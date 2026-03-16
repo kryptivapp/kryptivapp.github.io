@@ -1199,8 +1199,6 @@ function AppShell({user, setUser, view, children}) {
 
 /* ─────────────────────────── PAGE ──────────────────────────── */
 
-const {useState, useEffect, useMemo} = React;
-
 function CoinPicker({coins, availCoins, selectedSym, isFree, onSelect, onClose}) {
   return (
     <div className="cp-modal">

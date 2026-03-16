@@ -1140,8 +1140,6 @@ function AppShell({user, setUser, view, children}) {
 
 /* ─────────────────────────── PAGE ──────────────────────────── */
 
-const {useState, useEffect, useRef} = React;
-
 /* Fetch real 7-day sparkline from CoinGecko */
 async function fetchSparkline(coinId) {
   try {
