@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KRYPTIV · Compiler</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<!-- Babel for JSX transpilation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<!-- JSZip for bundling output -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --w:#fff; --w2:rgba(255,255,255,.9); --w3:rgba(255,255,255,.6);
+  --w4:rgba(255,255,255,.36); --border:rgba(255,255,255,.1); --border2:rgba(255,255,255,.2);
+  --ok:rgba(130,255,150,.85); --err:rgba(255,100,80,.85); --warn:rgba(255,210,80,.85);
+  --mono:'DM Mono',monospace; --sans:'Space Grotesk',sans-serif; --disp:'Bebas Neue',sans-serif;
+}
+html,body { background:#000; color:#fff; font-family:var(--sans); min-height:100vh; }
+.page { max-width:880px; margin:0 auto; padding:40px 24px 80px; }
+.logo { font-family:var(--disp); font-size:42px; letter-spacing:2px; margin-bottom:2px; }
+.sub  { font-family:var(--mono); font-size:8px; letter-spacing:5px; color:var(--w4); text-transform:uppercase; margin-bottom:36px; }
+.s-title { font-family:var(--mono); font-size:8px; letter-spacing:4px; text-transform:uppercase; color:var(--w4); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.s-title::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.06); }
+.section { margin-bottom:30px; }
+
+/* Drop zone */
+.drop { border:1px dashed var(--border2); padding:32px; text-align:center; cursor:pointer; transition:all .15s; }
+.drop:hover,.drop.over { border-color:var(--w3); background:rgba(255,255,255,.03); }
+.drop-t { font-family:var(--mono); font-size:9px; letter-spacing:3px; color:var(--w3); text-transform:uppercase; margin-bottom:6px; }
+.drop-s { font-size:12px; color:var(--w4); }
+input[type=file] { display:none; }
+
+/* File list */
+.file-list { display:flex; flex-direction:column; gap:3px; margin-bottom:14px; max-height:220px; overflow-y:auto; }
+.file-row { display:flex; align-items:center; padding:7px 12px; background:rgba(255,255,255,.03); border:1px solid var(--border); gap:10px; font-size:12px; }
+.file-name { flex:1; font-family:var(--mono); font-size:10px; color:var(--w2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.file-size { font-family:var(--mono); font-size:9px; color:var(--w4); flex-shrink:0; }
+.file-st   { font-family:var(--mono); font-size:9px; flex-shrink:0; }
+.file-st.ok   { color:var(--ok);  }
+.file-st.err  { color:var(--err); }
+.file-st.skip { color:var(--w4);  }
+.file-st.wait { color:var(--w4);  }
+
+/* Buttons */
+.btn { padding:12px 24px; background:var(--w); color:#000; border:none; font-family:var(--sans); font-weight:700; font-size:9px; letter-spacing:3px; text-transform:uppercase; cursor:pointer; transition:opacity .15s; }
+.btn:hover { opacity:.85; }
+.btn:disabled { opacity:.25; cursor:not-allowed; }
+.btn-g { padding:11px 20px; background:none; border:1px solid var(--border2); color:var(--w3); font-family:var(--mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .15s; }
+.btn-g:hover { border-color:var(--border2); color:var(--w); }
+.btn-g:disabled { opacity:.25; cursor:not-allowed; }
+.btns { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+/* Progress */
+.prog-bar { height:3px; background:rgba(255,255,255,.08); margin:12px 0; }
+.prog-fill { height:100%; background:var(--w); transition:width .25s; }
+.prog-lbl  { font-family:var(--mono); font-size:8px; color:var(--w4); letter-spacing:2px; }
+
+/* Log */
+.log { background:rgba(0,0,0,.6); border:1px solid var(--border); padding:14px; font-family:var(--mono); font-size:11px; line-height:1.8; max-height:280px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
+.ok  { color:var(--ok);   }
+.err { color:var(--err);  }
+.warn{ color:var(--warn); }
+.dim { color:var(--w4);   }
+.hd  { color:var(--w2); font-weight:600; }
+
+/* Stats */
+.stat-row { display:flex; gap:12px; flex-wrap:wrap; margin-top:14px; }
+.stat-p { padding:6px 12px; border:1px solid var(--border); font-family:var(--mono); font-size:8px; color:var(--w3); }
+.stat-p b { color:var(--w); }
+
+/* Output dir */
+.out-info { padding:14px; background:rgba(255,255,255,.03); border:1px solid var(--border); font-size:12px; color:var(--w3); line-height:1.8; }
+.out-info code { font-family:var(--mono); font-size:11px; color:var(--w); }
+
+/* Guide */
+.guide-box { padding:16px; background:rgba(255,255,255,.02); border:1px solid var(--border); font-size:12px; color:var(--w3); line-height:2; }
+.guide-box code { font-family:var(--mono); font-size:11px; color:var(--w); display:block; padding:10px; background:rgba(255,255,255,.03); margin:8px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="logo">KRYPTIV</div>
+  <div class="sub">Compiler · Auto-transpile JSX → precompiled.zip · GitHub Pages ready</div>
+
+  <!-- STEP 1: Upload -->
+  <div class="section">
+    <div class="s-title">Step 1 — Upload your kryptiv/ project folder</div>
+    <div class="drop" id="drop" onclick="document.getElementById('fi').click()">
+      <div class="drop-t">Drop folder or files here · or click to browse</div>
+      <div class="drop-s">Select all files from your kryptiv/ project — HTML, JS, CSS</div>
+    </div>
+    <input type="file" id="fi" multiple accept=".html,.js,.css,.jsx">
+  </div>
+
+  <!-- File list -->
+  <div class="section" id="fileSection" style="display:none">
+    <div class="s-title">Uploaded Files</div>
+    <div class="file-list" id="fileList"></div>
+    <div class="btns">
+      <button class="btn" id="compileBtn" onclick="compileAll()">AUTO-COMPILE ALL &amp; BUILD ZIP</button>
+      <button class="btn-g" onclick="clearAll()">CLEAR</button>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="section" id="progSection" style="display:none">
+    <div class="prog-lbl" id="progLbl">Compiling…</div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+  </div>
+
+  <!-- Log -->
+  <div class="section">
+    <div class="s-title">Compiler Log</div>
+    <div class="log" id="log"><span class="dim">Ready. Upload your project files to begin.</span></div>
+  </div>
+
+  <!-- Stats -->
+  <div id="statsSection" style="display:none">
+    <div class="stat-row" id="stats"></div>
+  </div>
+
+  <!-- Output -->
+  <div class="section" id="outSection" style="display:none">
+    <div class="s-title">Output</div>
+    <div class="out-info">
+      <code>precompiled.zip</code> contains your full project with all JSX pre-transpiled to plain JS.
+      The HTML files are modified to load <code>compiled.js</code> instead of running Babel in the browser — faster page loads.<br><br>
+      <strong style="color:var(--w);">To deploy:</strong> Unzip and push everything to the root of your GitHub Pages repository.
+      Subfolders like <code>/Dashboard/</code> are auto-detected by GitHub Pages.
+    </div>
+    <div class="btns" style="margin-top:10px;">
+      <button class="btn" id="dlBtn" disabled onclick="downloadZip()">DOWNLOAD precompiled.zip</button>
+    </div>
+  </div>
+
+  <!-- GitHub Guide -->
+  <div class="section">
+    <div class="s-title">GitHub Pages Structure</div>
+    <div class="guide-box">
+      After unzipping <code>precompiled.zip</code>, push this structure to your repo root:
+      <code>your-repo/
+├── index.html          ← Auth page (root = yourdomain.com/)
+├── compiled.js         ← Pre-transpiled JS bundle (auto-generated)
+├── cmp.html            ← This compiler
+├── susg.html           ← Social Update Screen Generator
+├── _shared/
+│   ├── globals.js
+│   ├── style.css
+│   └── shell.js
+├── Dashboard/index.html   → yourdomain.com/Dashboard/
+├── Markets/index.html     → yourdomain.com/Markets/
+├── Portfolio/index.html   → yourdomain.com/Portfolio/
+├── AI/index.html          → yourdomain.com/AI/
+├── News/index.html        → yourdomain.com/News/
+├── Account/index.html     → yourdomain.com/Account/
+├── Plans/index.html       → yourdomain.com/Plans/
+└── Privacy/index.html     → yourdomain.com/Privacy/</code>
+      GitHub Pages detects each <code>index.html</code> automatically — no config needed.
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   KRYPTIV AUTO-COMPILER
+   1. Reads uploaded files
+   2. Transpiles all JSX/Babel blocks with Babel Standalone
+   3. Patches HTML files to use compiled.js instead of inline babel
+   4. Packages everything into precompiled.zip via JSZip
+══════════════════════════════════════════════════ */
+
+const files = new Map(); // path → {content, name}
+let zipBlob = null;
+
+// ── LOG ──
+function log(msg, cls='dim') {
+  const el = document.getElementById('log');
+  const d  = document.createElement('div');
+  d.className = cls;
+  d.textContent = msg;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+function logClear() { document.getElementById('log').innerHTML = ''; }
+
+// ── DRAG & DROP ──
+const drop = document.getElementById('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); handleFiles(e.dataTransfer.files); });
+document.getElementById('fi').addEventListener('change', e => handleFiles(e.target.files));
+
+function handleFiles(list) {
+  const readers = Array.from(list).map(file => new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => {
+      // Preserve relative path if available
+      const path = file.webkitRelativePath || file.name;
+      files.set(path, { content: e.target.result, name: file.name, path });
+      res();
+    };
+    r.readAsText(file);
+  }));
+  Promise.all(readers).then(() => {
+    renderFileList();
+    document.getElementById('fileSection').style.display = '';
+    log(`Loaded ${list.length} file(s). Total: ${files.size} files ready.`, 'ok');
+  });
+}
+
+function renderFileList() {
+  const el = document.getElementById('fileList');
+  el.innerHTML = '';
+  files.forEach((f, path) => {
+    const row = document.createElement('div');
+    row.className = 'file-row';
+    row.id = 'fr-' + encodeURIComponent(path);
+    const kb = (new Blob([f.content]).size / 1024).toFixed(1);
+    const ext = f.name.split('.').pop();
+    row.innerHTML = `<span class="file-name">${path}</span><span class="file-size">${kb} KB</span><span class="file-st wait" id="st-${encodeURIComponent(path)}">—</span>`;
+    el.appendChild(row);
+  });
+}
+
+function setFileSt(path, text, cls) {
+  const el = document.getElementById('st-' + encodeURIComponent(path));
+  if (el) { el.textContent = text; el.className = 'file-st ' + cls; }
+}
+
+function clearAll() {
+  files.clear(); zipBlob = null;
+  document.getElementById('fileList').innerHTML = '';
+  document.getElementById('fileSection').style.display = 'none';
+  document.getElementById('progSection').style.display = 'none';
+  document.getElementById('statsSection').style.display = 'none';
+  document.getElementById('outSection').style.display = 'none';
+  document.getElementById('dlBtn').disabled = true;
+  logClear();
+  log('Cleared.', 'dim');
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progLbl').textContent = label;
+}
+
+// ── MAIN COMPILE ──
+async function compileAll() {
+  if (files.size === 0) { log('No files loaded.', 'warn'); return; }
+
+  logClear();
+  const btn = document.getElementById('compileBtn');
+  btn.disabled = true;
+  document.getElementById('progSection').style.display = '';
+  document.getElementById('statsSection').style.display = 'none';
+  document.getElementById('outSection').style.display = 'none';
+
+  const t0 = Date.now();
+  log('═══ KRYPTIV COMPILER START ═══', 'hd');
+  log(`Files: ${files.size} · Babel: ${Babel.version || '7.x'}`, 'dim');
+
+  const zip = new JSZip();
+
+  // Collect all transpiled JSX blocks into a single compiled.js
+  let compiledChunks = [];
+  compiledChunks.push(`/* KRYPTIV compiled.js — generated ${new Date().toISOString()} */\n`);
+
+  let nFiles = 0, nBlocks = 0, nErrors = 0, nSkipped = 0;
+  const fileArr = Array.from(files.entries());
+
+  // Step 1: compile JS files
+  log('', 'dim');
+  log('── Phase 1: JS files ──', 'hd');
+  for (let i = 0; i < fileArr.length; i++) {
+    const [path, f] = fileArr[i];
+    setProgress(Math.round((i / fileArr.length) * 40), `Compiling JS: ${f.name}`);
+    if (!f.name.endsWith('.js') && !f.name.endsWith('.jsx')) continue;
+    // Skip shell.js — it's already JSX that gets compiled within HTML pages
+    // But DO compile it here so the bundle includes it
+    log(`Compiling JS: ${path}`, 'dim');
+    try {
+      const result = Babel.transform(f.content, { presets:['react'], filename: f.name });
+      compiledChunks.push(`\n/* ── ${path} ── */\n${result.code}\n`);
+      setFileSt(path, '✓ compiled', 'ok');
+      nBlocks++; nFiles++;
+    } catch(e) {
+      log(`  ✗ ${path}: ${e.message}`, 'err');
+      setFileSt(path, '✗ error', 'err');
+      nErrors++;
+    }
+    await tick();
+  }
+
+  // Step 2: process HTML files
+  log('', 'dim');
+  log('── Phase 2: HTML files ──', 'hd');
+  const babelRegex = /<script[^>]+type=["']text\/babel["'][^>]*>([\s\S]*?)<\/script>/gi;
+
+  for (let i = 0; i < fileArr.length; i++) {
+    const [path, f] = fileArr[i];
+    setProgress(40 + Math.round((i / fileArr.length) * 40), `Processing HTML: ${f.name}`);
+    if (!f.name.endsWith('.html')) continue;
+
+    log(`Processing HTML: ${path}`, 'dim');
+    let html = f.content;
+    let blockIdx = 0;
+    let modified = html;
+    let fileOk = true;
+
+    // Extract and compile each babel block
+    let match;
+    babelRegex.lastIndex = 0;
+    const blocks = [];
+    while ((match = babelRegex.exec(html)) !== null) {
+      blocks.push({ full: match[0], src: match[1], idx: ++blockIdx });
+    }
+
+    if (blocks.length === 0) {
+      // No babel blocks — CSS, plain HTML etc. Pass through as-is
+      setFileSt(path, '→ passthrough', 'skip');
+      nSkipped++;
+    } else {
+      for (const block of blocks) {
+        try {
+          const result = Babel.transform(block.src, { presets:['react'], filename: f.name + '#' + block.idx });
+          compiledChunks.push(`\n/* ── ${path} [block ${block.idx}] ── */\n${result.code}\n`);
+          nBlocks++;
+          log(`  ✓ block ${block.idx} → OK`, 'ok');
+        } catch(e) {
+          log(`  ✗ block ${block.idx}: ${e.message}`, 'err');
+          nErrors++;
+          fileOk = false;
+        }
+      }
+
+      // Patch HTML: remove all babel script tags, add compiled.js reference before </body>
+      // Also remove the babel-standalone CDN script since we pre-compiled
+      modified = html
+        // Remove babel standalone script tag
+        .replace(/<script[^>]*babel-standalone[^>]*><\/script>\s*/gi, '')
+        .replace(/<script[^>]*babel\.min\.js[^>]*><\/script>\s*/gi, '')
+        // Remove type="text/babel" script blocks (their code is now in compiled.js)
+        .replace(/<script[^>]+type=["']text\/babel["'][^>]*>[\s\S]*?<\/script>/gi, '')
+        // Add compiled.js before closing body
+        .replace(/<\/body>/i, '<script src="/compiled.js"></script>\n</body>');
+
+      // Fix relative paths for _shared references — if file is in a subfolder like Dashboard/
+      // paths like ../_shared/ need to stay relative, compiled.js is at root
+      // For shell.js and globals.js which were extracted, we still include them as source files
+      // but remove the babel wrapper
+
+      setFileSt(path, fileOk ? '✓ patched' : '⚠ partial', fileOk ? 'ok' : 'warn');
+      nFiles++;
+    }
+
+    // Always add HTML to zip
+    zip.file(path, modified);
+    await tick();
+  }
+
+  // Step 3: pass through CSS and other non-compiled files
+  log('', 'dim');
+  log('── Phase 3: Static files ──', 'hd');
+  for (const [path, f] of fileArr) {
+    if (f.name.endsWith('.html') || f.name.endsWith('.js') || f.name.endsWith('.jsx')) continue;
+    log(`Including: ${path}`, 'dim');
+    zip.file(path, f.content);
+    setFileSt(path, '→ included', 'skip');
+    await tick();
+  }
+
+  // Step 4: build compiled.js and add to zip root
+  setProgress(85, 'Building compiled.js…');
+  const compiledJS = compiledChunks.join('\n');
+  zip.file('compiled.js', compiledJS);
+  log('', 'dim');
+  log(`compiled.js → ${(compiledJS.length/1024).toFixed(1)} KB`, 'ok');
+
+  // Step 5: generate zip
+  setProgress(92, 'Packaging zip…');
+  log('', 'dim');
+  log('── Packaging precompiled.zip ──', 'hd');
+  zipBlob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{level:6} });
+
+  const elapsed = Date.now() - t0;
+  const zipKB   = (zipBlob.size / 1024).toFixed(1);
+  setProgress(100, 'Done ✓');
+
+  log('', 'dim');
+  log(`═══ DONE in ${elapsed}ms ═══`, 'hd');
+  log(`Files: ${nFiles} compiled | Blocks: ${nBlocks} | Skipped: ${nSkipped} | Errors: ${nErrors} | ZIP: ${zipKB} KB`, nErrors > 0 ? 'warn' : 'ok');
+
+  // Stats
+  document.getElementById('statsSection').style.display = '';
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-p">Files compiled <b>${nFiles}</b></div>
+    <div class="stat-p">JSX blocks <b>${nBlocks}</b></div>
+    <div class="stat-p">Errors <b>${nErrors}</b></div>
+    <div class="stat-p">ZIP size <b>${zipKB} KB</b></div>
+    <div class="stat-p">Time <b>${elapsed}ms</b></div>
+  `;
+
+  document.getElementById('outSection').style.display = '';
+  document.getElementById('dlBtn').disabled = false;
+  btn.disabled = false;
+}
+
+async function tick() { await new Promise(r => setTimeout(r, 0)); }
+
+function downloadZip() {
+  if (!zipBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(zipBlob);
+  a.download = 'precompiled.zip';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  log('Downloaded precompiled.zip', 'ok');
+}
+</script>
+</body>
+</html>

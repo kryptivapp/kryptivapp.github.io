@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KRYPTIV · Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="../_shared/globals.js"></script>
+<script src="../_shared/shell.js" type="text/babel"></script>
+<style>
+/* Add holding modal */
+.modal-bg{position:fixed;inset:0;z-index:400;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .18s both;}
+@media(min-width:600px){.modal-bg{align-items:center;}}
+.modal-bd{position:absolute;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(14px);}
+.modal-panel{position:relative;z-index:1;background:rgba(6,6,6,.98);border:1px solid var(--border);border-bottom:none;padding:24px;width:100%;max-width:440px;animation:coinSlide .25s cubic-bezier(.4,0,.2,1) both;}
+@media(min-width:600px){.modal-panel{border-bottom:1px solid var(--border);}}
+.modal-title{font-family:var(--disp);font-size:24px;letter-spacing:3px;margin-bottom:18px;}
+.modal-fields{display:flex;flex-direction:column;gap:16px;margin-bottom:20px;}
+.modal-row{display:flex;gap:10px;}
+.modal-row .af{flex:1;}
+.modal-btn{width:100%;padding:12px;background:var(--w);color:#000;border:none;font-family:var(--sans);font-weight:700;font-size:9px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:opacity .2s;}
+.modal-btn:hover{opacity:.85;}
+.modal-btn:disabled{opacity:.3;cursor:not-allowed;}
+.modal-cancel{width:100%;padding:10px;background:none;border:1px solid var(--border);color:var(--w4);font-family:var(--mono);font-size:8px;letter-spacing:3px;cursor:pointer;margin-top:6px;transition:all .15s;}
+.modal-cancel:hover{border-color:var(--border2);color:var(--w3);}
+
+/* Holdings list */
+.holding-row{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);gap:8px;}
+.h-sym{font-family:var(--mono);font-size:12px;color:var(--w);font-weight:500;width:48px;flex-shrink:0;}
+.h-detail{flex:1;min-width:0;}
+.h-amt{font-family:var(--mono);font-size:10px;color:var(--w3);}
+.h-price{font-family:var(--mono);font-size:9px;color:var(--w4);margin-top:1px;}
+.h-val{font-family:var(--mono);font-size:12px;color:var(--w2);text-align:right;flex-shrink:0;width:80px;}
+.h-pnl{font-family:var(--mono);font-size:10px;text-align:right;flex-shrink:0;width:64px;}
+.h-pnl.up{color:rgba(130,255,150,.9);}
+.h-pnl.dn{color:rgba(255,100,80,.8);}
+.h-del{background:none;border:none;color:var(--w4);cursor:pointer;padding:4px;font-size:12px;flex-shrink:0;transition:color .12s;}
+.h-del:hover{color:rgba(255,100,80,.8);}
+
+.add-btn{width:100%;padding:10px;background:none;border:1px dashed var(--border2);color:var(--w4);font-family:var(--mono);font-size:8px;letter-spacing:3px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
+.add-btn:hover{border-color:var(--border2);color:var(--w3);}
+.add-btn .mi{font-size:14px;}
+
+/* Summary row */
+.summary-stat{flex:1;min-width:80px;}
+.summary-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;margin-bottom:4px;}
+.summary-val{font-family:var(--disp);font-size:22px;letter-spacing:1px;line-height:1;}
+.summary-sub{font-size:10px;color:var(--w3);margin-top:2px;}
+
+/* Alloc bar */
+.alloc-wrap{margin:12px 0 6px;}
+.alloc-bar2{display:flex;height:3px;gap:1px;}
+.alloc-seg2{height:100%;transition:width .5s;}
+.alloc-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.alloc-dot{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:8px;color:var(--w4);}
+.alloc-dot span:first-child{width:8px;height:8px;flex-shrink:0;display:inline-block;}
+
+/* Coin select in modal */
+.coin-select-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+.cs-btn{padding:4px 10px;background:none;border:1px solid var(--border);color:var(--w4);font-family:var(--mono);font-size:8px;cursor:pointer;transition:all .12s;}
+.cs-btn.on{border-color:var(--w2);color:var(--w2);background:rgba(255,255,255,.05);}
+
+.empty-state{padding:28px;border:1px dashed var(--border);text-align:center;}
+.empty-icon{font-size:28px;color:var(--w4);display:block;margin-bottom:10px;}
+.empty-txt{font-family:var(--mono);font-size:8px;color:var(--w4);letter-spacing:2px;line-height:2;text-transform:uppercase;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useEffect} = React;
+
+const HOLDINGS_KEY = 'kryptiv_holdings';
+const COLORS = ['rgba(255,255,255,1)','rgba(255,255,255,.7)','rgba(255,255,255,.5)','rgba(255,255,255,.35)','rgba(255,255,255,.22)','rgba(255,255,255,.14)','rgba(255,255,255,.08)'];
+
+function loadHoldings() {
+  try { return JSON.parse(localStorage.getItem(HOLDINGS_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveHoldings(h) {
+  try { localStorage.setItem(HOLDINGS_KEY, JSON.stringify(h)); } catch {}
+}
+
+function AddModal({coins, availCoins, isFree, onAdd, onClose}) {
+  const [sym,     setSym]     = useState('BTC');
+  const [amount,  setAmount]  = useState('');
+  const [avgBuy,  setAvgBuy]  = useState('');
+  const [err,     setErr]     = useState('');
+  const opts = isFree ? availCoins : coins;
+
+  const submit = () => {
+    setErr('');
+    const amt = parseFloat(amount);
+    const avg = parseFloat(avgBuy);
+    if (!sym)          { setErr('Select a coin'); return; }
+    if (!amt || amt<=0){ setErr('Enter a valid amount'); return; }
+    if (!avg || avg<=0){ setErr('Enter your average buy price'); return; }
+    onAdd({ sym, amount:amt, avgBuy:avg, addedAt: Date.now() });
+    onClose();
+  };
+
+  return (
+    <div className="modal-bg">
+      <div className="modal-bd" onClick={onClose}/>
+      <div className="modal-panel">
+        <div className="modal-title">ADD HOLDING</div>
+        <div className="modal-fields">
+          <div className="af">
+            <label className="af-lbl">Coin</label>
+            <div className="coin-select-grid">
+              {(opts||[]).map(c=>(
+                <button key={c.id} className={`cs-btn${sym===c.sym?' on':''}`} onClick={()=>setSym(c.sym)}>
+                  {c.sym}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="modal-row">
+            <div className="af">
+              <label className="af-lbl">Amount</label>
+              <input className="af-in" type="number" step="any" min="0" value={amount}
+                onChange={e=>setAmount(e.target.value)} placeholder="e.g. 0.5"/>
+            </div>
+            <div className="af">
+              <label className="af-lbl">Avg Buy Price (USD)</label>
+              <input className="af-in" type="number" step="any" min="0" value={avgBuy}
+                onChange={e=>setAvgBuy(e.target.value)} placeholder="e.g. 45000"/>
+            </div>
+          </div>
+          {err && <div className="af-err"><span className="mi" style={{fontSize:10}}>error_outline</span> {err}</div>}
+        </div>
+        <button className="modal-btn" onClick={submit}>ADD TO PORTFOLIO</button>
+        <button className="modal-cancel" onClick={onClose}>CANCEL</button>
+      </div>
+    </div>
+  );
+}
+
+function Portfolio({user, coins, availCoins, priceSrc}) {
+  const isFree = user.tier === 'free';
+  const [holdings, setHoldings]   = useState(loadHoldings);
+  const [showAdd,  setShowAdd]    = useState(false);
+  const [simCoin,   setSimCoin]   = useState('BTC');
+  const [simAmt,    setSimAmt]    = useState('100');
+  const [simPeriod, setSimPeriod] = useState('7d');
+  const [simResult, setSimResult] = useState(null);
+  const [simErr,    setSimErr]    = useState('');
+
+  useEffect(()=>{ saveHoldings(holdings); }, [holdings]);
+
+  const addHolding = h => setHoldings(prev=>[...prev.filter(x=>x.sym!==h.sym), h]);
+  const removeHolding = sym => setHoldings(prev=>prev.filter(h=>h.sym!==sym));
+
+  if (!coins) return null;
+
+  /* ── enrich holdings with live prices ── */
+  const enriched = holdings.map(h => {
+    const coin    = coins.find(c=>c.sym===h.sym);
+    const curPx   = coin?.price || 0;
+    const curVal  = h.amount * curPx;
+    const costVal = h.amount * h.avgBuy;
+    const pnl     = curVal - costVal;
+    const pnlPct  = costVal > 0 ? (pnl/costVal)*100 : 0;
+    return { ...h, coin, curPx, curVal, costVal, pnl, pnlPct };
+  });
+
+  const totalVal  = enriched.reduce((a,h)=>a+h.curVal, 0);
+  const totalCost = enriched.reduce((a,h)=>a+h.costVal, 0);
+  const totalPnl  = totalVal - totalCost;
+  const totalPct  = totalCost > 0 ? (totalPnl/totalCost)*100 : 0;
+
+  /* ── simulator with real % change ── */
+  const simCoins = isFree ? (availCoins||[]) : (coins||[]);
+
+  function runSim() {
+    setSimErr(''); setSimResult(null);
+    const coin = coins?.find(c=>c.sym===simCoin);
+    if (!coin) { setSimErr('Coin data not available.'); return; }
+    const pctMap = {'24h': coin.ch, '7d': coin.ch7d};
+    const pct    = pctMap[simPeriod];
+    if (pct == null) { setSimErr(`No ${simPeriod} data for ${simCoin} from ${priceSrc}.`); return; }
+    const invested  = parseFloat(simAmt)||100;
+    const pastPx    = coin.price / (1 + pct/100);
+    if (pastPx<=0)  { setSimErr('Invalid price data.'); return; }
+    const units     = invested / pastPx;
+    const nowVal    = units * coin.price;
+    const gain      = nowVal - invested;
+    const gainPct   = (gain/invested)*100;
+    setSimResult({ invested, nowVal, gain, gainPct, pct, sym:simCoin, period:simPeriod, name:coin.name });
+  }
+
+  const PERIOD_LBL = { '24h':'24 hours ago', '7d':'7 days ago' };
+
+  return (
+    <div className="scr">
+      {/* ── SUMMARY ── */}
+      {enriched.length > 0 && (
+        <div className="s-mb">
+          <div className="s-lbl">
+            <span className="mi">donut_small</span>PORTFOLIO OVERVIEW
+            <span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.5)',display:'flex',alignItems:'center',gap:4}}>
+              <span className="mi" style={{fontSize:8}}>fiber_manual_record</span>LIVE · {priceSrc}
+            </span>
+          </div>
+          <div className="stat-row" style={{marginBottom:14}}>
+            <div className="summary-stat">
+              <div className="summary-lbl">Total Value</div>
+              <div className="summary-val">{fv(totalVal)}</div>
+              <div className="summary-sub">{enriched.length} {enriched.length===1?'asset':'assets'}</div>
+            </div>
+            <div className="summary-stat">
+              <div className="summary-lbl">Total Cost</div>
+              <div className="summary-val">{fv(totalCost)}</div>
+            </div>
+            <div className="summary-stat">
+              <div className="summary-lbl">P&amp;L</div>
+              <div className="summary-val" style={{color:totalPnl>=0?'rgba(130,255,150,.9)':'rgba(255,100,80,.8)'}}>
+                {totalPnl>=0?'+':''}{fv(Math.abs(totalPnl))}
+              </div>
+              <div className="summary-sub" style={{color:totalPct>=0?'rgba(130,255,150,.8)':'rgba(255,100,80,.7)'}}>
+                {totalPct>=0?'+':''}{totalPct.toFixed(2)}%
+              </div>
+            </div>
+          </div>
+
+          {/* Allocation bar */}
+          {totalVal > 0 && (
+            <div className="alloc-wrap">
+              <div className="alloc-bar2">
+                {enriched.sort((a,b)=>b.curVal-a.curVal).map((h,i)=>(
+                  <div key={h.sym} className="alloc-seg2"
+                    style={{width:(h.curVal/totalVal*100)+'%', background:COLORS[i]||'rgba(255,255,255,.05)'}}/>
+                ))}
+              </div>
+              <div className="alloc-legend">
+                {enriched.sort((a,b)=>b.curVal-a.curVal).map((h,i)=>(
+                  <div key={h.sym} className="alloc-dot">
+                    <span style={{background:COLORS[i]||'rgba(255,255,255,.05)'}}/>
+                    {h.sym} {totalVal>0?(h.curVal/totalVal*100).toFixed(1):'0'}%
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── HOLDINGS ── */}
+      <div className="s-mb">
+        <div className="s-lbl"><span className="mi">list</span>HOLDINGS</div>
+
+        {enriched.length === 0 ? (
+          <div className="empty-state">
+            <span className="mi empty-icon">account_balance_wallet</span>
+            <div className="empty-txt">No holdings added yet.<br/>Add your positions to track real P&amp;L with live prices.</div>
+          </div>
+        ) : (
+          enriched.map(h=>(
+            <div key={h.sym} className="holding-row">
+              <div className="h-sym">{h.sym}</div>
+              <div className="h-detail">
+                <div className="h-amt">{h.amount} {h.sym}</div>
+                <div className="h-price">avg {fp(h.avgBuy)} · now {fp(h.curPx)}</div>
+              </div>
+              <div className="h-val">{fv(h.curVal)}</div>
+              <div className={`h-pnl ${h.pnl>=0?'up':'dn'}`}>
+                {h.pnl>=0?'▴':'▾'}{Math.abs(h.pnlPct).toFixed(1)}%
+              </div>
+              <button className="h-del" onClick={()=>removeHolding(h.sym)} title="Remove">
+                <span className="mi">close</span>
+              </button>
+            </div>
+          ))
+        )}
+
+        {(!isFree || enriched.length < 2) && (
+          <button className="add-btn" onClick={()=>setShowAdd(true)}>
+            <span className="mi">add</span>ADD HOLDING
+          </button>
+        )}
+        {isFree && enriched.length >= 2 && (
+          <div style={{padding:'8px 0',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2}}>
+            FREE PLAN · 2 HOLDINGS MAX ·{' '}
+            <span onClick={()=>window.location.href='/Plans/'} style={{color:'var(--w3)',cursor:'pointer'}}>UPGRADE FOR UNLIMITED ▸</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── INVESTMENT SIMULATOR ── */}
+      <div className="s-mb">
+        <div className="s-lbl"><span className="mi">school</span>INVESTMENT SIMULATOR</div>
+        <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.6)',letterSpacing:2,marginBottom:12,display:'flex',alignItems:'center',gap:5}}>
+          <span className="mi" style={{fontSize:8}}>fiber_manual_record</span>
+          REAL PRICES FROM {priceSrc||'…'} — ACTUAL {simPeriod.toUpperCase()} % CHANGE
+        </div>
+        <div className="sim-box">
+          <div className="sim-title">If I had bought {simCoin} {PERIOD_LBL[simPeriod]}…</div>
+          <div className="sim-row">
+            <div className="sim-field">
+              <div className="sim-lbl">Coin</div>
+              <select className="sim-sel" value={simCoin} onChange={e=>setSimCoin(e.target.value)}>
+                {simCoins.map(c=><option key={c.id} value={c.sym}>{c.sym} — {c.name}</option>)}
+              </select>
+            </div>
+            <div className="sim-field">
+              <div className="sim-lbl">Amount (USD)</div>
+              <input className="sim-in" type="number" min="1" value={simAmt}
+                onChange={e=>setSimAmt(e.target.value)} placeholder="100"/>
+            </div>
+            <div className="sim-field">
+              <div className="sim-lbl">Period</div>
+              <select className="sim-sel" value={simPeriod} onChange={e=>setSimPeriod(e.target.value)}>
+                <option value="24h">24 Hours ago</option>
+                <option value="7d">7 Days ago</option>
+              </select>
+            </div>
+          </div>
+          <button className="sim-btn" onClick={runSim}>SIMULATE</button>
+          {simErr && (
+            <div style={{padding:'10px 0',fontFamily:'var(--mono)',fontSize:8,color:'rgba(255,100,80,.8)',letterSpacing:1}}>{simErr}</div>
+          )}
+          {simResult && (
+            <div className="sim-result">
+              <div className="sim-rh" style={{color:simResult.good?'rgba(130,255,150,.9)':'rgba(255,100,80,.8)'}}>
+                {simResult.gain>=0?'+':'−'}${Math.abs(simResult.gain).toFixed(2)}
+              </div>
+              <div className="sim-rs">
+                ${simResult.invested.toFixed(2)} in <strong>{simResult.sym}</strong>{' '}
+                {PERIOD_LBL[simResult.period]} →{' '}
+                <strong style={{color:'var(--w)'}}>${simResult.nowVal.toFixed(2)}</strong> today.{' '}
+                {simResult.gain>=0?'Gain':'Loss'} of{' '}
+                <strong style={{color:simResult.gain>=0?'rgba(130,255,150,.9)':'rgba(255,100,80,.8)'}}>
+                  {simResult.gainPct>=0?'+':''}{simResult.gainPct.toFixed(2)}%
+                </strong>
+                {' '}({simResult.sym} moved {simResult.pct>=0?'+':''}{simResult.pct.toFixed(2)}% in that period).
+              </div>
+              <span className={`sim-verdict ${simResult.gain>=0?'good':'bad'}`}>
+                {simResult.gain>=0?'WOULD HAVE GAINED':'WOULD HAVE LOST'}
+              </span>
+              <div className="sim-dis">
+                Based on real {simResult.period} price change from {priceSrc}.
+                Current {simResult.sym}: {fp(coins?.find(c=>c.sym===simResult.sym)?.price)}.
+                Past performance ≠ future results. Not financial advice.
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showAdd && (
+        <AddModal
+          coins={coins}
+          availCoins={availCoins}
+          isFree={isFree}
+          onAdd={addHolding}
+          onClose={()=>setShowAdd(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function Page() {
+  const user = requireAuth();
+  if (!user) return null;
+  const [u, setU] = useState(user);
+  return (
+    <>
+      <div className="wall clear"/>
+      <AppShell user={u} setUser={setU} view="portfolio">
+        <Portfolio user={u}/>
+      </AppShell>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+</script>
+</body>
+</html>

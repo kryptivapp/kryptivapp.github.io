@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>KRYPTIV · AI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="../_shared/globals.js"></script>
+<script src="../_shared/shell.js" type="text/babel"></script>
+<style>
+.qb-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
+@media(max-width:440px){.qb-grid{grid-template-columns:1fr;}}
+/* Fix mobile keyboard not pushing content */
+.ai-wrap{display:flex;flex-direction:column;height:100%;overflow:hidden;position:relative;}
+@supports(height:100dvh){
+  #root{height:100dvh;}
+  .ai-wrap{height:100%;}
+}
+.preset-btn{padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--w3);font-family:var(--sans);font-size:12px;font-weight:400;text-align:left;cursor:pointer;transition:all .12s;line-height:1.4;}
+.preset-btn:hover,.preset-btn.on{background:rgba(255,255,255,.07);border-color:var(--border2);color:var(--w);}
+.preset-lbl{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:var(--w4);text-transform:uppercase;display:block;margin-bottom:3px;}
+.coin-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.coin-pill{padding:4px 10px;background:none;border:1px solid var(--border);color:var(--w4);font-family:var(--mono);font-size:8px;letter-spacing:1px;cursor:pointer;transition:all .12s;}
+.coin-pill.on{border-color:var(--w2);color:var(--w2);background:rgba(255,255,255,.05);}
+.ask-btn{width:100%;padding:11px;background:var(--w);border:none;color:#000;font-family:var(--sans);font-weight:700;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:opacity .2s;margin-top:8px;}
+.ask-btn:hover{opacity:.85;}
+.ask-btn:disabled{opacity:.25;cursor:not-allowed;}
+.live-price-row{font-family:var(--mono);font-size:8px;color:rgba(130,255,150,.6);letter-spacing:2px;display:flex;align-items:center;gap:5px;margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useEffect, useRef} = React;
+
+const PRESET_TYPES = [
+  {id:'invest',  label:'Investment Case',    desc:'Should I invest in {coin}?'},
+  {id:'outlook', label:'Market Outlook',     desc:'Full outlook for {coin}'},
+  {id:'cashout', label:'Take Profit?',       desc:'Should I cash out of {coin}?'},
+  {id:'compare', label:'BTC vs {coin}',      desc:'Which is the better buy now?'},
+];
+
+function AIView({user, coins, availCoins, priceSrc}) {
+  const [msgs,    setMsgs]    = useState([{
+    role:'ai',
+    text:'KRYPTIV AI ready. I have access to live prices right now. Select a question type and a coin, then tap ASK for a detailed analysis with real current data.'
+  }]);
+  const [loading, setLoading] = useState(false);
+  const [selType, setSelType] = useState('invest');
+  const [selCoin, setSelCoin] = useState('BTC');
+  const endRef = useRef(null);
+
+  useEffect(()=>endRef.current?.scrollIntoView({behavior:'smooth'}),[msgs]);
+
+  // Update selCoin when availCoins loads and doesn't include current selection
+  useEffect(()=>{
+    if (availCoins?.length && !availCoins.find(c=>c.sym===selCoin)) {
+      setSelCoin(availCoins[0].sym);
+    }
+  }, [availCoins]);
+
+  if (!availCoins) return null;
+
+  const coin = coins?.find(c=>c.sym===selCoin) || availCoins.find(c=>c.sym===selCoin);
+
+  const buildPrompt = () => {
+    const preset = AI_PRESETS.find(p=>p.id===selType);
+    return preset ? preset.build(selCoin, coin, coins) : `Tell me about ${selCoin}.`;
+  };
+
+  const displayQ = () => {
+    const t = PRESET_TYPES.find(p=>p.id===selType);
+    return t ? t.desc.replace('{coin}', selCoin) : selCoin;
+  };
+
+  const send = async () => {
+    if (loading) return;
+    const prompt  = buildPrompt();
+    const display = displayQ();
+    setMsgs(m=>[...m,{role:'user',text:display}]);
+    setLoading(true);
+    try {
+      const history = [];
+      msgs.forEach(m=>{
+        if (m.role==='user') history.push({role:'user',      content:m.text});
+        else                 history.push({role:'assistant', content:m.text});
+      });
+      history.push({role:'user', content:prompt});
+
+      const res = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-haiku-4-5-20251001',
+          max_tokens:1000,
+          system:`You are KRYPTIV AI, a professional crypto analyst. You are given REAL LIVE market prices fetched directly from ${priceSrc||'CoinGecko'}. Use them as the basis for your analysis — they are accurate as of this moment. Give thorough, direct, actionable analysis. For investment questions: cover current momentum, key risks, macro environment, and a clear recommendation. For outlook: short-term (1-2 weeks), mid-term (1-3 months), key levels. For cash-out: profit strategy, risks of holding vs selling. For comparisons: risk profile, liquidity, growth thesis, clear verdict. Always end with: "Not financial advice." User plan: ${user.tier}. KryptID: ${user.kryptid}.`,
+          messages:history
+        })
+      });
+      const d = await res.json();
+      setMsgs(m=>[...m,{role:'ai',text:d.content?.[0]?.text||'No response. Try again.'}]);
+    } catch {
+      setMsgs(m=>[...m,{role:'ai',text:'Connection error. Check your network.'}]);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="ai-wrap">
+      {/* Header */}
+      <div className="ai-header">
+        <div className="ai-model-row">
+          <div className="ai-dot"/>
+          <div className="ai-mb">CLAUDE · KRYPTIV AI</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:2,marginLeft:'auto'}}>
+            {user.tier.toUpperCase()}
+          </div>
+        </div>
+        {coin && (
+          <div className="live-price-row">
+            <span className="mi" style={{fontSize:9}}>fiber_manual_record</span>
+            {coin.sym}: {fp(coin.price)} · {fc(coin.ch)} 24h · LIVE from {priceSrc}
+          </div>
+        )}
+        <div className="ai-dis">AI-generated analysis based on live prices. Not financial advice. Do your own research.</div>
+      </div>
+
+      {/* Quick Builder */}
+      <div className="qb-wrap">
+        <div className="qb-lbl">Select question type</div>
+        <div className="qb-grid">
+          {PRESET_TYPES.map(t=>(
+            <button
+              key={t.id}
+              className={`preset-btn${selType===t.id?' on':''}`}
+              onClick={()=>setSelType(t.id)}
+            >
+              <span className="preset-lbl">{t.label}</span>
+              {t.desc.replace('{coin}',selCoin)}
+            </button>
+          ))}
+        </div>
+
+        <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:3,color:'var(--w4)',textTransform:'uppercase',marginBottom:6,marginTop:4}}>Coin</div>
+        <div className="coin-pills">
+          {availCoins.map(c=>(
+            <button
+              key={c.id}
+              className={`coin-pill${selCoin===c.sym?' on':''}`}
+              onClick={()=>setSelCoin(c.sym)}
+            >{c.sym}</button>
+          ))}
+        </div>
+
+        <button className="ask-btn" disabled={loading||!coin} onClick={send}>
+          {loading?'ANALYSING…':`ASK ABOUT ${selCoin}${coin?' @ '+fp(coin.price):''}`}
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div className="ai-msgs">
+        {msgs.map((m,i)=>(
+          <div key={i} className="msg-wrap">
+            <div className="msg-meta">
+              <span className="mi">{m.role==='ai'?'smart_toy':'person'}</span>
+              {m.role==='ai'?'KRYPTIV AI':user.kryptid}
+            </div>
+            <div className={`msg-body${m.role==='user'?' usr':''}`}>{m.text}</div>
+          </div>
+        ))}
+        {loading&&(
+          <div className="msg-wrap">
+            <div className="msg-meta"><span className="mi">smart_toy</span>KRYPTIV AI</div>
+            <div className="thinking"><span/><span/><span/></div>
+          </div>
+        )}
+        <div ref={endRef}/>
+      </div>
+    </div>
+  );
+}
+
+function Page() {
+  const user = requireAuth();
+  if (!user) return null;
+  const [u, setU] = useState(user);
+  return (
+    <>
+      <div className="wall clear"/>
+      <AppShell user={u} setUser={setU} view="ai">
+        <AIView user={u}/>
+      </AppShell>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+</script>
+</body>
+</html>

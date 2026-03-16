@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KRYPTIV · Privacy</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="../_shared/globals.js"></script>
+<script src="../_shared/shell.js" type="text/babel"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState} = React;
+
+function Privacy() {
+  return (
+    <div className="main">
+      <div className="privacy-wrap">
+        <div className="priv-h1">PRIVACY & TERMS</div>
+        <div className="priv-sub">Last updated · March 2025</div>
+
+        <div className="priv-sect">
+          <div className="priv-h2">Privacy</div>
+          <div className="priv-p">KRYPTIV stores your account data locally in your browser's localStorage. No data is sent to external servers except AI queries and market data requests. We do not sell or share your information with third parties.</div>
+          <div className="priv-p">AI conversations are processed via the Anthropic API and are subject to Anthropic's usage policies. KRYPTIV does not store your conversation history server-side.</div>
+        </div>
+
+        <div className="priv-sect">
+          <div className="priv-h2">APIs & Data Sources</div>
+          {[
+            ['Anthropic API',  'Powers the KRYPTIV AI assistant. Your questions are processed by Anthropic\'s servers and subject to their privacy policy. We do not store chat history.',           'smart_toy'],
+            ['CoinGecko / CoinMarketCap', 'Provides live and historical cryptocurrency price data, market caps, and volume. Requests are not tied to user identity.', 'show_chart'],
+            ['Local Storage',  'Your account (name, KryptID, plan) is stored in your browser\'s localStorage. Nothing is sent to a KRYPTIV server at this stage of development.',              'storage'],
+          ].map(([nm, desc, ic]) => (
+            <div key={nm} className="priv-li">
+              <span className="mi">{ic}</span>
+              <div>
+                <strong style={{color:'var(--w2)',display:'block',marginBottom:2}}>{nm}</strong>
+                {desc}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="priv-sect">
+          <div className="priv-h2">Terms of Use</div>
+          <div className="priv-p">KRYPTIV is an educational platform. Nothing on this app constitutes financial advice. AI analysis is informational only. We are not responsible for financial losses from actions taken based on this app.</div>
+          {[
+            'We do not sell or share your data with third parties',
+            'We do not run advertisements',
+            'All AI answers are estimates — not financial advice',
+            'Use at your own risk — always do your own research',
+          ].map((t,i) => (
+            <div key={i} className="priv-li"><span className="mi">check</span>{t}</div>
+          ))}
+        </div>
+
+        <div style={{paddingTop:18,fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2}}>
+          KRYPTIV · EDUCATIONAL PLATFORM · NOT FINANCIAL ADVICE
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Page() {
+  const user = requireAuth();
+  if (!user) return null;
+  const [u, setU] = useState(user);
+  return (
+    <>
+      <div className="wall clear"/>
+      <AppShell user={u} setUser={setU} view="privacy">
+        <Privacy/>
+      </AppShell>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+</script>
+</body>
+</html>

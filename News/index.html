@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KRYPTIV · News</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="../_shared/globals.js"></script>
+<script src="../_shared/shell.js" type="text/babel"></script>
+<style>
+.news-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 0; gap:12px; }
+.news-loading .spin-icon { font-size:24px; color:var(--w4); display:block; animation:spin 1.2s linear infinite; }
+.news-loading-txt { font-family:var(--mono); font-size:8px; letter-spacing:4px; color:var(--w4); text-transform:uppercase; }
+.news-err { padding:24px 0; text-align:center; }
+.news-err-icon { font-size:26px; color:var(--w4); display:block; margin-bottom:10px; }
+.news-err-txt { font-family:var(--mono); font-size:8px; color:var(--w4); letter-spacing:1px; line-height:2; }
+.news-err-retry { margin-top:14px; padding:8px 18px; background:none; border:1px solid var(--border2); color:var(--w3); font-family:var(--mono); font-size:8px; letter-spacing:2px; cursor:pointer; transition:all .15s; }
+.news-err-retry:hover { color:var(--w); border-color:var(--w3); }
+.news-it { padding:15px 0; border-bottom:1px solid rgba(255,255,255,.05); cursor:pointer; transition:padding-left .15s; position:relative; text-decoration:none; color:inherit; display:block; }
+.news-it:hover { padding-left:8px; }
+.news-it:hover::before { content:''; position:absolute; left:0; top:0; bottom:0; width:1px; background:rgba(255,255,255,.35); }
+.news-src { font-family:var(--mono); font-size:7px; letter-spacing:3px; color:var(--w4); text-transform:uppercase; margin-bottom:5px; display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.news-src .mi { font-size:9px; }
+.news-ttl { font-size:13px; font-weight:400; line-height:1.5; color:var(--w2); margin-bottom:5px; }
+.news-meta { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.news-time { font-family:var(--mono); font-size:7px; color:var(--w4); }
+.news-coins { display:flex; gap:4px; }
+.news-coin-tag { font-family:var(--mono); font-size:6px; letter-spacing:1px; padding:1px 5px; border:1px solid rgba(255,255,255,.1); color:var(--w4); }
+.news-votes { display:flex; gap:8px; }
+.news-vote { font-family:var(--mono); font-size:7px; color:var(--w4); display:flex; align-items:center; gap:2px; }
+.news-vote .mi { font-size:8px; }
+.news-vote.bull { color:rgba(150,255,175,.6); }
+.news-vote.bear { color:rgba(255,130,110,.5); }
+.filter-row { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+.filter-btn { padding:5px 11px; background:none; border:1px solid var(--border); color:var(--w4); font-family:var(--mono); font-size:7px; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .12s; }
+.filter-btn.on { border-color:var(--border2); color:var(--w2); background:rgba(255,255,255,.05); }
+.live-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.live-label { font-family:var(--mono); font-size:7px; letter-spacing:3px; color:rgba(140,255,160,.7); text-transform:uppercase; display:flex; align-items:center; gap:6px; }
+.live-dot { width:6px; height:6px; background:rgba(140,255,160,.8); animation:pulse 2s infinite; }
+.load-more-btn { width:100%; padding:11px; background:none; border:1px solid var(--border); color:var(--w4); font-family:var(--mono); font-size:8px; letter-spacing:3px; text-transform:uppercase; cursor:pointer; margin-top:10px; transition:all .15s; }
+.load-more-btn:hover { color:var(--w3); border-color:var(--border2); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useEffect, useCallback} = React;
+
+/* ══════════════════════════════════════════════════
+   REAL NEWS — three live sources, no API key needed:
+   1. CryptoPanic public token
+   2. RSS2JSON → CoinTelegraph
+   3. RSS2JSON → Decrypt
+══════════════════════════════════════════════════ */
+
+function timeAgo(dateStr) {
+  const secs = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (secs < 60)    return Math.floor(secs) + 's ago';
+  if (secs < 3600)  return Math.floor(secs/60) + 'm ago';
+  if (secs < 86400) return Math.floor(secs/3600) + 'h ago';
+  return Math.floor(secs/86400) + 'd ago';
+}
+
+const RSS_FEEDS = [
+  { url:'https://cointelegraph.com/rss', source:'COINTELEGRAPH' },
+  { url:'https://decrypt.co/feed',       source:'DECRYPT'       },
+  { url:'https://bitcoinmagazine.com/.rss/full/', source:'BITCOIN MAGAZINE' },
+  { url:'https://www.coindesk.com/arc/outboundfeeds/rss/', source:'COINDESK' },
+];
+
+async function fetchRSSFeed(feed) {
+  const r = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}&count=20`);
+  const d = await r.json();
+  if (d.status !== 'ok' || !d.items?.length) return [];
+  return d.items.map((item, i) => ({
+    id:        feed.source + '-' + i + '-' + (item.guid || item.link),
+    title:     item.title,
+    url:       item.link,
+    source:    feed.source,
+    published: item.pubDate || new Date().toISOString(),
+    coins:     [],
+    votes:     { pos:0, neg:0 },
+  }));
+}
+
+async function fetchCryptoPanic(filter) {
+  const f = filter && filter !== 'all' ? `&filter=${filter}` : '';
+  const r = await fetch(`https://cryptopanic.com/api/v1/posts/?auth_token=public&kind=news${f}&public=true`);
+  if (!r.ok) throw new Error('CP ' + r.status);
+  const d = await r.json();
+  return (d.results || []).map(item => ({
+    id:        'cp-' + item.id,
+    title:     item.title,
+    url:       item.url,
+    source:    item.source?.title?.toUpperCase() || item.domain?.toUpperCase() || 'CRYPTO NEWS',
+    published: item.published_at || item.created_at,
+    coins:     (item.currencies || []).map(c => c.code).slice(0,5),
+    votes:     { pos: item.votes?.positive||0, neg: item.votes?.negative||0 },
+  }));
+}
+
+const FILTERS = [
+  {id:'all',      label:'All'},
+  {id:'rising',   label:'Rising'},
+  {id:'hot',      label:'Hot'},
+  {id:'bullish',  label:'Bullish'},
+  {id:'bearish',  label:'Bearish'},
+  {id:'important',label:'Important'},
+];
+
+function NewsView() {
+  const [items,   setItems]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState('');
+  const [filter,  setFilter]  = useState('all');
+  const [page,    setPage]    = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [source,  setSource]  = useState('');
+
+  const load = useCallback(async (f, p, append) => {
+    setLoading(true);
+    setError('');
+    try {
+      // Primary: CryptoPanic public API
+      const data = await fetchCryptoPanic(f);
+      setItems(prev => append ? [...prev, ...data] : data);
+      setHasMore(data.length >= 20);
+      setSource('CryptoPanic');
+    } catch {
+      // Fallback: RSS feeds (only on first page, filter ignored)
+      if (!append) {
+        try {
+          const results = await Promise.allSettled(RSS_FEEDS.map(fetchRSSFeed));
+          const all = results
+            .filter(r => r.status === 'fulfilled')
+            .flatMap(r => r.value)
+            .sort((a,b) => new Date(b.published) - new Date(a.published));
+          if (all.length > 0) {
+            setItems(all);
+            setHasMore(false);
+            setSource('RSS (CoinTelegraph · Decrypt · Bitcoin Magazine · CoinDesk)');
+          } else {
+            setError('Could not load live news. Check your internet connection.');
+          }
+        } catch {
+          setError('Could not load live news. Check your internet connection.');
+        }
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { setPage(1); setItems([]); load(filter, 1, false); }, [filter]);
+
+  const loadMore = () => { const next = page+1; setPage(next); load(filter, next, true); };
+
+  return (
+    <div className="scr">
+      <div className="live-row">
+        <div className="live-label"><div className="live-dot"/>LIVE CRYPTO NEWS</div>
+        {items.length > 0 && !loading && (
+          <span style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2}}>{items.length} ARTICLES · {source}</span>
+        )}
+      </div>
+
+      {/* Filters (CryptoPanic only) */}
+      <div className="filter-row">
+        {FILTERS.map(f => (
+          <button key={f.id} className={`filter-btn${filter===f.id?' on':''}`} onClick={()=>setFilter(f.id)}>{f.label}</button>
+        ))}
+      </div>
+
+      {error ? (
+        <div className="news-err">
+          <span className="mi news-err-icon">wifi_off</span>
+          <div className="news-err-txt">
+            {error}<br/>
+            Live news requires an internet connection.
+          </div>
+          <button className="news-err-retry" onClick={()=>load(filter,1,false)}>TRY AGAIN</button>
+        </div>
+      ) : loading && items.length === 0 ? (
+        <div className="news-loading">
+          <span className="mi spin-icon">refresh</span>
+          <div className="news-loading-txt">Loading live news…</div>
+        </div>
+      ) : (
+        <>
+          {items.map(n => (
+            <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="news-it">
+              <div className="news-src">
+                <span className="mi">article</span>
+                {n.source}
+              </div>
+              <div className="news-ttl">{n.title}</div>
+              <div className="news-meta">
+                <span className="news-time">{timeAgo(n.published)}</span>
+                {n.coins.length > 0 && (
+                  <div className="news-coins">
+                    {n.coins.map(c => <span key={c} className="news-coin-tag">{c}</span>)}
+                  </div>
+                )}
+                {n.votes.pos > 0 && (
+                  <div className="news-votes">
+                    <span className="news-vote bull"><span className="mi">thumb_up</span>{n.votes.pos}</span>
+                    {n.votes.neg > 0 && <span className="news-vote bear"><span className="mi">thumb_down</span>{n.votes.neg}</span>}
+                  </div>
+                )}
+              </div>
+            </a>
+          ))}
+
+          {loading && items.length > 0 && (
+            <div className="news-loading" style={{padding:'16px 0'}}>
+              <span className="mi spin-icon">refresh</span>
+            </div>
+          )}
+
+          {!loading && hasMore && <button className="load-more-btn" onClick={loadMore}>LOAD MORE</button>}
+          {!loading && !hasMore && items.length > 0 && (
+            <div style={{padding:'14px 0',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:3,textAlign:'center'}}>END OF FEED</div>
+          )}
+          {!loading && items.length === 0 && (
+            <div style={{padding:'30px 0',fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:3,textAlign:'center'}}>NO ARTICLES FOR THIS FILTER</div>
+          )}
+        </>
+      )}
+
+      <div style={{paddingTop:14,fontFamily:'var(--mono)',fontSize:6,color:'var(--w4)',letterSpacing:1,borderTop:'1px solid rgba(255,255,255,.04)',marginTop:12,lineHeight:2}}>
+        SOURCES: CRYPTOPANIC · COINTELEGRAPH · DECRYPT · BITCOIN MAGAZINE · COINDESK<br/>
+        CLICK ANY ARTICLE TO READ FULL STORY · NOT FINANCIAL ADVICE
+      </div>
+    </div>
+  );
+}
+
+function Page() {
+  const user = requireAuth();
+  if (!user) return null;
+  const [u, setU] = useState(user);
+  return (
+    <>
+      <div className="wall clear"/>
+      <AppShell user={u} setUser={setU} view="news">
+        <NewsView user={u}/>
+      </AppShell>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+</script>
+</body>
+</html>

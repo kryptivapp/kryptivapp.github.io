@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KRYPTIV · Account</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="../_shared/globals.js"></script>
+<script src="../_shared/shell.js" type="text/babel"></script>
+<style>
+.roadmap-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.roadmap-item:last-child{border-bottom:none;}
+.roadmap-dot{width:8px;height:8px;flex-shrink:0;margin-top:4px;}
+.roadmap-dot.done{background:rgba(130,255,150,.7);}
+.roadmap-dot.wip{background:rgba(255,200,60,.7);}
+.roadmap-dot.planned{background:rgba(255,255,255,.2);}
+.roadmap-label{font-family:var(--mono);font-size:7px;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;}
+.roadmap-label.done{color:rgba(130,255,150,.7);}
+.roadmap-label.wip{color:rgba(255,200,60,.7);}
+.roadmap-label.planned{color:rgba(255,255,255,.3);}
+.roadmap-desc{font-size:12px;color:var(--w3);line-height:1.5;}
+.inline-edit{display:flex;align-items:center;gap:8px;}
+.inline-edit input{background:none;border:none;border-bottom:1px solid var(--border);color:var(--w);font-family:var(--sans);font-size:12px;padding:4px 0;outline:none;caret-color:#fff;flex:1;min-width:0;}
+.inline-edit input:focus{border-bottom-color:var(--border2);}
+.edit-btn{background:none;border:none;color:var(--w4);cursor:pointer;font-family:var(--mono);font-size:8px;letter-spacing:1px;padding:3px 6px;transition:color .12s;white-space:nowrap;}
+.edit-btn:hover{color:var(--w3);}
+.edit-btn.save{color:rgba(130,255,150,.8);}
+.edit-btn.save:hover{color:rgba(130,255,150,1);}
+.version-badge{padding:3px 10px;border:1px solid rgba(255,255,255,.08);font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--w4);display:inline-block;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState} = React;
+
+const APP_VERSION = '0.2.0';
+
+function Account({user, setUser}) {
+  const memberSince = user.created_at
+    ? new Date(user.created_at).toLocaleDateString('en',{month:'short',year:'numeric',day:'numeric'})
+    : '—';
+
+  const [editingName, setEditingName] = useState(false);
+  const [nameVal,     setNameVal]     = useState(user.name || '');
+  const [saved,       setSaved]       = useState(false);
+
+  const saveName = () => {
+    if (!nameVal.trim()) return;
+    const updated = {...user, name: nameVal.trim()};
+    LS.set(updated);
+    setUser(updated);
+    setEditingName(false);
+    setSaved(true);
+    setTimeout(()=>setSaved(false), 2000);
+  };
+
+  const handleSignOut = () => { LS.clear(); window.location.href = '/'; };
+
+  const ROADMAP = [
+    { status:'done',    label:'Live',    desc:'Live crypto prices — CoinGecko, Binance, Kraken APIs' },
+    { status:'done',    label:'Live',    desc:'Real crypto news — CryptoPanic + 4 RSS outlets' },
+    { status:'done',    label:'Live',    desc:'AI analysis — Claude (Anthropic) with real prices injected' },
+    { status:'done',    label:'Live',    desc:'Portfolio holdings tracker with live P&L' },
+    { status:'wip',     label:'Building',desc:'Cloud accounts & sync — real auth replacing localStorage' },
+    { status:'wip',     label:'Building',desc:'Billing & plan payments — Budget, Pro, Atmosphere' },
+    { status:'planned', label:'Planned', desc:'Price alerts — push notifications when coins hit targets' },
+    { status:'planned', label:'Planned', desc:'Exchange connect — read-only Binance / Coinbase integration' },
+    { status:'planned', label:'Planned', desc:'Real portfolio import — CSV, exchange API, wallet address' },
+    { status:'planned', label:'Planned', desc:'Extended history — 30d/90d/1y charts per coin' },
+  ];
+
+  return (
+    <div className="scr">
+      <div className="acct-wrap">
+
+        {/* Hero */}
+        <div className="s-mb acct-hero">
+          <div className="acct-kid">{user.kryptid}</div>
+          {editingName ? (
+            <div className="inline-edit" style={{marginBottom:6}}>
+              <input
+                value={nameVal}
+                onChange={e=>setNameVal(e.target.value)}
+                onKeyDown={e=>{if(e.key==='Enter')saveName();if(e.key==='Escape')setEditingName(false);}}
+                autoFocus
+              />
+              <button className="edit-btn save" onClick={saveName}>SAVE</button>
+              <button className="edit-btn" onClick={()=>{setEditingName(false);setNameVal(user.name);}}>✕</button>
+            </div>
+          ) : (
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+              <div className="acct-name">{user.name}</div>
+              <button className="edit-btn" onClick={()=>setEditingName(true)}>
+                <span className="mi" style={{fontSize:11}}>edit</span>
+              </button>
+            </div>
+          )}
+          {saved && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.7)',letterSpacing:2}}>NAME UPDATED</div>}
+          <div className="acct-email">{user.email}</div>
+        </div>
+
+        {/* Profile */}
+        <div className="s-mb">
+          <div className="s-lbl"><span className="mi">person_outline</span>Profile</div>
+          <div className="acct-card">
+            <div className="acct-row">
+              <span className="acct-rl">KryptID</span>
+              <span className="acct-rv" style={{fontFamily:'var(--mono)',letterSpacing:7,fontSize:13}}>{user.kryptid}</span>
+            </div>
+            <div className="acct-row">
+              <span className="acct-rl">Plan</span>
+              <span className="acct-tier-badge" onClick={()=>window.location.href='/Plans/'}>
+                {(user.tier||'free').toUpperCase()} ›
+              </span>
+            </div>
+            <div className="acct-row">
+              <span className="acct-rl">Member Since</span>
+              <span className="acct-rv">{memberSince}</span>
+            </div>
+            <div className="acct-row">
+              <span className="acct-rl">Version</span>
+              <span><div className="version-badge">v{APP_VERSION}</div></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Roadmap */}
+        <div className="s-mb">
+          <div className="s-lbl"><span className="mi">rocket_launch</span>Roadmap</div>
+          <div className="acct-card" style={{padding:'8px 16px'}}>
+            {ROADMAP.map((item, i) => (
+              <div key={i} className="roadmap-item">
+                <div className={`roadmap-dot ${item.status}`}/>
+                <div>
+                  <div className={`roadmap-label ${item.status}`}>{item.label}</div>
+                  <div className="roadmap-desc">{item.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div>
+          <div className="s-lbl"><span className="mi">manage_accounts</span>Account Actions</div>
+          <div className="acct-danger">
+            <button className="acct-sign-out-btn" onClick={handleSignOut}>
+              <span className="mi">logout</span>SIGN OUT
+            </button>
+            <div className="acct-id-footer">{user.kryptid} · v{APP_VERSION}</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function Page() {
+  const user = requireAuth();
+  if (!user) return null;
+  const [u, setU] = useState(user);
+  // setUser for AppShell logout and name edit
+  const handleSetUser = (updated) => {
+    setU(updated);
+    LS.set(updated);
+  };
+  return (
+    <>
+      <div className="wall clear"/>
+      <AppShell user={u} setUser={handleSetUser} view="account">
+        <Account user={u} setUser={handleSetUser}/>
+      </AppShell>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+</script>
+</body>
+</html>

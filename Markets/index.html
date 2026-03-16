@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KRYPTIV · Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="../_shared/globals.js"></script>
+<script src="../_shared/shell.js" type="text/babel"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useEffect, useRef} = React;
+
+/* Fetch real 7-day sparkline from CoinGecko */
+async function fetchSparkline(coinId) {
+  try {
+    const r = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=7&interval=hourly`
+    );
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    return (d.prices||[]).map(p=>p[1]); // array of prices
+  } catch { return null; }
+}
+
+function RealChart({coinId, ch}) {
+  const [prices, setPrices] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{
+    setLoading(true); setPrices(null);
+    fetchSparkline(coinId).then(p=>{
+      setPrices(p);
+      setLoading(false);
+    });
+  },[coinId]);
+
+  const sw=320, sh=80;
+  if (loading) return (
+    <div style={{height:sh,display:'flex',alignItems:'center',justifyContent:'center',borderTop:'1px solid rgba(255,255,255,.05)',marginBottom:16}}>
+      <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:3}}>LOADING 7D CHART…</div>
+    </div>
+  );
+  if (!prices || prices.length < 2) return (
+    <div style={{height:sh,display:'flex',alignItems:'center',justifyContent:'center',borderTop:'1px solid rgba(255,255,255,.05)',marginBottom:16}}>
+      <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:3}}>7D CHART UNAVAILABLE</div>
+    </div>
+  );
+  const mn=Math.min(...prices), mx=Math.max(...prices), rng=mx-mn||1;
+  const pts = prices.map((v,i)=>({
+    x:(i/(prices.length-1))*sw,
+    y:sh-((v-mn)/rng)*sh*0.88-sh*0.04
+  }));
+  const d = pts.map((p,i)=>`${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const color = (ch||0)>=0?'rgba(130,255,150,.7)':'rgba(255,100,80,.6)';
+  const fillColor = (ch||0)>=0?'rgba(130,255,150,.06)':'rgba(255,100,80,.05)';
+  // Day markers
+  const dayCount = Math.floor(prices.length / 24);
+  return (
+    <div style={{marginBottom:16}}>
+      <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:3,marginBottom:6}}>7-DAY CHART · {prices.length} DATA POINTS · COINGECKO</div>
+      <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none" style={{width:'100%',height:sh,display:'block'}}>
+        <defs>
+          <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={(ch||0)>=0?'rgba(130,255,150,1)':'rgba(255,100,80,1)'} stopOpacity="0.1"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d={`${d} L${sw},${sh} L0,${sh} Z`} fill="url(#cg)"/>
+        <path d={d} fill="none" stroke={color} strokeWidth="1.5"/>
+        {/* Current price dot */}
+        <circle cx={pts[pts.length-1].x} cy={pts[pts.length-1].y} r="3" fill={color}/>
+      </svg>
+      <div style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',marginTop:4}}>
+        <span>7D AGO</span>
+        <span>NOW</span>
+      </div>
+    </div>
+  );
+}
+
+function getVerdict(c) {
+  // Based on actual price change data
+  const s = [(c.ch||0)>0?1:0, (c.ch7d||0)>0?1:0, (c.ch1h||0)>0?1:0].reduce((a,b)=>a+b,0);
+  const ch = c.ch||0, ch7 = c.ch7d||0;
+  if (s >= 2 && ch > 0)
+    return {rating:'BULLISH',   txt:`${c.sym} is showing positive momentum: ${fc(ch)} in 24h${ch7 ? ', '+fc(ch7)+' over 7 days' : ''}. Buying pressure is present. Watch for continuation above current levels.`};
+  if (s >= 1)
+    return {rating:'NEUTRAL',   txt:`Mixed signals on ${c.sym}. 24h: ${fc(ch)}${ch7?', 7d: '+fc(ch7):''} . No clear directional bias. Wait for a confirmed breakout before positioning.`};
+  return {rating:'BEARISH',    txt:`${c.sym} is under selling pressure: ${fc(ch)} in 24h${ch7 ? ', '+fc(ch7)+' over 7 days' : ''}. Consider waiting for stabilisation before entering.`};
+}
+
+function Markets({user, coins, availCoins, priceSrc}) {
+  const [q,      setQ]      = useState('');
+  const [sort,   setSort]   = useState('rank');
+  const [tab,    setTab]    = useState('all');
+  const [detail, setDetail] = useState(null);
+
+  const isFree = user.tier === 'free';
+  const TIERS_I = t => TIERS.indexOf(t);
+  const locked  = t => TIERS_I(user.tier) < TIERS_I(t);
+
+  if (!availCoins) return null;
+
+  const list = [...availCoins]
+    .filter(c => tab==='gainers'?(c.ch||0)>0 : tab==='losers'?(c.ch||0)<0 : true)
+    .filter(c => c.name.toLowerCase().includes(q.toLowerCase()) || c.sym.toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b) =>
+      sort==='rank'  ? (a.rank||99)-(b.rank||99) :
+      sort==='ch'    ? (b.ch||0)-(a.ch||0) :
+      sort==='price' ? b.price-a.price : 0
+    );
+
+  return (
+    <div className="scr">
+      {isFree && (
+        <div style={{padding:'8px 0 14px',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+          <span className="mi" style={{fontSize:9}}>lock</span>
+          FREE · BTC & SOL ·{' '}
+          <span onClick={()=>window.location.href='/Plans/'} style={{color:'var(--w3)',cursor:'pointer'}}>
+            UPGRADE FOR ALL {coins?.length||15} LIVE COINS ▸
+          </span>
+          <span style={{marginLeft:'auto',color:'rgba(130,255,150,.5)'}}>● LIVE · {priceSrc}</span>
+        </div>
+      )}
+
+      <div className="tabs">
+        {[['ALL','all'],['GAINERS','gainers'],['LOSERS','losers']].map(([l,k])=>
+          <div key={k} className={`tab${tab===k?' on':''}`} onClick={()=>setTab(k)}>{l}</div>
+        )}
+        <div style={{flex:1}}/>
+        {['rank','ch','price'].map(s=>
+          <div key={s} className={`tab${sort===s?' on':''}`} style={{fontSize:'7px'}} onClick={()=>setSort(s)}>
+            {s==='rank'?'RANK':s==='ch'?'24H':s==='price'?'PRICE':''}
+          </div>
+        )}
+      </div>
+
+      <div className="srch-row">
+        <span className="mi">search</span>
+        <input className="srch-in" value={q} onChange={e=>setQ(e.target.value)} placeholder="Search…"/>
+        {q && <span className="mi" style={{cursor:'pointer',fontSize:12,color:'var(--w4)'}} onClick={()=>setQ('')}>close</span>}
+      </div>
+
+      {/* Column headers */}
+      <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,.04)',paddingBottom:5,marginBottom:2}}>
+        {[['#',22],['SYM',44],['NAME',0],['',48],['PRICE',88],['24H',58]].map(([l,w],i)=>
+          <div key={i} style={{width:w||'auto',flex:w?'none':1,fontFamily:'var(--mono)',fontSize:7,letterSpacing:3,color:'var(--w4)',textAlign:i>=4?'right':'left'}}>{l}</div>
+        )}
+      </div>
+
+      {list.map((c,i) => (
+        <div key={c.id} className="coin-line" onClick={()=>setDetail(c)}>
+          <div className="c-rank">{c.rank||i+1}</div>
+          <div className="c-sym">{c.sym}</div>
+          <div className="c-nm">{c.name}</div>
+          <div className="c-spark"><Spark ch={c.ch}/></div>
+          <div className="c-pr">{fp(c.price)}</div>
+          <div className={`c-ch ${(c.ch||0)>=0?'up':'dn'}`}>{(c.ch||0)>=0?'▴':'▾'}{Math.abs(c.ch||0).toFixed(2)}%</div>
+        </div>
+      ))}
+
+      {list.length===0 && (
+        <div style={{padding:'28px 0',fontFamily:'var(--mono)',fontSize:9,color:'var(--w4)',letterSpacing:2}}>
+          NO RESULTS
+        </div>
+      )}
+
+      {/* DETAIL PANEL */}
+      {detail && (
+        <div className="coin-detail">
+          <div className="cd-backdrop" onClick={()=>setDetail(null)}/>
+          <div className="cd-panel">
+            <div className="cd-head">
+              <div>
+                <div className="cd-sym">{detail.sym}</div>
+                <div className="cd-nm">{detail.name}{detail.rank ? ' · Rank #'+detail.rank : ''}</div>
+              </div>
+              <div>
+                <div className="cd-price">{fp(detail.price)}</div>
+                <div className={`cd-ch-big c-ch ${(detail.ch||0)>=0?'up':'dn'}`}>{fc(detail.ch)} 24h</div>
+              </div>
+              <button className="cd-close" onClick={()=>setDetail(null)}>
+                <span className="mi">close</span>
+              </button>
+            </div>
+
+            <RealChart coinId={detail.id} ch={detail.ch}/>
+
+            {/* Real change data — only show what we have */}
+            <div className="cd-grid">
+              {[
+                ['1H',  detail.ch1h],
+                ['24H', detail.ch],
+                ['7D',  detail.ch7d],
+              ].filter(([,v])=>v!=null).concat(
+                detail.mc ? [['MCap', null, fv(detail.mc*1e9)]] : [],
+                detail.vol ? [['Vol', null, fv(detail.vol*1e9)]] : [],
+                detail.ath ? [['ATH', null, fp(detail.ath)]] : [],
+              ).map(([l,v,display])=>(
+                <div key={l} className="cd-gs">
+                  <div className="cd-gs-lbl">{l}</div>
+                  {display
+                    ? <div className="cd-gs-val">{display}</div>
+                    : <div className="cd-gs-val" style={{color:(v||0)>=0?'var(--w2)':'var(--w4)'}}>{(v||0)>=0?'+':''}{(v||0).toFixed(2)}%</div>
+                  }
+                </div>
+              ))}
+            </div>
+
+            {locked('budget')
+              ? <div className="budget-lock">
+                  <span className="mi">lock</span>
+                  <div className="budget-lock-t">AI market analysis requires Budget plan</div>
+                  <button className="budget-lock-cta" onClick={()=>window.location.href='/Plans/'}>UPGRADE ▸</button>
+                </div>
+              : <div className="cd-verdict">
+                  <div className="cd-vt">Analysis · {getVerdict(detail).rating}</div>
+                  <div className="cd-vtxt">{getVerdict(detail).txt}</div>
+                  <div className="cd-vdis">Based on live price data. Not financial advice.</div>
+                </div>
+            }
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Page() {
+  const user = requireAuth();
+  if (!user) return null;
+  const [u, setU] = useState(user);
+  return (
+    <>
+      <div className="wall clear"/>
+      <AppShell user={u} setUser={setU} view="markets">
+        <Markets user={u}/>
+      </AppShell>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+</script>
+</body>
+</html>

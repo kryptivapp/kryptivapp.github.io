@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KRYPTIV · Feed</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="../_shared/globals.js"></script>
+<script src="../_shared/shell.js" type="text/babel"></script>
+<style>
+/* Coin picker */
+.cp-modal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;animation:fadeIn .18s both;}
+.cp-bd{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(16px);}
+.cp-panel{position:relative;z-index:1;background:rgba(6,6,6,.97);border:1px solid var(--border);padding:22px;width:92%;max-width:400px;max-height:82vh;display:flex;flex-direction:column;animation:fadeUp .2s both;}
+.cp-title{font-family:var(--disp);font-size:22px;letter-spacing:3px;margin-bottom:4px;}
+.cp-sub{font-family:var(--mono);font-size:7px;color:var(--w4);letter-spacing:2px;margin-bottom:14px;line-height:1.8;}
+.cp-list{overflow-y:auto;flex:1;}
+.cp-row{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:padding-left .1s;}
+.cp-row:hover{padding-left:5px;}
+.cp-sym{font-family:var(--mono);font-size:12px;font-weight:500;width:52px;flex-shrink:0;}
+.cp-nm{font-size:12px;color:var(--w3);flex:1;}
+.cp-pr{font-family:var(--mono);font-size:11px;color:var(--w2);text-align:right;flex-shrink:0;margin-right:8px;}
+.cp-ch{font-family:var(--mono);font-size:10px;width:54px;text-align:right;flex-shrink:0;}
+.cp-ch.up{color:rgba(130,255,150,.9);}
+.cp-ch.dn{color:rgba(255,100,80,.8);}
+.cp-tick{width:16px;text-align:right;flex-shrink:0;font-size:13px;}
+.cp-close{margin-top:12px;width:100%;padding:9px;background:none;border:1px solid var(--border);color:var(--w4);font-family:var(--mono);font-size:8px;letter-spacing:3px;cursor:pointer;transition:all .15s;}
+.cp-close:hover{border-color:var(--border2);color:var(--w3);}
+.cp-lock{font-family:var(--mono);font-size:7px;color:var(--w4);padding:8px 0;border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:5px;}
+
+/* Hero */
+.hero-coin{padding:14px 0 12px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.hero-sym{font-family:var(--disp);font-size:clamp(38px,8vw,56px);letter-spacing:3px;line-height:1;}
+.hero-nm{font-family:var(--mono);font-size:7px;color:var(--w4);letter-spacing:3px;text-transform:uppercase;margin-top:3px;}
+.hero-right{text-align:right;}
+.hero-price{font-family:var(--mono);font-size:clamp(20px,4vw,28px);color:var(--w);}
+.hero-ch{font-family:var(--mono);font-size:12px;margin-top:3px;}
+.hero-ch.up{color:rgba(130,255,150,.9);}
+.hero-ch.dn{color:rgba(255,100,80,.8);}
+.hero-meta{font-family:var(--mono);font-size:9px;color:var(--w4);margin-top:5px;line-height:1.9;}
+.change-btn{background:none;border:1px solid var(--border);color:var(--w4);font-family:var(--mono);font-size:7px;letter-spacing:2px;padding:4px 9px;cursor:pointer;display:inline-flex;align-items:center;gap:3px;transition:all .15s;margin-top:10px;}
+.change-btn:hover{border-color:var(--border2);color:var(--w3);}
+.change-btn .mi{font-size:10px;}
+
+/* Top movers */
+.mover-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:padding-left .1s;position:relative;}
+.mover-row:hover{padding-left:6px;}
+.mover-row:hover::before{content:'';position:absolute;left:0;top:0;bottom:0;width:1px;background:rgba(255,255,255,.3);}
+.mover-rank{font-family:var(--mono);font-size:8px;color:var(--w4);width:18px;flex-shrink:0;}
+.mover-sym{font-family:var(--mono);font-size:11px;font-weight:500;width:48px;flex-shrink:0;}
+.mover-nm{font-size:11px;color:var(--w3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mover-price{font-family:var(--mono);font-size:11px;color:var(--w);text-align:right;flex-shrink:0;margin-right:4px;}
+.mover-ch{font-family:var(--mono);font-size:10px;width:56px;text-align:right;flex-shrink:0;}
+.mover-ch.up{color:rgba(130,255,150,.9);}
+.mover-ch.dn{color:rgba(255,100,80,.8);}
+
+/* Live badge */
+.live-badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:7px;color:rgba(130,255,150,.6);letter-spacing:2px;}
+.live-dot{width:5px;height:5px;background:rgba(130,255,150,.8);animation:pulse 2s infinite;}
+
+/* Summary strip */
+.mkt-strip{display:flex;gap:0;border:1px solid var(--border);margin-bottom:18px;overflow:hidden;}
+.strip-cell{flex:1;padding:10px 12px;border-right:1px solid var(--border);}
+.strip-cell:last-child{border-right:none;}
+.strip-lbl{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:var(--w4);text-transform:uppercase;margin-bottom:3px;}
+.strip-val{font-family:var(--mono);font-size:11px;color:var(--w);}
+.strip-val.up{color:rgba(130,255,150,.9);}
+.strip-val.dn{color:rgba(255,100,80,.8);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useEffect, useMemo} = React;
+
+function CoinPicker({coins, availCoins, selectedSym, isFree, onSelect, onClose}) {
+  return (
+    <div className="cp-modal">
+      <div className="cp-bd" onClick={onClose}/>
+      <div className="cp-panel">
+        <div className="cp-title">SELECT COIN</div>
+        <div className="cp-sub">
+          {isFree
+            ? 'FREE PLAN · BTC & SOL · UPGRADE FOR ALL COINS'
+            : `ALL ${coins?.length||15} LIVE COINS`}
+        </div>
+        <div className="cp-list">
+          {availCoins?.map(c=>(
+            <div key={c.id} className="cp-row" onClick={()=>{onSelect(c.sym);onClose();}}>
+              <span className="cp-sym">{c.sym}</span>
+              <span className="cp-nm">{c.name}</span>
+              <span className="cp-pr">{fp(c.price)}</span>
+              <span className={`cp-ch ${(c.ch||0)>=0?'up':'dn'}`}>{fc(c.ch)}</span>
+              <span className="cp-tick">{c.sym===selectedSym?'✓':''}</span>
+            </div>
+          ))}
+          {isFree && coins && availCoins && coins.length > availCoins.length && (
+            <div className="cp-lock">
+              <span className="mi" style={{fontSize:9}}>lock</span>
+              BUDGET+ UNLOCKS ALL {coins.length} COINS ·{' '}
+              <span onClick={()=>window.location.href='/Plans/'} style={{color:'var(--w3)',cursor:'pointer'}}>UPGRADE ▸</span>
+            </div>
+          )}
+        </div>
+        <button className="cp-close" onClick={onClose}>CLOSE</button>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({user, coins, availCoins, priceSrc}) {
+  const isFree = user.tier === 'free';
+
+  const [selectedSym, setSelectedSym] = useState(FREE_COINS[0]);
+  const [pickerOpen,  setPickerOpen]  = useState(false);
+  const [pinned,      setPinned]      = useState(() => {
+    try { return JSON.parse(localStorage.getItem('kryptiv_pinned')||'["BTC","SOL"]'); }
+    catch { return ['BTC','SOL']; }
+  });
+
+  // Persist pinned
+  useEffect(()=>{
+    localStorage.setItem('kryptiv_pinned', JSON.stringify(pinned));
+  }, [pinned]);
+
+  useEffect(()=>{
+    if (isFree && !FREE_COINS.includes(selectedSym)) setSelectedSym('BTC');
+  }, []);
+
+  const selected = useMemo(()=>
+    availCoins?.find(c=>c.sym===selectedSym) || availCoins?.[0],
+    [availCoins, selectedSym]
+  );
+
+  const togglePin = sym => setPinned(prev=>
+    prev.includes(sym)
+      ? prev.filter(s=>s!==sym)
+      : prev.length < (isFree?2:999) ? [...prev,sym] : prev
+  );
+
+  // Top movers from ALL available coins
+  const gainers = useMemo(()=>
+    [...(availCoins||[])].sort((a,b)=>(b.ch||0)-(a.ch||0)).slice(0,isFree?2:5),
+    [availCoins]
+  );
+  const losers = useMemo(()=>
+    [...(availCoins||[])].sort((a,b)=>(a.ch||0)-(b.ch||0)).slice(0,isFree?2:5),
+    [availCoins]
+  );
+
+  // Market summary strip
+  const gainCount = (availCoins||[]).filter(c=>(c.ch||0)>0).length;
+  const loseCount = (availCoins||[]).filter(c=>(c.ch||0)<0).length;
+  const avgCh     = (availCoins||[]).reduce((a,c)=>a+(c.ch||0),0) / Math.max((availCoins||[]).length,1);
+  const bestCoin  = [...(availCoins||[])].sort((a,b)=>(b.ch||0)-(a.ch||0))[0];
+
+  if (!availCoins) return null;
+
+  return (
+    <div className="scr">
+
+      {/* ── SELECTED COIN HERO ── */}
+      <div className="s-mb">
+        <div className="s-lbl">
+          <span className="mi">show_chart</span>YOUR COIN
+          <span className="live-badge" style={{marginLeft:'auto'}}>
+            <span className="live-dot"/>LIVE · {priceSrc||'…'}
+          </span>
+        </div>
+        {selected && (
+          <>
+            <div className="hero-coin">
+              <div>
+                <div className="hero-sym">{selected.sym}</div>
+                <div className="hero-nm">{selected.name}{selected.rank?` · #${selected.rank}`:''}</div>
+              </div>
+              <div className="hero-right">
+                <div className="hero-price">{fp(selected.price)}</div>
+                <div className={`hero-ch ${(selected.ch||0)>=0?'up':'dn'}`}>
+                  {(selected.ch||0)>=0?'▴':'▾'} {fc(selected.ch)} 24h
+                </div>
+                {selected.ch7d!=null&&<div className="hero-meta">7D: {fc(selected.ch7d)}</div>}
+                {selected.ch1h!=null&&<div className="hero-meta">1H: {fc(selected.ch1h)}</div>}
+                {selected.mc&&<div className="hero-meta">MCap: {fv(selected.mc*1e9)}</div>}
+              </div>
+            </div>
+            <button className="change-btn" onClick={()=>setPickerOpen(true)}>
+              <span className="mi">swap_horiz</span>CHANGE COIN
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* ── MARKET STRIP ── */}
+      <div className="mkt-strip">
+        <div className="strip-cell">
+          <div className="strip-lbl">Avg 24h</div>
+          <div className={`strip-val ${avgCh>=0?'up':'dn'}`}>{avgCh>=0?'+':''}{avgCh.toFixed(2)}%</div>
+        </div>
+        <div className="strip-cell">
+          <div className="strip-lbl">Gainers</div>
+          <div className="strip-val up">{gainCount}</div>
+        </div>
+        <div className="strip-cell">
+          <div className="strip-lbl">Losers</div>
+          <div className="strip-val dn">{loseCount}</div>
+        </div>
+        {bestCoin && (
+          <div className="strip-cell">
+            <div className="strip-lbl">Best</div>
+            <div className="strip-val up">{bestCoin.sym} {fc(bestCoin.ch)}</div>
+          </div>
+        )}
+      </div>
+
+      {/* ── TOP GAINERS ── */}
+      <div className="s-mb">
+        <div className="s-lbl"><span className="mi">trending_up</span>TOP GAINERS 24H</div>
+        {gainers.map((c,i)=>(
+          <div key={c.id} className="mover-row" onClick={()=>window.location.href='/Markets/'}>
+            <div className="mover-rank">{i+1}</div>
+            <div className="mover-sym">{c.sym}</div>
+            <div className="mover-nm">{c.name}</div>
+            <div className="mover-price">{fp(c.price)}</div>
+            <div className="mover-ch up">▴ {(c.ch||0).toFixed(2)}%</div>
+          </div>
+        ))}
+        {isFree&&<div style={{paddingTop:8,fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2}}>
+          FREE · TOP 2 SHOWN ·{' '}
+          <span onClick={()=>window.location.href='/Plans/'} style={{color:'var(--w3)',cursor:'pointer'}}>UPGRADE FOR ALL ▸</span>
+        </div>}
+      </div>
+
+      {/* ── TOP LOSERS ── */}
+      <div className="s-mb">
+        <div className="s-lbl"><span className="mi">trending_down</span>BIGGEST DROPS 24H</div>
+        {losers.map((c,i)=>(
+          <div key={c.id} className="mover-row" onClick={()=>window.location.href='/Markets/'}>
+            <div className="mover-rank">{i+1}</div>
+            <div className="mover-sym">{c.sym}</div>
+            <div className="mover-nm">{c.name}</div>
+            <div className="mover-price">{fp(c.price)}</div>
+            <div className="mover-ch dn">▾ {Math.abs(c.ch||0).toFixed(2)}%</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── WATCHLIST ── */}
+      <div className="s-mb">
+        <div className="s-lbl">
+          <span className="mi">star</span>WATCHLIST
+          {isFree&&<span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)'}}>
+            {pinned.length}/2 pinned
+          </span>}
+        </div>
+        {availCoins.map((c,i)=>{
+          const isPinned = pinned.includes(c.sym);
+          const blur     = isFree && !isPinned;
+          return (
+            <div key={c.id} className={`coin-line${blur?' blurred-row':''}`}>
+              <span
+                className={`hl-star${isPinned?' on':''}`}
+                onClick={e=>{e.stopPropagation();togglePin(c.sym);}}
+                title={isPinned?'Unpin':'Pin'}
+              >★</span>
+              <div className="c-rank">{c.rank||i+1}</div>
+              <div className="c-sym">{c.sym}</div>
+              <div className="c-nm">{c.name}</div>
+              <div className={`c-spark${blur?' blur-row-spark':''}`}><Spark ch={c.ch}/></div>
+              <div className="c-pr">{fp(c.price)}</div>
+              <div className={`c-ch ${(c.ch||0)>=0?'up':'dn'}`}>
+                {(c.ch||0)>=0?'▴':'▾'}{Math.abs(c.ch||0).toFixed(2)}%
+              </div>
+            </div>
+          );
+        })}
+        {isFree&&<div style={{paddingTop:8,fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2}}>
+          FREE · BTC & SOL ·{' '}
+          <span onClick={()=>window.location.href='/Plans/'} style={{color:'var(--w3)',cursor:'pointer'}}>UPGRADE FOR ALL {coins?.length||15} COINS ▸</span>
+        </div>}
+      </div>
+
+      {/* ── AI CTA ── */}
+      <div className="s-mb">
+        <div className="s-lbl"><span className="mi">smart_toy</span>AI ANALYSIS</div>
+        <div style={{padding:'14px 0',borderBottom:'1px solid rgba(255,255,255,.05)',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:2,lineHeight:1.9}}>
+            ASK THE AI ABOUT ANY COIN<br/>
+            POWERED BY CLAUDE · REAL PRICES INCLUDED
+          </div>
+          <button onClick={()=>window.location.href='/AI/'} style={{padding:'10px 18px',background:'var(--w)',color:'#000',border:'none',fontFamily:'var(--sans)',fontWeight:700,fontSize:9,letterSpacing:2,textTransform:'uppercase',cursor:'pointer',flexShrink:0}}>
+            OPEN AI ▸
+          </button>
+        </div>
+      </div>
+
+      {pickerOpen&&(
+        <CoinPicker
+          coins={coins}
+          availCoins={availCoins}
+          selectedSym={selectedSym}
+          isFree={isFree}
+          onSelect={setSelectedSym}
+          onClose={()=>setPickerOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function Page() {
+  const user = requireAuth();
+  if (!user) return null;
+  const [u, setU] = useState(user);
+  return (
+    <>
+      <div className="wall clear"/>
+      <AppShell user={u} setUser={setU} view="dashboard">
+        <Dashboard user={u}/>
+      </AppShell>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+</script>
+</body>
+</html>

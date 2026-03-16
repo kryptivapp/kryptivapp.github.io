@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>KRYPTIV</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+<link rel="stylesheet" href="_shared/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="_shared/globals.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useEffect, useRef} = React;
+
+/* ══════════════════════════════════════════════════
+   AUTH COMPONENT
+══════════════════════════════════════════════════ */
+function Auth() {
+  const [tab, setTab]     = useState('login');
+  const [lmode, setLmode] = useState('email');
+  const [name, setName]   = useState('');
+  const [email, setEmail] = useState('');
+  const [pw, setPw]       = useState('');
+  const [kid, setKid]     = useState('');
+  const [tier, setTier]   = useState('free');
+  const [step, setStep]   = useState(1);
+  const [nid]             = useState(genId);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr]     = useState('');
+  const [ok, setOk]       = useState('');
+
+  const reset = t => { setTab(t); setStep(1); setErr(''); setOk(''); setName(''); setEmail(''); setPw(''); setKid(''); };
+
+  const goApp = () => { window.location.href = '/Dashboard/'; };
+
+  /* ── LOGIN ── */
+  const handleLogin = () => {
+    setErr('');
+    if (lmode === 'email' && (!email || !pw)) { setErr('EMAIL AND PASSWORD REQUIRED'); return; }
+    if (lmode === 'id' && (!kid || !pw))      { setErr('KRYPTID AND PASSWORD REQUIRED'); return; }
+    setLoading(true);
+    const saved = LS.get();
+    if (lmode === 'id') {
+      if (saved && saved.kryptid === kid.toUpperCase() && saved.pw === pw) { goApp(); }
+      else { setErr('KRYPTID OR PASSWORD INCORRECT'); }
+    } else {
+      if (saved && saved.email === email.toLowerCase() && saved.pw === pw) { goApp(); }
+      else { setErr('EMAIL OR PASSWORD INCORRECT'); }
+    }
+    setLoading(false);
+  };
+
+  /* ── SIGNUP STEP 1 ── */
+  const handleSignupNext = () => {
+    setErr('');
+    if (!name.trim())                       { setErr('NAME REQUIRED'); return; }
+    if (!email.trim() || !email.includes('@')) { setErr('VALID EMAIL REQUIRED'); return; }
+    if (pw.length < 6)                      { setErr('PASSWORD MIN 6 CHARACTERS'); return; }
+    setStep(2);
+  };
+
+  /* ── SIGNUP FINAL ── */
+  const handleJoin = () => {
+    if (tier !== 'free') {
+      setOk('PAYMENT PROCESSORS ARE BEING ADDED SOON. YOUR ACCOUNT HAS BEEN CREATED ON THE FREE PLAN.');
+    }
+    const u = { id:'local-'+Date.now(), email:email.toLowerCase(), name, kryptid:nid, tier:'free', pw, created_at:new Date().toISOString() };
+    LS.set(u);
+    setTimeout(() => goApp(), tier === 'free' ? 0 : 1600);
+  };
+
+  /* ── SKIP ── */
+  const handleSkip = () => {
+    const guest = { id:'guest-'+Date.now(), email:'guest@kryptiv.app', name:'Guest', kryptid:genId(), tier:'free', pw:'', created_at:new Date().toISOString() };
+    LS.set(guest);
+    goApp();
+  };
+
+  const PLAN_LABELS = { free:'$0', budget:'$3.90/mo', pro:'$14.90/mo', atmosphere:'$44.90/mo' };
+
+  return (
+    <div className="auth">
+      <div className="auth-logo">KRYPTIV</div>
+      <div className="auth-tag">Trade with intelligence, not noise.</div>
+      <div className="auth-tabs">
+        {['login','signup'].map(t =>
+          <button key={t} className={`auth-tab${tab===t?' on':''}`} onClick={()=>reset(t)}>{t.toUpperCase()}</button>
+        )}
+      </div>
+
+      {tab === 'login' ? (<>
+        <div className="auth-modetabs">
+          <button className={`auth-modetab${lmode==='email'?' on':''}`} onClick={()=>{setLmode('email');setErr('');}}>EMAIL</button>
+          <button className={`auth-modetab${lmode==='id'?' on':''}`}    onClick={()=>{setLmode('id');setErr('');}}>KRYPTID</button>
+        </div>
+        <div className="auth-fields">
+          {lmode === 'email'
+            ? <div className="af"><label className="af-lbl">Email</label><input className="af-in" type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="your@email.com"/></div>
+            : <div className="af"><label className="af-lbl">KryptID</label><input className="af-in" value={kid} onChange={e=>setKid(e.target.value.toUpperCase())} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="e.g. X7KPQ" maxLength={5} style={{letterSpacing:10,fontSize:20,fontFamily:'var(--mono)'}}/></div>
+          }
+          <div className="af"><label className="af-lbl">Password</label><input className="af-in" type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="Password"/></div>
+          {err && <div className="af-err"><span className="mi" style={{fontSize:10}}>error_outline</span> {err}</div>}
+          {ok  && <div className="af-ok"><span className="mi"  style={{fontSize:10}}>check_circle</span> {ok}</div>}
+          <button className="auth-btn" disabled={loading} onClick={handleLogin}>{loading?'SIGNING IN…':'ENTER KRYPTIV'}</button>
+          <button className="auth-skip" onClick={handleSkip}>SKIP → BROWSE AS GUEST</button>
+        </div>
+      </>) : step === 1 ? (
+        <div className="auth-fields">
+          <div className="af"><label className="af-lbl">Display Name</label><input className="af-in" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/></div>
+          <div className="af"><label className="af-lbl">Email</label><input className="af-in" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com"/></div>
+          <div className="af"><label className="af-lbl">Password</label><input className="af-in" type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSignupNext()} placeholder="Min 6 characters"/></div>
+          {err && <div className="af-err"><span className="mi" style={{fontSize:10}}>error_outline</span> {err}</div>}
+          <button className="auth-btn" disabled={loading} onClick={handleSignupNext}>GENERATE KRYPTID</button>
+          <button className="auth-skip" onClick={handleSkip}>SKIP → BROWSE AS GUEST</button>
+        </div>
+      ) : step === 2 ? (
+        <div className="auth-fields">
+          <div className="kid-reveal">
+            <div className="kid-lbl">Your KryptID — save this</div>
+            <div className="kid-val">{nid}<span className="cursor">_</span></div>
+            <div className="kid-hint">Your permanent public identity on KRYPTIV</div>
+          </div>
+          <button className="auth-btn" onClick={()=>setStep(3)}>CHOOSE PLAN</button>
+          <button className="auth-link" onClick={()=>setStep(1)}>← Back</button>
+        </div>
+      ) : (
+        <div className="auth-fields">
+          <div className="af">
+            <label className="af-lbl">Choose Plan</label>
+            <div className="plan-sel-row">
+              {PLANS.map(p => (
+                <button key={p.id} className={`plan-sel-opt${tier===p.id?' on':''}`} onClick={()=>setTier(p.id)}>
+                  <span>{p.nm}</span>
+                  <span className="ps-price">{PLAN_LABELS[p.id]}</span>
+                </button>
+              ))}
+            </div>
+            {tier !== 'free' && (
+              <div className="plan-sel-note">
+                <span className="mi" style={{fontSize:9,marginRight:4}}>info</span>
+                PAYMENT PROCESSORS COMING SOON — YOUR ACCOUNT WILL START ON THE FREE PLAN
+              </div>
+            )}
+          </div>
+          {err && <div className="af-err"><span className="mi" style={{fontSize:10}}>error_outline</span> {err}</div>}
+          {ok  && <div className="af-ok"><span className="mi"  style={{fontSize:10}}>check_circle</span> {ok}</div>}
+          <button className="auth-btn" disabled={loading} onClick={handleJoin}>{loading?'CREATING ACCOUNT…':'JOIN KRYPTIV'}</button>
+          <button className="auth-link" onClick={()=>setStep(2)}>← Back</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════
+   ROOT — image shows immediately, auth fades in
+══════════════════════════════════════════════════ */
+function Root() {
+  const [ready, setReady] = useState(false);
+  const wallRef = useRef(null);
+
+  useEffect(() => {
+    // Check existing session first
+    const saved = LS.get();
+    if (saved?.kryptid) { window.location.href = '/Dashboard/'; return; }
+    // Fade in immediately
+    requestAnimationFrame(() => {
+      if (wallRef.current) wallRef.current.className = 'wall intro';
+      requestAnimationFrame(() => {
+        if (wallRef.current) wallRef.current.className = 'wall clear';
+        setReady(true);
+      });
+    });
+  }, []);
+
+  return (<>
+    <div className="wall intro" ref={wallRef}/>
+    {ready && <Auth/>}
+  </>);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+</body>
+</html>
