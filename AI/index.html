@@ -740,18 +740,6 @@ const PLANS = [
     feats:['Everything in Pro','Invite 2 friends → free Pro','Whale movement alerts','Custom AI signals · Experimental AI','AI-generated insight feed','Exclusive deep-dive analysis'] },
 ];
 
-const AI_PRESETS = [
-  { id:'invest',  label:'Investment Case', build:(sym,c) =>
-      `${sym} (${c?c.name:sym}) is currently trading at ${c?fp(c.price):'current market price'} with a 24h change of ${c?fc(c.ch):'unknown'}. Market cap rank: ${c?'#'+c.rank:'top 20'}. Should I invest in ${sym} right now? Give a thorough, honest analysis covering: current momentum, on-chain signals, macro environment, key risks, and a clear recommendation. Be direct.` },
-  { id:'outlook', label:'Market Outlook', build:(sym,c) =>
-      `${sym} is currently at ${c?fp(c.price):'current price'}, ${c?fc(c.ch):''} today. What is the current market outlook for ${sym}? Cover short-term price action (next 1–2 weeks), medium-term thesis (1–3 months), key macro factors, support/resistance levels to watch, and any catalysts upcoming. Be thorough.` },
-  { id:'cashout', label:'Take Profit?', build:(sym,c) =>
-      `I hold ${sym} which is currently at ${c?fp(c.price):'current price'} (24h: ${c?fc(c.ch):'N/A'}). Should I take profit or continue holding? Give me a detailed analysis: profit-taking strategy, what price levels matter, risk factors for holding vs selling, tax considerations, and a clear recommendation.` },
-  { id:'compare', label:'BTC vs Coin', build:(sym,c,coins) => {
-      const btc = coins?coins.find(x=>x.sym==='BTC'):null;
-      return `Compare Bitcoin (BTC${btc?', currently '+fp(btc.price)+', 24h: '+fc(btc.ch):''}) against ${sym} (${c?fp(c.price)+', 24h: '+fc(c.ch):'current price'}) as investments right now. Cover: risk profile, liquidity, growth potential, use case strength, which suits a conservative vs aggressive investor, and a clear verdict.`;
-    }},
-];
 
 const NAV_ITEMS = [
   { id:'dashboard', lbl:'Feed',      icon:'bolt',              path:'/Dashboard/'  },
