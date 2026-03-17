@@ -739,7 +739,7 @@ const fp = p => {
   if (p >= 0.01) return '$' + p.toFixed(4);
   return '$' + p.toFixed(6);
 };
-const fc = c => { if (c == null || isNaN(c)) return '—'; return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; };
+const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
   if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
@@ -1307,110 +1307,184 @@ function AppShell({user, setUser, view, children}) {
 
 
 /* ═══════════════ AI PAGE ═══════════════ */
+
+// Persist LLM engine across page navigation via window global
+// so it's only downloaded once per session
+if (!window._kryptivLLM) window._kryptivLLM = { engine: null, loading: false, progress: '' };
+
+const AI_PRESETS = [
+  { id:'invest',  label:'Should I invest?',   build:(sym,c) => `Should I invest in ${sym} right now? Current price: ${c?fp(c.price):'N/A'}, 24h: ${c?fc(c.ch):'N/A'}. Give a direct honest analysis covering momentum, risks, and a clear recommendation.` },
+  { id:'outlook', label:'Price outlook',       build:(sym,c) => `What is the price outlook for ${sym}? Currently at ${c?fp(c.price):'N/A'} (${c?fc(c.ch):'N/A'} 24h). Cover short-term (1-2 weeks), medium-term (1-3 months), key levels to watch.` },
+  { id:'cashout', label:'Take profit?',        build:(sym,c) => `I hold ${sym} at ${c?fp(c.price):'N/A'} (${c?fc(c.ch):'N/A'} 24h). Should I take profit or keep holding? Analyse risk vs reward, key exit levels, and give a clear recommendation.` },
+  { id:'compare', label:'BTC vs this coin',    build:(sym,c,coins) => { const btc=coins?.find(x=>x.sym==='BTC'); return `Compare Bitcoin (BTC${btc?', '+fp(btc.price)+', '+fc(btc.ch):''}) vs ${sym} (${c?fp(c.price)+', '+fc(c.ch):'N/A'}) as investments today. Which is the better buy and why?`; }},
+  { id:'risk',    label:'Risk analysis',       build:(sym,c) => `Analyse the risks of investing in ${sym} right now at ${c?fp(c.price):'N/A'}. Cover volatility, liquidity, regulatory risks, technical risks, and overall risk rating out of 10.` },
+  { id:'dca',     label:'DCA strategy',        build:(sym,c) => `Give me a DCA (dollar cost averaging) strategy for ${sym} at current price ${c?fp(c.price):'N/A'}. Suggest entry points, frequency, position sizing, and when to stop/review.` },
+];
+
 function AIView({user, coins, availCoins, priceSrc}) {
-  const [msgs,     setMsgs]    = useState([{role:'ai', text:'Llama 3.2 ready. Ask me anything about crypto — I have live market prices. Type a question and hit ASK.'}]);
-  const [loading,  setLoading] = useState(false);
-  const [input,    setInput]   = useState('');
-  const [selCoin,  setSelCoin] = useState('BTC');
-  const [engine,   setEngine]  = useState(null);
-  const [initMsg,  setInitMsg] = useState('');
+  const [msgs,    setMsgs]    = useState([{role:'ai', text:'Llama 3.2 ready. Select a question type, pick a coin, and tap ASK — I have live market prices.'}]);
+  const [loading, setLoading] = useState(false);
+  const [input,   setInput]   = useState('');
+  const [selCoin, setSelCoin] = useState('BTC');
+  const [selPreset,setPreset] = useState('invest');
+  const [initMsg, setInitMsg] = useState(window._kryptivLLM.progress || (window._kryptivLLM.engine ? '' : ''));
+  const [hasEngine,setHasEngine]=useState(!!window._kryptivLLM.engine);
   const endRef = useRef(null);
 
   useEffect(()=>endRef.current?.scrollIntoView({behavior:'smooth'}), [msgs]);
   useEffect(()=>{ if (availCoins?.length&&!availCoins.find(c=>c.sym===selCoin)) setSelCoin(availCoins[0].sym); }, [availCoins]);
 
-  // Load WebLLM on mount
+  // Load WebLLM once globally — persists across page navigation
   useEffect(()=>{
-    let cancelled = false;
+    if (window._kryptivLLM.engine || window._kryptivLLM.loading) {
+      // Already loaded or loading — just sync state
+      if (window._kryptivLLM.engine) { setHasEngine(true); setInitMsg(''); }
+      else {
+        // Poll until ready
+        const poll = setInterval(()=>{
+          setInitMsg(window._kryptivLLM.progress);
+          if (window._kryptivLLM.engine) { setHasEngine(true); setInitMsg(''); clearInterval(poll); }
+        }, 500);
+        return ()=>clearInterval(poll);
+      }
+      return;
+    }
+    window._kryptivLLM.loading = true;
+    setInitMsg('Checking WebGPU support…');
     async function initLLM() {
       try {
-        setInitMsg('Loading Llama 3.2…');
         const { CreateMLCEngine } = await import('https://esm.run/@mlc-ai/web-llm');
+        window._kryptivLLM.progress = 'Loading Llama 3.2 (first time only)…';
+        setInitMsg(window._kryptivLLM.progress);
         const eng = await CreateMLCEngine('Llama-3.2-1B-Instruct-q4f16_1-MLC', {
           initProgressCallback: p => {
-            if (!cancelled) setInitMsg(p.text || 'Loading model…');
+            window._kryptivLLM.progress = p.text || 'Loading…';
+            setInitMsg(window._kryptivLLM.progress);
           }
         });
-        if (!cancelled) { setEngine(eng); setInitMsg(''); }
-      } catch(e) {
-        if (!cancelled) setInitMsg('WebGPU not available — using fallback.');
+        window._kryptivLLM.engine = eng;
+        window._kryptivLLM.loading = false;
+        window._kryptivLLM.progress = '';
+        setHasEngine(true);
+        setInitMsg('');
+      } catch {
+        window._kryptivLLM.loading = false;
+        window._kryptivLLM.progress = '';
+        setInitMsg('');
+        setHasEngine(false); // will use API fallback
       }
     }
     initLLM();
-    return ()=>{cancelled=true;};
   },[]);
 
   if (!availCoins) return null;
   const coin = coins?.find(c=>c.sym===selCoin)||availCoins.find(c=>c.sym===selCoin);
 
-  const send = async () => {
-    if (loading || !input.trim()) return;
-    const q = input.trim();
-    setInput('');
-    setMsgs(m=>[...m,{role:'user',text:q}]);
-    setLoading(true);
+  const buildPrompt = () => {
+    if (input.trim()) return input.trim();
+    const preset = AI_PRESETS.find(p=>p.id===selPreset);
+    return preset ? preset.build(selCoin, coin, coins) : `Tell me about ${selCoin}.`;
+  };
 
-    const priceCtx = coin ? `Live price context: ${coin.sym} = ${fp(coin.price)}, 24h change: ${fc(coin.ch)}.` : '';
-    const system = `You are a concise crypto analyst. ${priceCtx} Answer in 2-3 paragraphs. End with: Not financial advice.`;
+  const buildDisplay = () => {
+    if (input.trim()) return input.trim();
+    const preset = AI_PRESETS.find(p=>p.id===selPreset);
+    return preset ? preset.label + ' · ' + selCoin : selCoin;
+  };
+
+  const buildSystem = () => {
+    const priceLines = coins ? coins.map(c=>`${c.sym}: ${fp(c.price)} (${fc(c.ch)} 24h, vol $${c.vol?.toFixed(1)||'?'}B)`).join(', ') : '';
+    return `You are a professional crypto analyst with access to real-time market data.
+LIVE PRICES RIGHT NOW (from ${priceSrc||'live feed'}): ${priceLines || 'unavailable'}.
+User's selected coin: ${selCoin}${coin?` at ${fp(coin.price)}, ${fc(coin.ch)} 24h`:''}.
+User plan: ${user.tier}. Be direct, thorough, data-driven. 2-4 paragraphs. End with: Not financial advice.`;
+  };
+
+  const send = async () => {
+    if (loading) return;
+    const prompt  = buildPrompt();
+    const display = buildDisplay();
+    if (!prompt.trim()) return;
+    setInput('');
+    setMsgs(m=>[...m,{role:'user',text:display}]);
+    setLoading(true);
+    const system = buildSystem();
 
     try {
-      if (engine) {
-        const history = [{role:'system', content:system}];
-        msgs.forEach(m=>history.push({role:m.role==='ai'?'assistant':'user', content:m.text}));
-        history.push({role:'user', content:q});
+      const eng = window._kryptivLLM.engine;
+      if (eng) {
+        const history = [{role:'system',content:system}];
+        msgs.forEach(m=>history.push({role:m.role==='ai'?'assistant':'user',content:m.text}));
+        history.push({role:'user',content:prompt});
         let reply = '';
-        const stream = await engine.chat.completions.create({messages:history, stream:true, max_tokens:600});
+        const stream = await eng.chat.completions.create({messages:history,stream:true,max_tokens:700});
+        setMsgs(m=>[...m,{role:'ai',text:'',streaming:true}]);
         for await (const chunk of stream) {
-          reply += chunk.choices[0]?.delta?.content || '';
-          setMsgs(m=>[...m.slice(0,-1).concat(m[m.length-1]?.role==='ai'&&m[m.length-1]?.streaming ? [{role:'ai',text:reply,streaming:true}] : m.slice(-1)), {role:'ai',text:reply,streaming:true}]);
+          reply += chunk.choices[0]?.delta?.content||'';
+          setMsgs(m=>[...m.slice(0,-1),{role:'ai',text:reply,streaming:true}]);
         }
         setMsgs(m=>[...m.slice(0,-1),{role:'ai',text:reply}]);
       } else {
-        // Fallback to Anthropic API
+        // API fallback
         const history = msgs.map(m=>({role:m.role==='ai'?'assistant':'user',content:m.text}));
-        history.push({role:'user',content:q});
+        history.push({role:'user',content:prompt});
         const res = await fetch('https://api.anthropic.com/v1/messages',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system,messages:history})
+          body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:700,system,messages:history})
         });
         const d = await res.json();
         setMsgs(m=>[...m,{role:'ai',text:d.content?.[0]?.text||'No response.'}]);
       }
     } catch {
-      setMsgs(m=>[...m,{role:'ai',text:'Error. Check your connection and try again.'}]);
+      setMsgs(m=>[...m,{role:'ai',text:'Error — check your connection and try again.'}]);
     }
     setLoading(false);
   };
 
   return (
     <div className="ai-wrap">
-      {/* Header */}
       <div className="ai-header">
         <div className="ai-model-row">
           <div className="ai-dot"/>
           <div className="ai-mb">LLAMA 3.2 · KRYPTIV AI</div>
-          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginLeft:'auto'}}>MLC WebLLM</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginLeft:'auto'}}>
+            {hasEngine ? 'ON-DEVICE' : 'API'}
+          </div>
         </div>
-        {initMsg&&<div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.5)',letterSpacing:2,marginTop:4}}>{initMsg}</div>}
+        {initMsg&&(
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.5)',letterSpacing:2,marginTop:4,lineHeight:1.6}}>
+            {initMsg}
+          </div>
+        )}
         {coin&&(
           <div className="live-price-row">
             <MI n="fiber_manual_record"/>
-            {coin.sym}: {fp(coin.price)} · {fc(coin.ch)} 24h
+            {coin.sym} {fp(coin.price)} · {fc(coin.ch)} 24h
           </div>
         )}
       </div>
 
-      {/* Coin selector */}
       <div className="qb-wrap">
-        <div className="coin-pills">
+        <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:3,color:'var(--w4)',textTransform:'uppercase',marginBottom:8}}>Question type</div>
+        <div className="qb-grid" style={{marginBottom:14}}>
+          {AI_PRESETS.map(p=>(
+            <button key={p.id} className={`preset-btn${selPreset===p.id?' on':''}`} onClick={()=>{setPreset(p.id);setInput('');}}>
+              <span className="preset-lbl">{p.label}</span>
+            </button>
+          ))}
+        </div>
+        <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:3,color:'var(--w4)',textTransform:'uppercase',marginBottom:8}}>Coin</div>
+        <div className="coin-pills" style={{marginBottom:14}}>
           {availCoins.map(c=>(
             <button key={c.id} className={`coin-pill${selCoin===c.sym?' on':''}`} onClick={()=>setSelCoin(c.sym)}>{c.sym}</button>
           ))}
         </div>
+        <button className="ask-btn" disabled={loading} onClick={send}>
+          {loading?'ANALYSING…':`ASK ABOUT ${selCoin}`}
+        </button>
       </div>
 
-      {/* Messages */}
       <div className="ai-msgs">
         {msgs.map((m,i)=>(
           <div key={i} className="msg-wrap">
@@ -1430,12 +1504,11 @@ function AIView({user, coins, availCoins, priceSrc}) {
         <div ref={endRef}/>
       </div>
 
-      {/* Input */}
       <div className="ai-bar">
-        <textarea className="ai-in" placeholder="Ask about any crypto…" rows={1}
+        <textarea className="ai-in" placeholder="Or type a custom question…" rows={1}
           value={input} onChange={e=>setInput(e.target.value)}
           onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}}/>
-        <button className="ai-send" disabled={loading||!input.trim()} onClick={send}>
+        <button className="ai-send" disabled={loading} onClick={send}>
           <MI n="send"/>
         </button>
       </div>
