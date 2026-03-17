@@ -573,10 +573,28 @@ input,textarea,select{font-family:var(--sans)}
 .settings-row{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;gap:12px}
 .settings-lbl{font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--w3);text-transform:uppercase}
 .settings-sub{font-size:11px;color:var(--w4);margin-top:3px}
-.settings-btn{padding:7px 14px;background:none;border:1px solid var(--border);color:var(--w3);font-family:var(--mono);font-size:7px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap}
-.settings-btn:hover{border-color:var(--border2);color:var(--w2)}
-.settings-btn.danger{border-color:rgba(255,100,80,.2);color:rgba(255,100,80,.7)}
-.settings-btn.danger:hover{border-color:rgba(255,100,80,.4);color:rgba(255,100,80,.9)}
+
+/* PRO BLUR LOCK */
+.pro-blur-wrap{position:relative;overflow:hidden}
+.pro-blur-content{filter:blur(6px);pointer-events:none;user-select:none;transition:filter .3s}
+.pro-lock-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:5;background:rgba(0,0,0,.45)}
+.pro-lock-icon{font-size:20px!important;color:var(--w4)}
+.pro-lock-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;text-align:center;line-height:1.8}
+.pro-lock-btn{padding:6px 16px;background:var(--w);color:#000;border:none;font-family:var(--sans);font-weight:700;font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:4px;transition:opacity .2s}
+.pro-lock-btn:hover{opacity:.85}
+/* Settings btn — icon only */
+.settings-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--w3);cursor:pointer;transition:all .15s;flex-shrink:0}
+.settings-btn:hover{border-color:var(--border2);color:var(--w)}
+.settings-btn .mi{font-size:16px}
+.settings-btn.danger{border-color:rgba(255,100,80,.2);color:rgba(255,100,80,.6)}
+.settings-btn.danger:hover{border-color:rgba(255,100,80,.4);color:rgba(255,100,80,.9);background:rgba(255,100,80,.05)}
+
+/* Settings btn */
+.settings-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--w3);cursor:pointer;transition:all .15s;flex-shrink:0}
+.settings-btn:hover{border-color:var(--border2);color:var(--w)}
+.settings-btn .mi{font-size:16px}
+.settings-btn.danger{border-color:rgba(255,100,80,.2);color:rgba(255,100,80,.6)}
+.settings-btn.danger:hover{border-color:rgba(255,100,80,.4);color:rgba(255,100,80,.9);background:rgba(255,100,80,.05)}
 .settings-close{width:100%;padding:11px;background:none;border:1px solid var(--border);color:var(--w4);font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .15s;margin-top:18px}
 .settings-close:hover{border-color:var(--border2);color:var(--w3)}
 
@@ -1038,58 +1056,44 @@ function PriceLoading() {
 }
 
 function SettingsModal({onClose}) {
-  const [cleared, setCleared] = useState('');
-  const doClearCache = () => {
-    clearAllCache();
-    setCleared('Cache cleared! Prices will refresh on next load.');
-  };
-  const doNuke = () => {
-    if (confirm('This will delete your account and all local data. You will need to sign up again. Continue?')) {
-      nukeEverything();
-    }
-  };
+  const [msg, setMsg] = useState('');
+  const act = (fn, txt) => { fn(); setMsg(txt); };
+  const rows = [
+    {icon:'refresh',       lbl:'Refresh Prices',   sub:'Force live price reload',   fn:()=>act(clearAllCache,'Prices will refresh.'),                                             danger:false},
+    {icon:'delete_sweep',  lbl:'Clear Holdings',    sub:'Remove all saved positions',fn:()=>act(()=>localStorage.removeItem('kryptiv_holdings'),'Holdings cleared.'),              danger:true },
+    {icon:'logout',        lbl:'Sign Out',          sub:'Keeps your account data',   fn:()=>{ LS.clear(); navigate('/'); },                                                         danger:false},
+    {icon:'delete_forever',lbl:'Reset Everything',  sub:'Wipe all data and sign out',fn:()=>{ if(confirm('Delete all data? Cannot be undone.')) nukeEverything(); },               danger:true },
+  ];
   return (
     <div className="settings-modal">
       <div className="settings-bd" onClick={onClose}/>
       <div className="settings-panel">
-        <div className="settings-title">SETTINGS</div>
-
-        <div className="settings-row">
-          <div>
-            <div className="settings-lbl">Clear Price Cache</div>
-            <div className="settings-sub">Force fresh price data on next load</div>
-          </div>
-          <button className="settings-btn" onClick={doClearCache}>
-            <span className="mi" style={{fontSize:11,marginRight:4}}>refresh</span>CLEAR
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:22}}>
+          <div className="settings-title" style={{marginBottom:0}}>SETTINGS</div>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w4)',display:'flex',alignItems:'center'}}>
+            <span className="mi" style={{fontSize:22}}>close</span>
           </button>
         </div>
-
-        <div className="settings-row">
-          <div>
-            <div className="settings-lbl">Clear Holdings Cache</div>
-            <div className="settings-sub">Remove saved portfolio positions</div>
+        {rows.map(r=>(
+          <div key={r.lbl} className="settings-row">
+            <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
+              <span className="mi" style={{fontSize:20,color:r.danger?'rgba(255,100,80,.55)':'var(--w4)',flexShrink:0}}>{r.icon}</span>
+              <div>
+                <div className="settings-lbl">{r.lbl}</div>
+                <div className="settings-sub">{r.sub}</div>
+              </div>
+            </div>
+            <button className={`settings-btn${r.danger?' danger':''}`} onClick={r.fn}>
+              <span className="mi">chevron_right</span>
+            </button>
           </div>
-          <button className="settings-btn danger" onClick={()=>{localStorage.removeItem('kryptiv_holdings');setCleared('Holdings cleared.');}}>
-            <span className="mi" style={{fontSize:11,marginRight:4}}>delete_outline</span>CLEAR
-          </button>
-        </div>
-
-        <div className="settings-row">
-          <div>
-            <div className="settings-lbl">Reset & Sign Out</div>
-            <div className="settings-sub">Wipes all data — account, holdings, cache</div>
-          </div>
-          <button className="settings-btn danger" onClick={doNuke}>
-            <span className="mi" style={{fontSize:11,marginRight:4}}>logout</span>RESET ALL
-          </button>
-        </div>
-
-        {cleared && (
+        ))}
+        {msg&&(
           <div style={{fontFamily:'var(--mono)',fontSize:8,color:'rgba(130,255,150,.7)',
-            padding:'10px 0',letterSpacing:2,animation:'fadeIn .3s both'}}>{cleared}</div>
+            padding:'10px 0',letterSpacing:2,display:'flex',alignItems:'center',gap:6}}>
+            <span className="mi" style={{fontSize:12}}>check_circle</span>{msg}
+          </div>
         )}
-
-        <button className="settings-close" onClick={onClose}>CLOSE</button>
       </div>
     </div>
   );
@@ -1381,29 +1385,32 @@ function Markets({user, coins, availCoins, priceSrc}) {
 
       {filtered.map((c,i)=>{
         const locked = isFree && !FREE_COINS.includes(c.sym);
-        return (
-          <div key={c.id} className={`coin-line${locked?' blurred-row':''}`}
-            onClick={()=>!locked&&setDetail(c)}>
+        const row = (
+          <div className="coin-line" onClick={()=>!locked&&setDetail(c)} style={{cursor:locked?'default':'pointer'}}>
             <div className="c-rank">{c.rank||i+1}</div>
             <div style={{flex:1,display:'flex',alignItems:'center',gap:8,minWidth:0}}>
               <div className="c-sym">{c.sym}</div>
               <div className="c-nm">{c.name}</div>
             </div>
-            <div className={`c-spark${locked?' blur-row-spark':''}`}>
-              <Spark ch={c.ch}/>
-            </div>
+            <div className="c-spark"><Spark ch={c.ch}/></div>
             <div className="c-pr">{fp(c.price)}</div>
             <div className={`c-ch ${(c.ch||0)>=0?'up':'dn'}`}>
               {(c.ch||0)>=0?'▴':'▾'}{Math.abs(c.ch||0).toFixed(2)}%
             </div>
           </div>
         );
+        if (!locked) return <React.Fragment key={c.id}>{row}</React.Fragment>;
+        return (
+          <div key={c.id} className="pro-blur-wrap">
+            <div className="pro-blur-content">{row}</div>
+            <div className="pro-lock-ov">
+              <span className="mi pro-lock-icon">lock</span>
+              <div className="pro-lock-lbl">BUDGET & PRO</div>
+              <button className="pro-lock-btn" onClick={()=>navigate('/Plans/')}>UPGRADE</button>
+            </div>
+          </div>
+        );
       })}
-
-      {isFree&&<div style={{paddingTop:10,fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2}}>
-        FREE · BTC & SOL ONLY ·{' '}
-        <span onClick={()=>navigate('/Plans/')} style={{color:'var(--w3)',cursor:'pointer'}}>UPGRADE FOR ALL ▸</span>
-      </div>}
 
       {detail && <CoinDetail coin={detail} onClose={()=>setDetail(null)}/>}
     </div>
