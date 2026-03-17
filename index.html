@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>KRYPTIV · Privacy</title>
+<title>KRYPTIV · Intelligence for Crypto</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -946,369 +946,159 @@ async function fetchMempoolTxs() {
 
 </script>
 <script type="text/babel" data-presets="react">
-
-/* ═══════════════════════ SHELL COMPONENTS ═══════════════════════ */
 const {useState, useEffect, useRef, useCallback, useMemo} = React;
 
-function Spark({prices, ch, w=46, h=20}) {
-  let pts;
-  if (prices && prices.length >= 2) {
-    const vals = prices.slice(-14);
-    const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx-mn||1;
-    pts = vals.map((v,i) => ({ x:(i/(vals.length-1))*w, y:h-((v-mn)/rng)*h }));
-  } else {
-    pts = Array.from({length:12}, (_,i) => {
-      const t=i/11, tr=(ch||0)>=0?t*.3:-t*.3;
-      return { x:(i/11)*w, y:h-(0.5+tr+Math.sin(i*1.4)*.07)*h };
-    });
-  }
-  const d = pts.map((p,i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const color = (ch||0)>=0 ? 'rgba(130,255,150,.75)' : 'rgba(255,100,80,.6)';
-  return (
-    <svg width={w} height={h} style={{display:'block'}}>
-      <path d={d} fill="none" stroke={color} strokeWidth="1.2"/>
-    </svg>
-  );
-}
+/* ═══════════════ AUTH / INDEX PAGE ═══════════════ */
 
-function BigSpark({prices, ch}) {
-  const sw=340, sh=76;
-  let pts;
-  if (prices && prices.length >= 2) {
-    const vals = prices.map(p => typeof p==='number'?p:p[1]);
-    const mn=Math.min(...vals), mx=Math.max(...vals), rng=mx-mn||1;
-    pts = vals.map((v,i) => ({ x:(i/(vals.length-1))*sw, y:sh-((v-mn)/rng)*sh }));
-  } else {
-    pts = Array.from({length:24}, (_,i) => {
-      const t=i/23, base=(ch||0)/100*1.5;
-      return { x:(i/23)*sw, y:sh-(0.5+base*t+Math.sin(i*.8)*.06)*sh };
-    });
-  }
-  const d = pts.map((p,i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const color = (ch||0)>=0 ? 'rgba(130,255,150,.65)' : 'rgba(255,100,80,.5)';
-  const fill  = (ch||0)>=0 ? 'rgba(130,255,150,.06)' : 'rgba(255,100,80,.04)';
-  return (
-    <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none" style={{width:'100%',height:sh,display:'block'}}>
-      <defs>
-        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fff" stopOpacity={(ch||0)>=0?.09:.03}/>
-          <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d={`${d} L${sw},${sh} L0,${sh} Z`} fill="url(#sg)"/>
-      <path d={d} fill="none" stroke={color} strokeWidth="1.5"/>
-    </svg>
-  );
-}
+function Auth() {
+  const [tab,   setTab]   = useState('login');
+  const [lmode, setLmode] = useState('email');
+  const [name,  setName]  = useState('');
+  const [email, setEmail] = useState('');
+  const [pw,    setPw]    = useState('');
+  const [kid,   setKid]   = useState('');
+  const [tier,  setTier]  = useState('free');
+  const [step,  setStep]  = useState(1);
+  const [nid]             = useState(genId);
+  const [loading,setLoading]=useState(false);
+  const [err,   setErr]   = useState('');
+  const [ok,    setOk]    = useState('');
 
-function Ticker({coins}) {
-  if (!coins || !coins.length) return <div className="tb-ticker"/>;
-  const items = [...coins, ...coins];
-  return (
-    <div className="tb-ticker">
-      <div className="ticker-track">
-        {items.map((c,i) => (
-          <div key={i} className="tick">
-            <span className="tick-sym">{c.sym}</span>
-            <span className="tick-pr">{fp(c.price)}</span>
-            <span className={`tick-ch ${(c.ch||0)>=0?'up':'dn'}`}>
-              {(c.ch||0)>=0?'▴':'▾'}{Math.abs(c.ch||0).toFixed(2)}%
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+  const reset = t => { setTab(t);setStep(1);setErr('');setOk('');setName('');setEmail('');setPw('');setKid(''); };
+  const goApp = () => { window.location.href = '/Dashboard/'; };
 
-function PriceError({errors, onRetry}) {
-  return (
-    <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',
-      alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,.94)',
-      backdropFilter:'blur(20px)',padding:32,textAlign:'center'}}>
-      <span className="mi" style={{fontSize:38,color:'rgba(255,100,80,.8)',marginBottom:18}}>wifi_off</span>
-      <div style={{fontFamily:'var(--disp)',fontSize:30,letterSpacing:3,marginBottom:10}}>COULD NOT LOAD PRICES</div>
-      <div style={{fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:2,lineHeight:2.4,marginBottom:26,maxWidth:380}}>
-        KRYPTIV REQUIRES A LIVE INTERNET CONNECTION.<br/>
-        TRIED COINGECKO, BINANCE, AND KRAKEN — ALL FAILED.
-      </div>
-      {errors?.length > 0 && (
-        <div style={{fontFamily:'var(--mono)',fontSize:8,color:'rgba(255,100,80,.5)',marginBottom:22,lineHeight:2.2}}>
-          {errors.map((e,i)=><div key={i}>{e}</div>)}
-        </div>
-      )}
-      <button onClick={onRetry} style={{padding:'12px 26px',background:'var(--w)',color:'#000',border:'none',
-        fontFamily:'var(--sans)',fontWeight:700,fontSize:9,letterSpacing:3,textTransform:'uppercase',cursor:'pointer'}}>
-        RETRY
-      </button>
-    </div>
-  );
-}
-
-function PriceLoading() {
-  return (
-    <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',
-      alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,.92)',backdropFilter:'blur(12px)'}}>
-      <div style={{fontFamily:'var(--disp)',fontSize:46,letterSpacing:2,marginBottom:10,animation:'pulse 1.8s ease-in-out infinite'}}>KRYPTIV</div>
-      <div style={{fontFamily:'var(--mono)',fontSize:8,letterSpacing:5,color:'var(--w4)',textTransform:'uppercase',marginBottom:18}}>Fetching live prices…</div>
-      <div style={{display:'flex',gap:6}}>
-        {[0,1,2].map(i=><div key={i} style={{width:4,height:4,background:'var(--w4)',animation:`pulse 1.2s ease-in-out ${i*.2}s infinite`}}/>)}
-      </div>
-    </div>
-  );
-}
-
-function SettingsModal({onClose}) {
-  const [msg, setMsg] = useState('');
-  const act = (fn, txt) => { fn(); setMsg(txt); };
-  const rows = [
-    {icon:'refresh',       lbl:'Refresh Prices',   sub:'Force live price reload',   fn:()=>act(clearAllCache,'Prices will refresh.'),                                             danger:false},
-    {icon:'delete_sweep',  lbl:'Clear Holdings',    sub:'Remove all saved positions',fn:()=>act(()=>localStorage.removeItem('kryptiv_holdings'),'Holdings cleared.'),              danger:true },
-    {icon:'logout',        lbl:'Sign Out',          sub:'Keeps your account data',   fn:()=>{ LS.clear(); navigate('/'); },                                                         danger:false},
-    {icon:'delete_forever',lbl:'Reset Everything',  sub:'Wipe all data and sign out',fn:()=>{ if(confirm('Delete all data? Cannot be undone.')) nukeEverything(); },               danger:true },
-  ];
-  return (
-    <div className="settings-modal">
-      <div className="settings-bd" onClick={onClose}/>
-      <div className="settings-panel">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:22}}>
-          <div className="settings-title" style={{marginBottom:0}}>SETTINGS</div>
-          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w4)',display:'flex',alignItems:'center'}}>
-            <span className="mi" style={{fontSize:22}}>close</span>
-          </button>
-        </div>
-        {rows.map(r=>(
-          <div key={r.lbl} className="settings-row">
-            <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
-              <span className="mi" style={{fontSize:20,color:r.danger?'rgba(255,100,80,.55)':'var(--w4)',flexShrink:0}}>{r.icon}</span>
-              <div>
-                <div className="settings-lbl">{r.lbl}</div>
-                <div className="settings-sub">{r.sub}</div>
-              </div>
-            </div>
-            <button className={`settings-btn${r.danger?' danger':''}`} onClick={r.fn}>
-              <span className="mi">chevron_right</span>
-            </button>
-          </div>
-        ))}
-        {msg&&(
-          <div style={{fontFamily:'var(--mono)',fontSize:8,color:'rgba(130,255,150,.7)',
-            padding:'10px 0',letterSpacing:2,display:'flex',alignItems:'center',gap:6}}>
-            <span className="mi" style={{fontSize:12}}>check_circle</span>{msg}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function NavOverlay({view, go, onClose}) {
-  return (
-    <div className="nav-ov" onClick={onClose}>
-      <div className="nav-ov-header" onClick={e=>e.stopPropagation()}>
-        <div className="nav-ov-logo">KRYPTIV</div>
-        <button className="nav-ov-close-btn" onClick={onClose}>
-          <span className="mi">close</span>
-        </button>
-      </div>
-      <div className="nav-ov-list" onClick={e=>e.stopPropagation()}>
-        {NAV_ITEMS.map(n => (
-          <div key={n.id} className={`nav-ov-it${view===n.id?' on':''}`} onClick={()=>go(n.id)}>
-            <span className="mi">{n.icon}</span>{n.lbl}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AppShell({user, setUser, view, children}) {
-  const [navOpen,  setNavOpen]  = useState(false);
-  const [settOpen, setSettOpen] = useState(false);
-  const [coins,    setCoins]    = useState(null);
-  const [priceErr, setPriceErr] = useState(null);
-  const [priceSrc, setPriceSrc] = useState('');
-  const [retryKey, setRetryKey] = useState(0);
-
-  useEffect(() => {
-    let stopped = false;
-    const stop = startPriceUpdates(
-      (newCoins, src) => {
-        if (stopped) return;
-        setCoins(newCoins);
-        setPriceSrc(src);
-        setPriceErr(null);
-      },
-      (errors) => {
-        if (stopped) return;
-        setCoins(prev => { if (!prev) setPriceErr(errors); return prev; });
-      }
-    );
-    return () => { stopped=true; stop(); };
-  }, [retryKey]);
-
-  const go = id => {
-    setNavOpen(false);
-    const n = NAV_ITEMS.find(x => x.id===id);
-    if (n) navigate(n.path);
+  const handleLogin = () => {
+    setErr('');
+    if (lmode==='email'&&(!email||!pw)) { setErr('EMAIL AND PASSWORD REQUIRED'); return; }
+    if (lmode==='id'&&(!kid||!pw))      { setErr('KRYPTID AND PASSWORD REQUIRED'); return; }
+    setLoading(true);
+    const saved = LS.get();
+    if (lmode==='id') {
+      if (saved&&saved.kryptid===kid.toUpperCase()&&saved.pw===pw) goApp();
+      else setErr('KRYPTID OR PASSWORD INCORRECT');
+    } else {
+      if (saved&&saved.email===email.toLowerCase()&&saved.pw===pw) goApp();
+      else setErr('EMAIL OR PASSWORD INCORRECT');
+    }
+    setLoading(false);
   };
 
-  const handleSignOut = () => { LS.clear(); navigate('/'); };
+  const handleSignupNext = () => {
+    setErr('');
+    if (!name.trim())                           { setErr('NAME REQUIRED'); return; }
+    if (!email.trim()||!email.includes('@'))     { setErr('VALID EMAIL REQUIRED'); return; }
+    if (pw.length<6)                             { setErr('PASSWORD MIN 6 CHARACTERS'); return; }
+    setStep(2);
+  };
 
-  if (priceErr) return <PriceError errors={priceErr} onRetry={()=>{setPriceErr(null);setRetryKey(k=>k+1);}}/>;
-  if (!coins)   return <PriceLoading/>;
+  const handleJoin = () => {
+    if (tier!=='free') setOk('PAYMENT PROCESSORS BEING ADDED SOON. ACCOUNT CREATED ON FREE PLAN.');
+    const u = {id:'local-'+Date.now(),email:email.toLowerCase(),name,kryptid:nid,tier:'free',pw,created_at:new Date().toISOString()};
+    LS.set(u);
+    setTimeout(()=>goApp(), tier==='free'?0:1600);
+  };
 
-  const availCoins = user.tier==='free' ? coins.filter(c=>FREE_COINS.includes(c.sym)) : coins;
+  const handleSkip = () => {
+    const guest = {id:'guest-'+Date.now(),email:'guest@kryptiv.app',name:'Guest',kryptid:genId(),tier:'free',pw:'',created_at:new Date().toISOString()};
+    LS.set(guest);
+    goApp();
+  };
+
+  const PLAN_LABELS = {free:'$0',budget:'$3.90/mo',pro:'$14.90/mo',atmosphere:'$44.90/mo'};
 
   return (
-    <div className="app">
-      {/* SIDEBAR */}
-      <div className="sidebar">
-        <div className="sb-head">
-          <div className="sb-logo">KRYPTIV</div>
-          <div className="sb-uid">ID <span>{user.kryptid}</span></div>
-        </div>
-        <div className="sb-hr"/>
-        <nav className="sb-nav">
-          <div className="nav-grp">Navigation</div>
-          {NAV_ITEMS.map(n => (
-            <div key={n.id} className={`nav-it${view===n.id?' on':''}`} onClick={()=>go(n.id)}>
-              <span className="mi">{n.icon}</span>
-              {n.lbl}
-              {n.id==='ai' && <span className="nav-badge">FREE</span>}
-            </div>
-          ))}
-        </nav>
-        <div className="sb-foot">
-          <div className="sb-hr" style={{marginBottom:8}}/>
-          <div className="tier-row" onClick={()=>go('plans')}>
-            <div className="tier-dot"/>
-            <div className="tier-info">
-              <div className="tier-lbl">Plan</div>
-              <div className="tier-nm">{(user.tier||'free').toUpperCase()}</div>
-            </div>
-            <span className="mi" style={{fontSize:14,color:'var(--w4)'}}>chevron_right</span>
-          </div>
-          <div className="sb-settings" onClick={()=>setSettOpen(true)}>
-            <span className="mi">settings</span>Settings
-          </div>
-          <div className="sb-logout" onClick={handleSignOut}>
-            <span className="mi">logout</span>{user.name}
-          </div>
-        </div>
+    <div className="auth">
+      <div className="auth-logo">KRYPTIV</div>
+      <div className="auth-tag">Trade with intelligence, not noise.</div>
+      <div className="auth-tabs">
+        {['login','signup'].map(t=>(
+          <button key={t} className={`auth-tab${tab===t?' on':''}`} onClick={()=>reset(t)}>{t.toUpperCase()}</button>
+        ))}
       </div>
 
-      {/* MAIN CONTENT */}
-      <div className="content">
-        <div className="topbar">
-          <div className="tb-logo">KRYPTIV</div>
-          <div className="tb-title">{NAV_ITEMS.find(n=>n.id===view)?.lbl}</div>
-          <Ticker coins={coins}/>
-          <div className="tb-right">
-            <div className="ic-btn" title={`Live · ${priceSrc}`}>
-              <span className="mi" style={{fontSize:9,color:'rgba(130,255,150,.8)'}}>fiber_manual_record</span>
-            </div>
-            <div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
-              <span className="mi">settings</span>
-            </div>
-            <div className="tier-chip" onClick={()=>go('plans')}>{(user.tier||'free').toUpperCase()}</div>
+      {tab==='login'?(<>
+        <div className="auth-modetabs">
+          <button className={`auth-modetab${lmode==='email'?' on':''}`} onClick={()=>{setLmode('email');setErr('');}}>EMAIL</button>
+          <button className={`auth-modetab${lmode==='id'?' on':''}`}    onClick={()=>{setLmode('id');setErr('');}}>KRYPTID</button>
+        </div>
+        <div className="auth-fields">
+          {lmode==='email'
+            ?<div className="af"><label className="af-lbl">Email</label><input className="af-in" type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="your@email.com"/></div>
+            :<div className="af"><label className="af-lbl">KryptID</label><input className="af-in" value={kid} onChange={e=>setKid(e.target.value.toUpperCase())} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="e.g. X7KPQ" maxLength={5} style={{letterSpacing:10,fontSize:20,fontFamily:'var(--mono)'}}/></div>
+          }
+          <div className="af"><label className="af-lbl">Password</label><input className="af-in" type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="Password"/></div>
+          {err&&<div className="af-err"><span className="mi" style={{fontSize:11}}>error_outline</span> {err}</div>}
+          {ok&&<div className="af-ok"><span className="mi" style={{fontSize:11}}>check_circle</span> {ok}</div>}
+          <button className="auth-btn" disabled={loading} onClick={handleLogin}>{loading?'SIGNING IN…':'ENTER KRYPTIV'}</button>
+          <button className="auth-skip" onClick={handleSkip}>SKIP → BROWSE AS GUEST</button>
+        </div>
+      </>):step===1?(<>
+        <div className="auth-fields">
+          <div className="af"><label className="af-lbl">Display Name</label><input className="af-in" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/></div>
+          <div className="af"><label className="af-lbl">Email</label><input className="af-in" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com"/></div>
+          <div className="af"><label className="af-lbl">Password</label><input className="af-in" type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSignupNext()} placeholder="Min 6 characters"/></div>
+          {err&&<div className="af-err"><span className="mi" style={{fontSize:11}}>error_outline</span> {err}</div>}
+          <button className="auth-btn" onClick={handleSignupNext}>GENERATE KRYPTID</button>
+          <button className="auth-skip" onClick={handleSkip}>SKIP → BROWSE AS GUEST</button>
+        </div>
+      </>):step===2?(<>
+        <div className="auth-fields">
+          <div className="kid-reveal">
+            <div className="kid-lbl">Your KryptID — save this</div>
+            <div className="kid-val">{nid}<span className="cursor">_</span></div>
+            <div className="kid-hint">Your permanent identity on KRYPTIV</div>
           </div>
+          <button className="auth-btn" onClick={()=>setStep(3)}>CHOOSE PLAN</button>
+          <button className="auth-link" onClick={()=>setStep(1)}>← Back</button>
         </div>
-        <div className="main">
-          {React.cloneElement(children, { coins, availCoins, priceSrc })}
-        </div>
-      </div>
-
-      {/* BOTTOM NAV */}
-      <div className="botnav">
-        {['dashboard','markets','ai','news'].map(id => {
-          const n = NAV_ITEMS.find(x=>x.id===id);
-          return (
-            <button key={id} className={`bn-it${view===id?' on':''}`} onClick={()=>go(id)}>
-              <span className="mi">{n.icon}</span>{n.lbl}
-            </button>
-          );
-        })}
-        <button className="bn-more-btn" onClick={()=>setNavOpen(true)}>
-          <div className="bn-sq"><span className="mi">grid_view</span></div>
-          <div className="bn-sq-lbl">More</div>
-        </button>
-      </div>
-
-      {navOpen && <NavOverlay view={view} go={go} onClose={()=>setNavOpen(false)}/>}
-      {settOpen && <SettingsModal onClose={()=>setSettOpen(false)}/>}
-    </div>
-  );
-}
-
-
-/* ═══════════════ PRIVACY PAGE ═══════════════ */
-function Privacy({user, coins, availCoins, priceSrc}) {
-  return (
-    <div className="main">
-      <div className="privacy-wrap">
-        <div className="priv-h1">PRIVACY & TERMS</div>
-        <div className="priv-sub">Last updated · March 2025</div>
-
-        <div className="priv-sect">
-          <div className="priv-h2">Privacy</div>
-          <div className="priv-p">KRYPTIV stores your account data locally in your browser's localStorage. No personal data is sent to external servers except AI queries and market data requests. We do not sell or share your information with third parties.</div>
-          <div className="priv-p">AI conversations are processed via the Anthropic API and are subject to Anthropic's usage policies. KRYPTIV does not store your conversation history server-side.</div>
-        </div>
-
-        <div className="priv-sect">
-          <div className="priv-h2">Data Sources & APIs</div>
-          {[
-            ['smart_toy', 'Anthropic API', 'Powers the KRYPTIV AI assistant. Questions are processed by Anthropic\'s servers per their privacy policy. No chat history is stored server-side.'],
-            ['show_chart', 'CoinGecko / Binance / Kraken', 'Provides live and historical cryptocurrency price data. Requests are not tied to user identity.'],
-            ['storage', 'Browser localStorage', 'Your account (name, KryptID, plan, holdings) is stored in your browser only. Nothing is sent to a KRYPTIV server.'],
-            ['newspaper', 'RSS News Feeds', 'News is fetched from public RSS feeds (CoinTelegraph, Decrypt, Bitcoin Magazine, CoinDesk) via CORS proxies. No user data is transmitted.'],
-            ['currency_bitcoin', 'Blockchain.info / Blockstream', 'Live BTC transaction data from public APIs. Requests are not tied to user identity.'],
-          ].map(([ic,nm,desc])=>(
-            <div key={nm} className="priv-li">
-              <span className="mi">{ic}</span>
-              <div>
-                <strong style={{color:'var(--w2)',display:'block',marginBottom:2}}>{nm}</strong>
-                {desc}
+      </>):(<>
+        <div className="auth-fields">
+          <div className="af">
+            <label className="af-lbl">Choose Plan</label>
+            <div className="plan-sel-row">
+              {PLANS.map(p=>(
+                <button key={p.id} className={`plan-sel-opt${tier===p.id?' on':''}`} onClick={()=>setTier(p.id)}>
+                  <span>{p.nm}</span><span className="ps-price">{PLAN_LABELS[p.id]}</span>
+                </button>
+              ))}
+            </div>
+            {tier!=='free'&&(
+              <div className="plan-sel-note">
+                <span className="mi" style={{fontSize:10,marginRight:4}}>info</span>
+                PAYMENT PROCESSORS COMING SOON — ACCOUNT STARTS ON FREE PLAN
               </div>
-            </div>
-          ))}
+            )}
+          </div>
+          {err&&<div className="af-err"><span className="mi" style={{fontSize:11}}>error_outline</span> {err}</div>}
+          {ok&&<div className="af-ok"><span className="mi" style={{fontSize:11}}>check_circle</span> {ok}</div>}
+          <button className="auth-btn" disabled={loading} onClick={handleJoin}>{loading?'CREATING…':'JOIN KRYPTIV'}</button>
+          <button className="auth-link" onClick={()=>setStep(2)}>← Back</button>
         </div>
-
-        <div className="priv-sect">
-          <div className="priv-h2">Terms of Use</div>
-          <div className="priv-p">KRYPTIV is an educational platform. Nothing on this app constitutes financial advice. AI analysis is informational only. We are not responsible for financial losses from actions taken based on this app.</div>
-          {[
-            'We do not sell or share your data with third parties',
-            'We do not run advertisements',
-            'All AI answers are estimates — not financial advice',
-            'Use at your own risk — always do your own research',
-            'Paid plans are not yet available — all accounts are on the free plan',
-          ].map((t,i)=>(
-            <div key={i} className="priv-li"><span className="mi">check</span>{t}</div>
-          ))}
-        </div>
-
-        <div style={{paddingTop:20,fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,lineHeight:2}}>
-          KRYPTIV v0.3.0 · EDUCATIONAL PLATFORM · NOT FINANCIAL ADVICE
-        </div>
-      </div>
+      </>)}
     </div>
   );
 }
 
-function Page() {
-  const user = requireAuth();
-  if (!user) return null;
-  const [u, setU] = useState(user);
+function Root() {
+  const [ready, setReady] = useState(false);
+  const wallRef = useRef(null);
+  useEffect(()=>{
+    const saved = LS.get();
+    if (saved?.kryptid) { window.location.href='/Dashboard/'; return; }
+    requestAnimationFrame(()=>{
+      if (wallRef.current) wallRef.current.className='wall intro';
+      requestAnimationFrame(()=>{
+        if (wallRef.current) wallRef.current.className='wall clear';
+        setReady(true);
+      });
+    });
+  },[]);
   return (<>
-    <div className="wall clear"/>
-    <AppShell user={u} setUser={setU} view="privacy">
-      <Privacy user={u}/>
-    </AppShell>
+    <div className="wall intro" ref={wallRef}/>
+    {ready&&<Auth/>}
   </>);
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
 
 </script>
 </body>
