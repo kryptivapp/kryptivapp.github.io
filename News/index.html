@@ -892,14 +892,12 @@ function requireAuth() {
 
 /* ── PAGE NAVIGATE with transition ── */
 function navigate(path) {
-  // Show transition overlay
+  // Minimal transition — just a thin progress bar, no logo text
   const ov = document.createElement('div');
   ov.className = 'page-transition';
-  ov.innerHTML = `<div class="pt-logo">KRYPTIV</div>
-    <div class="pt-bar"><div class="pt-fill"></div></div>
-    <div class="pt-txt">Loading…</div>`;
+  ov.innerHTML = '<div class="pt-bar" style="position:fixed;top:0;left:0;right:0;width:100%;height:2px;background:rgba(255,255,255,.08)"><div class="pt-fill"></div></div>';
   document.body.appendChild(ov);
-  setTimeout(() => { window.location.href = path; }, 280);
+  setTimeout(function() { window.location.href = path; }, 180);
 }
 
 /* ── MEMPOOL (live BTC chain data via Blockchain.info public API) ── */
@@ -1310,58 +1308,75 @@ function timeAgo(dateStr) {
   return Math.floor(secs/86400)+'d ago';
 }
 
-/* News: multiple sources with CORS proxy fallback */
+/* News: local news.json first, then live API fallbacks */
 async function fetchAllNews() {
-  const ENDPOINTS = [
-    // 1. CryptoCompare — direct (usually works)
-    async () => {
-      const r = await fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50',
-        {signal: AbortSignal.timeout(8000)});
-      if (!r.ok) throw new Error(r.status);
+  // 1. Try local news.json (same folder — easy to edit and expand)
+  try {
+    const r = await fetch('./news.json');
+    if (r.ok) {
       const d = await r.json();
-      if (!d.Data?.length) throw new Error('empty');
-      return d.Data.map((a,i)=>({
-        id: String(a.id||i), title: a.title, url: a.url,
-        source: (a.source_info?.name||a.source||'CRYPTOCOMPARE').toUpperCase(),
-        published: new Date(a.published_on*1000).toISOString(),
-        coins: a.categories?a.categories.split('|').filter(c=>c&&c.length<8).slice(0,3):[],
-      }));
-    },
-    // 2. CryptoCompare via allorigins proxy
-    async () => {
-      const url = 'https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50';
-      const r = await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url),
-        {signal: AbortSignal.timeout(10000)});
-      if (!r.ok) throw new Error(r.status);
+      if (Array.isArray(d) && d.length > 0) {
+        return d.map((a,i)=>({
+          id: String(a.id||i),
+          title: a.title||'',
+          url: a.url||'#',
+          source: (a.source||'LOCAL').toUpperCase(),
+          published: a.published||new Date().toISOString(),
+          coins: Array.isArray(a.coins)?a.coins:[],
+        })).filter(a=>a.title);
+      }
+    }
+  } catch {}
+
+  // 2. CryptoCompare live API
+  try {
+    const r = await fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50');
+    if (r.ok) {
       const d = await r.json();
-      const inner = JSON.parse(d.contents);
-      if (!inner.Data?.length) throw new Error('empty');
-      return inner.Data.map((a,i)=>({
-        id: String(a.id||i), title: a.title, url: a.url,
-        source: (a.source_info?.name||a.source||'CRYPTOCOMPARE').toUpperCase(),
-        published: new Date(a.published_on*1000).toISOString(),
-        coins: a.categories?a.categories.split('|').filter(c=>c&&c.length<8).slice(0,3):[],
-      }));
-    },
-    // 3. Coinpaprika
-    async () => {
-      const r = await fetch('https://api.coinpaprika.com/v1/news?limit=50',
-        {signal: AbortSignal.timeout(8000)});
-      if (!r.ok) throw new Error(r.status);
+      if (d.Data?.length) {
+        return d.Data.map((a,i)=>({
+          id: String(a.id||i), title: a.title, url: a.url,
+          source: (a.source_info?.name||a.source||'CRYPTOCOMPARE').toUpperCase(),
+          published: new Date(a.published_on*1000).toISOString(),
+          coins: a.categories?a.categories.split('|').filter(c=>c&&c.length<8).slice(0,3):[],
+        }));
+      }
+    }
+  } catch {}
+
+  // 3. CryptoCompare via allorigins CORS proxy
+  try {
+    const url = 'https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50';
+    const r = await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url));
+    if (r.ok) {
       const d = await r.json();
-      if (!d?.length) throw new Error('empty');
-      return d.map((a,i)=>({
+      const inner = JSON.parse(d.contents||'{}');
+      if (inner.Data?.length) {
+        return inner.Data.map((a,i)=>({
+          id: String(a.id||i), title: a.title, url: a.url,
+          source: (a.source_info?.name||a.source||'CRYPTOCOMPARE').toUpperCase(),
+          published: new Date(a.published_on*1000).toISOString(),
+          coins: a.categories?a.categories.split('|').filter(c=>c&&c.length<8).slice(0,3):[],
+        }));
+      }
+    }
+  } catch {}
+
+  // 4. Coinpaprika
+  try {
+    const r = await fetch('https://api.coinpaprika.com/v1/news?limit=50');
+    if (r.ok) {
+      const d = await r.json();
+      if (d?.length) return d.map((a,i)=>({
         id: String(i), title: a.title, url: a.url,
         source: (a.source||'COINPAPRIKA').toUpperCase(),
         published: a.date||new Date().toISOString(),
         coins: a.currencies?.slice(0,3).map(c=>c.symbol)||[],
       }));
-    },
-  ];
-  for (const fn of ENDPOINTS) {
-    try { const r = await fn(); if (r.length > 0) return r; } catch {}
-  }
-  throw new Error('All news sources unavailable');
+    }
+  } catch {}
+
+  throw new Error('No news available');
 }
 
 const FILTERS = [
