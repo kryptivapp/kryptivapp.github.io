@@ -1312,7 +1312,7 @@ function timeAgo(dateStr) {
 async function fetchAllNews() {
   // 1. Try local news.json (same folder — easy to edit and expand)
   try {
-    const r = await fetch('./news.json');
+    const r = await fetch('/News/news.json');
     if (r.ok) {
       const d = await r.json();
       if (Array.isArray(d) && d.length > 0) {
