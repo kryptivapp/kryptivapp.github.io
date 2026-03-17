@@ -623,6 +623,10 @@ input,textarea,select{font-family:var(--sans)}
 <body>
 <div id="root"></div>
 <!-- React + Babel via CDN (cached by browser after first load) -->
+<!-- preload so subsequent pages load from disk cache instantly -->
+<link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" as="script" crossorigin>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" crossorigin></script>
@@ -730,7 +734,7 @@ const fp = p => {
   if (p >= 0.01) return '$' + p.toFixed(4);
   return '$' + p.toFixed(6);
 };
-const fc = c => { if (c == null || isNaN(c)) return '—'; return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; };
+const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
   if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
@@ -900,42 +904,41 @@ function navigate(path) {
 
 /* ── MEMPOOL (live BTC chain data via Blockchain.info public API) ── */
 async function fetchMempoolTxs() {
+  // Try blockstream first (returns clean recent mempool txs)
   try {
-    // Use blockchain.info unconfirmed transactions (public, CORS-enabled)
-    const r = await fetch('https://blockchain.info/unconfirmed-transactions?format=json&cors=true');
-    if (!r.ok) throw new Error('blockchain.info ' + r.status);
-    const d = await r.json();
-    const txs = (d.txs || []).slice(0, 8).map(tx => {
-      const outVal = tx.out.reduce((a, o) => a + (o.value || 0), 0);
+    const r = await fetch('https://blockstream.info/api/mempool/recent');
+    if (!r.ok) throw new Error('blockstream ' + r.status);
+    const txs = await r.json();
+    return (txs||[]).slice(0,8).map(tx=>({
+      hash:  tx.txid,
+      shortHash: tx.txid.slice(0,8)+'…'+tx.txid.slice(-6),
+      value: tx.value||0,           // satoshis — real sent value
+      btc:   ((tx.value||0)/1e8).toFixed(6),
+      fee:   tx.fee||0,
+      feeRate: tx.fee && tx.vsize ? (tx.fee/tx.vsize).toFixed(1) : '?',
+      vsize: tx.vsize||0,
+      time:  new Date(),
+    }));
+  } catch {}
+  // Fallback: blockchain.info (use max single output, not sum, to avoid change inflation)
+  try {
+    const r2 = await fetch('https://blockchain.info/unconfirmed-transactions?format=json&cors=true');
+    if (!r2.ok) throw new Error(r2.status);
+    const d = await r2.json();
+    return (d.txs||[]).slice(0,8).map(tx=>{
+      const maxOut = Math.max(...(tx.out||[]).map(o=>o.value||0));
       return {
         hash: tx.hash,
-        shortHash: tx.hash.slice(0,8) + '…' + tx.hash.slice(-6),
-        value: outVal,  // in satoshis
-        btc: (outVal / 1e8).toFixed(4),
-        fee: tx.fee || 0,
-        inputs: tx.inputs?.length || 0,
-        outputs: tx.out?.length || 0,
-        time: tx.time ? new Date(tx.time * 1000) : new Date(),
+        shortHash: tx.hash.slice(0,8)+'…'+tx.hash.slice(-6),
+        value: maxOut,
+        btc:  (maxOut/1e8).toFixed(6),
+        fee:  tx.fee||0,
+        feeRate: tx.fee && tx.vsize ? (tx.fee/tx.vsize).toFixed(1) : '?',
+        vsize: tx.vsize||tx.weight||0,
+        time: tx.time ? new Date(tx.time*1000) : new Date(),
       };
     });
-    return txs;
-  } catch(e) {
-    // Fallback: blockstream.info
-    try {
-      const r2 = await fetch('https://blockstream.info/api/mempool/recent');
-      if (!r2.ok) throw new Error('blockstream ' + r2.status);
-      const txs2 = await r2.json();
-      return (txs2 || []).slice(0, 8).map(tx => ({
-        hash: tx.txid,
-        shortHash: tx.txid.slice(0,8) + '…' + tx.txid.slice(-6),
-        value: tx.value || 0,
-        btc: ((tx.value || 0) / 1e8).toFixed(4),
-        fee: tx.fee || 0,
-        inputs: 1, outputs: 1,
-        time: new Date(),
-      }));
-    } catch { return null; }
-  }
+  } catch { return null; }
 }
 
 </script>
@@ -1369,11 +1372,11 @@ function MempoolFeed({btcPrice}) {
         return (
           <div key={tx.hash} className="tx-row" style={{animationDelay:`${i*0.05}s`}}>
             <div className="tx-icon" style={big?{borderColor:'rgba(130,255,150,.3)'}:{}}>
-              <MI n="payments" style={{fontSize:13,color:big?'rgba(130,255,150,.7)':'var(--w4)'}}/>
+              <MI n="payments" style={{width:13,height:13,color:big?'rgba(130,255,150,.7)':'var(--w4)'}}/>
             </div>
             <div className="tx-body">
               <div className="tx-hash">{tx.shortHash}</div>
-              <div className="tx-meta">{tx.inputs}→{tx.outputs} · fee {tx.fee} sats</div>
+              <div className="tx-meta">fee {tx.fee} sats{tx.feeRate&&tx.feeRate!=='?'?' · '+tx.feeRate+' sat/vB':''}</div>
             </div>
             <div>
               <div className="tx-val">{tx.btc} BTC</div>
@@ -1394,11 +1397,16 @@ function Dashboard({user, coins, availCoins, priceSrc}) {
     try { return JSON.parse(localStorage.getItem('kryptiv_pinned')||'["BTC","SOL"]'); } catch { return ['BTC','SOL']; }
   });
 
-  useEffect(()=>{ localStorage.setItem('kryptiv_pinned', JSON.stringify(pinned)); }, [pinned]);
   useEffect(()=>{ if (isFree && !FREE_COINS.includes(selectedSym)) setSelectedSym('BTC'); }, []);
 
   const selected = useMemo(()=>availCoins?.find(c=>c.sym===selectedSym)||availCoins?.[0], [availCoins,selectedSym]);
-  const togglePin = sym => setPinned(prev => prev.includes(sym)?prev.filter(s=>s!==sym):prev.length<(isFree?2:99)?[...prev,sym]:prev);
+  const togglePin = sym => {
+    setPinned(prev => {
+      const next = prev.includes(sym) ? prev.filter(s=>s!==sym) : prev.length<(isFree?2:99) ? [...prev,sym] : prev;
+      localStorage.setItem('kryptiv_pinned', JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Always use full coins list for market stats
   const allCoins = coins || availCoins || [];
@@ -1498,7 +1506,7 @@ function Dashboard({user, coins, availCoins, priceSrc}) {
         <div className="s-lbl">
           <MI n="grade"/>WATCHLIST
           {isFree&&<span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)'}}>
-            {pinned.length}/2 pinned
+            {availCoins.filter(c=>pinned.includes(c.sym)).length}/{isFree?2:'∞'} pinned
           </span>}
         </div>
         {availCoins.map((c,i)=>{
