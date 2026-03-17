@@ -1,0 +1,25 @@
+[
+  {
+    "id": "1",
+    "title": "Bitcoin surges past $100,000 as institutional demand accelerates",
+    "url": "https://cointelegraph.com",
+    "source": "CoinTelegraph",
+    "published": "2025-03-17T09:00:00.000Z",
+    "coins": ["BTC"]
+  },
+  {
+    "id": "2",
+    "title": "Ethereum ETF sees record inflows as DeFi activity reaches all-time high",
+    "url": "https://decrypt.co",
+    "source": "Decrypt",
+    "published": "2025-03-17T08:30:00.000Z",
+    "coins": ["ETH"]
+  },
+  {
+    "id": "3",
+    "title": "Solana network processes 100,000 transactions per second milestone",
+    "url": "https://coindesk.com",
+    "source": "CoinDesk",
+    "published": "2025-03-17T07:45:00.000Z",
+    "coins": ["SOL"]
+  },
