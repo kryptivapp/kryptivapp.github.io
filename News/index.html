@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=wifi_tethering_error">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=block">
 <style>
 /* KRYPTIV v14 — SHARED BASE STYLES */
@@ -53,6 +54,7 @@ html,body{background:#000;color:#fff;font-family:var(--sans);height:100%;overflo
   user-select:none;
 }
 
+.sym{font-family:'Material Symbols Outlined';font-style:normal;font-weight:normal;font-size:inherit;line-height:1;display:inline-block;vertical-align:middle;user-select:none}
 ::-webkit-scrollbar{width:2px}
 ::-webkit-scrollbar-thumb{background:var(--border2)}
 input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px rgba(0,0,0,0) inset!important;-webkit-text-fill-color:#fff!important}
@@ -1312,7 +1314,7 @@ function timeAgo(dateStr) {
 async function fetchAllNews() {
   // 1. Try local news.json (same folder — easy to edit and expand)
   try {
-    const r = await fetch('/News/news.json');
+    const r = await fetch('news.json');
     if (r.ok) {
       const d = await r.json();
       if (Array.isArray(d) && d.length > 0) {
@@ -1431,7 +1433,7 @@ function NewsView({user, coins, availCoins, priceSrc}) {
 
       {error?(
         <div className="news-err">
-          <MI n="wifi_off" className="news-err-icon"/>
+          <span className="sym" style={{fontSize:40,color:'rgba(255,100,80,.6)'}}>wifi_tethering_error</span>
           <div className="news-err-txt">{error}</div>
           <button className="news-err-retry" onClick={()=>window.location.reload()}>RETRY</button>
         </div>
