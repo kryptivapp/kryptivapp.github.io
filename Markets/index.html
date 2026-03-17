@@ -623,6 +623,10 @@ input,textarea,select{font-family:var(--sans)}
 <body>
 <div id="root"></div>
 <!-- React + Babel via CDN (cached by browser after first load) -->
+<!-- preload so subsequent pages load from disk cache instantly -->
+<link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" as="script" crossorigin>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" crossorigin></script>
@@ -730,7 +734,7 @@ const fp = p => {
   if (p >= 0.01) return '$' + p.toFixed(4);
   return '$' + p.toFixed(6);
 };
-const fc = c => { if (c == null || isNaN(c)) return '—'; return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; };
+const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
   if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
@@ -1445,6 +1449,9 @@ function Markets({user, coins, availCoins, priceSrc}) {
         const locked = isFree && !FREE_COINS.includes(c.sym);
         const row = (
           <div className="coin-line" onClick={()=>!locked&&setDetail(c)} style={{cursor:locked?'default':'pointer'}}>
+            {!locked&&<span className={'hl-star'+(pinned.includes(c.sym)?' on':'')}
+              onClick={e=>{e.stopPropagation();togglePin(c.sym);}}>★</span>}
+            {locked&&<span className="hl-star" style={{opacity:.3}}>★</span>}
             <div className="c-rank">{c.rank||i+1}</div>
             <div style={{flex:1,display:'flex',alignItems:'center',gap:8,minWidth:0}}>
               <div className="c-sym">{c.sym}</div>
