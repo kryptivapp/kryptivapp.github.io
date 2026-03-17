@@ -7,7 +7,6 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp">
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=block">
 <style>
@@ -46,16 +45,11 @@ html,body{background:#000;color:#fff;font-family:var(--sans);height:100%;overflo
 
 /* Material Icons — force block display so ligature text never shows */
 .mi{
-  font-family:'Material Icons Sharp';
-  font-size:inherit;
-  vertical-align:middle;
-  line-height:1;
-  font-style:normal;
+  width:20px;height:20px;
   display:inline-block;
-  font-feature-settings:'liga';
-  -webkit-font-feature-settings:'liga';
-  text-rendering:optimizeLegibility;
-  -webkit-font-smoothing:antialiased;
+  vertical-align:middle;
+  flex-shrink:0;
+  fill:currentColor;
   user-select:none;
 }
 
@@ -165,7 +159,7 @@ input,textarea,select{font-family:var(--sans)}
 .nav-it:hover{color:var(--w);background:rgba(255,255,255,.03)}
 .nav-it.on{color:var(--w)}
 .nav-it.on::before{content:'';position:absolute;left:0;top:15%;bottom:15%;width:2px;background:var(--w)}
-.nav-it .mi{font-size:16px;opacity:.7}
+.nav-it .mi{width:16px;height:16px;opacity:.7}
 .nav-it.on .mi,.nav-it:hover .mi{opacity:1}
 .nav-badge{margin-left:auto;font-family:var(--mono);font-size:7px;border:1px solid var(--border);color:var(--w4);padding:1px 5px;letter-spacing:1px}
 .sb-foot{padding:8px;border-top:1px solid rgba(255,255,255,.06)}
@@ -202,7 +196,7 @@ input,textarea,select{font-family:var(--sans)}
 .tb-right{display:flex;align-items:center;gap:6px}
 .ic-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--w3);cursor:pointer;transition:all .15s}
 .ic-btn:hover{border-color:var(--border2);color:var(--w)}
-.ic-btn .mi{font-size:14px}
+.ic-btn .mi{width:14px;height:14px}
 .tier-chip{height:30px;padding:0 10px;font-family:var(--mono);font-size:8px;letter-spacing:3px;border:1px solid var(--border);color:var(--w3);cursor:pointer;background:rgba(255,255,255,.03);display:flex;align-items:center;transition:all .15s}
 .tier-chip:hover{border-color:var(--border2);color:var(--w2)}
 .main{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
@@ -212,7 +206,7 @@ input,textarea,select{font-family:var(--sans)}
 /* SECTION LABELS */
 .s-lbl{font-family:var(--mono);font-size:8px;letter-spacing:4px;text-transform:uppercase;color:var(--w4);margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .s-lbl::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.05)}
-.s-lbl .mi{font-size:11px}
+.s-lbl .mi{width:11px;height:11px}
 .s-mb{margin-bottom:30px}
 
 /* STAT CELLS */
@@ -243,7 +237,7 @@ input,textarea,select{font-family:var(--sans)}
 
 /* LOCK OVERLAY */
 .lock-ov{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:5}
-.lock-ov .mi{font-size:20px;color:var(--w3)}
+.lock-ov .mi{width:20px;height:20px;color:var(--w3)}
 .lock-lbl{font-family:var(--mono);font-size:8px;letter-spacing:3px;color:var(--w4);text-transform:uppercase}
 .lock-btn{padding:7px 16px;background:var(--w);color:#000;border:none;font-family:var(--sans);font-weight:700;font-size:8px;letter-spacing:2px;cursor:pointer;margin-top:2px}
 
@@ -258,10 +252,10 @@ input,textarea,select{font-family:var(--sans)}
 @media(max-width:768px){.botnav{display:flex}}
 .bn-it{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px;cursor:pointer;color:var(--w4);font-family:var(--mono);font-size:6px;letter-spacing:1px;text-transform:uppercase;background:none;border:none;transition:color .15s}
 .bn-it.on{color:var(--w2)}
-.bn-it .mi{font-size:18px}
+.bn-it .mi{width:18px;height:18px}
 .bn-more-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 2px;cursor:pointer;background:none;border:none}
 .bn-sq{width:30px;height:30px;border:1px solid var(--border);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center}
-.bn-sq .mi{font-size:16px;color:var(--w3)}
+.bn-sq .mi{width:16px;height:16px;color:var(--w3)}
 .bn-sq-lbl{font-family:var(--mono);font-size:6px;letter-spacing:1px;text-transform:uppercase;color:var(--w4);margin-top:2px}
 
 /* MOBILE NAV OVERLAY */
@@ -269,12 +263,12 @@ input,textarea,select{font-family:var(--sans)}
 .nav-ov-list{flex:1;display:flex;flex-direction:column;padding:0;overflow-y:auto}
 .nav-ov-it{display:flex;align-items:center;gap:14px;padding:18px 28px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;font-family:var(--sans);font-size:15px;font-weight:400;color:var(--w3);transition:all .12s}
 .nav-ov-it:hover,.nav-ov-it.on{background:rgba(255,255,255,.05);color:var(--w)}
-.nav-ov-it .mi{font-size:20px;opacity:.7}
+.nav-ov-it .mi{width:20px;height:20px;opacity:.7}
 .nav-ov-it.on .mi{opacity:1}
 .nav-ov-header{padding:20px 28px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between}
 .nav-ov-logo{font-family:var(--disp);font-size:22px;letter-spacing:3px}
 .nav-ov-close-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:none;color:var(--w3);cursor:pointer}
-.nav-ov-close-btn .mi{font-size:18px}
+.nav-ov-close-btn .mi{width:18px;height:18px}
 
 /* COIN DETAIL PANEL */
 .coin-detail{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;justify-content:flex-end;animation:fadeIn .2s both}
@@ -287,7 +281,7 @@ input,textarea,select{font-family:var(--sans)}
 .cd-price{font-family:var(--mono);font-size:22px;color:var(--w);text-align:right}
 .cd-ch-big{font-family:var(--mono);font-size:12px;margin-top:3px;text-align:right}
 .cd-close{background:none;border:none;color:var(--w3);cursor:pointer}
-.cd-close .mi{font-size:22px}
+.cd-close .mi{width:22px;height:22px}
 .cd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid rgba(255,255,255,.05);margin-bottom:20px}
 .cd-gs{padding:12px 0}
 .cd-gs+.cd-gs{border-left:1px solid rgba(255,255,255,.05);padding-left:14px}
@@ -314,7 +308,7 @@ input,textarea,select{font-family:var(--sans)}
 .hero-meta{font-family:var(--mono);font-size:9px;color:var(--w4);margin-top:5px;line-height:2}
 .change-btn{background:none;border:1px solid var(--border);color:var(--w4);font-family:var(--mono);font-size:7px;letter-spacing:2px;padding:5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .15s;margin-top:12px}
 .change-btn:hover{border-color:var(--border2);color:var(--w3)}
-.change-btn .mi{font-size:11px}
+.change-btn .mi{width:11px;height:11px}
 
 /* MOVER ROWS */
 .mover-row{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:padding-left .1s;position:relative}
@@ -349,10 +343,10 @@ input,textarea,select{font-family:var(--sans)}
 .h-pnl.dn{color:var(--dn)}
 .h-del{background:none;border:none;color:var(--w4);cursor:pointer;padding:4px;transition:color .15s;flex-shrink:0}
 .h-del:hover{color:var(--w3)}
-.h-del .mi{font-size:14px}
+.h-del .mi{width:14px;height:14px}
 .add-btn{display:flex;align-items:center;gap:8px;padding:11px 0;font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--w4);background:none;border:none;cursor:pointer;transition:color .15s;margin-top:8px}
 .add-btn:hover{color:var(--w3)}
-.add-btn .mi{font-size:14px}
+.add-btn .mi{width:14px;height:14px}
 .summary-stat{flex:1;padding:14px 0}
 .summary-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;margin-bottom:6px}
 .summary-val{font-family:var(--disp);font-size:26px;letter-spacing:1px;line-height:1}
@@ -363,7 +357,7 @@ input,textarea,select{font-family:var(--sans)}
 .alloc-dot{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:8px;color:var(--w3)}
 .alloc-dot span{width:8px;height:8px;flex-shrink:0;display:inline-block}
 .empty-state{padding:40px 0;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
-.empty-icon{font-size:32px!important;color:var(--w4)}
+.empty-icon{width:32px!important;height:32px!important;color:var(--w4)}
 .empty-txt{font-family:var(--mono);font-size:8px;color:var(--w4);letter-spacing:2px;line-height:2;text-transform:uppercase}
 
 /* MODAL */
@@ -430,7 +424,7 @@ input,textarea,select{font-family:var(--sans)}
 .ai-dot{width:6px;height:6px;background:var(--up);animation:pulse 2s infinite;flex-shrink:0}
 .ai-dis{font-family:var(--mono);font-size:8px;color:var(--w4);letter-spacing:1px;line-height:1.5}
 .live-price-row{font-family:var(--mono);font-size:8px;color:rgba(130,255,150,.65);letter-spacing:2px;margin-bottom:5px;display:flex;align-items:center;gap:5px}
-.live-price-row .mi{font-size:8px}
+.live-price-row .mi{width:8px;height:8px}
 .qb-wrap{padding:10px 28px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;overflow-y:auto;max-height:42vh}
 @media(max-width:768px){.qb-wrap{padding:10px 14px}}
 .qb-lbl{font-family:var(--mono);font-size:7px;letter-spacing:4px;text-transform:uppercase;color:var(--w4);margin-bottom:9px}
@@ -448,7 +442,7 @@ input,textarea,select{font-family:var(--sans)}
 @media(max-width:768px){.ai-msgs{padding:14px}}
 .msg-wrap{animation:fadeUp .22s ease both}
 .msg-meta{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:5px}
-.msg-meta .mi{font-size:11px}
+.msg-meta .mi{width:11px;height:11px}
 .msg-body{font-size:13px;line-height:1.78;color:var(--w2);font-weight:300;max-width:700px;white-space:pre-wrap}
 .msg-body.usr{color:var(--w);font-weight:400}
 .thinking{display:flex;gap:5px;padding:4px 0;align-items:center}
@@ -463,7 +457,7 @@ input,textarea,select{font-family:var(--sans)}
 .ai-send{background:none;border:none;color:var(--w3);cursor:pointer;padding:5px;transition:color .15s}
 .ai-send:hover{color:var(--w2)}
 .ai-send:disabled{opacity:.2;cursor:not-allowed}
-.ai-send .mi{font-size:20px}
+.ai-send .mi{width:20px;height:20px}
 
 /* NEWS */
 .live-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
@@ -475,7 +469,7 @@ input,textarea,select{font-family:var(--sans)}
 .news-it:hover{padding-left:8px}
 .news-it:hover::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:rgba(255,255,255,.35)}
 .news-src{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:5px}
-.news-src .mi{font-size:9px}
+.news-src .mi{width:9px;height:9px}
 .news-ttl{font-size:13px;font-weight:400;line-height:1.55;color:var(--w2);margin-bottom:6px}
 .news-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .news-time{font-family:var(--mono);font-size:7px;color:var(--w4)}
@@ -483,15 +477,15 @@ input,textarea,select{font-family:var(--sans)}
 .news-coin-tag{font-family:var(--mono);font-size:7px;border:1px solid var(--border);color:var(--w4);padding:1px 5px;letter-spacing:1px}
 .news-votes{display:flex;gap:6px;margin-left:auto}
 .news-vote{display:flex;align-items:center;gap:3px;font-family:var(--mono);font-size:7px;color:var(--w4)}
-.news-vote .mi{font-size:9px}
+.news-vote .mi{width:9px;height:9px}
 .news-vote.bull{color:rgba(130,255,150,.5)}
 .news-vote.bear{color:rgba(255,100,80,.5)}
 .news-err{padding:36px 0;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
-.news-err-icon{font-size:32px!important;color:var(--w4)}
+.news-err-icon{width:32px!important;height:32px!important;color:var(--w4)}
 .news-err-txt{font-family:var(--mono);font-size:8px;color:var(--w4);letter-spacing:2px;line-height:2;text-transform:uppercase}
 .news-err-retry{padding:9px 20px;background:var(--w);border:none;color:#000;font-family:var(--sans);font-weight:700;font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
 .news-loading{display:flex;align-items:center;gap:10px;padding:28px 0;justify-content:center}
-.spin-icon{font-size:20px!important;color:var(--w4);animation:spin 1s linear infinite}
+.spin-icon{width:20px!important;height:20px!important;color:var(--w4);animation:spin 1s linear infinite}
 .news-loading-txt{font-family:var(--mono);font-size:8px;color:var(--w4);letter-spacing:3px;text-transform:uppercase}
 .load-more-btn{width:100%;padding:12px;background:none;border:1px solid var(--border);color:var(--w4);font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .15s;margin-top:14px}
 .load-more-btn:hover{border-color:var(--border2);color:var(--w3)}
@@ -529,7 +523,7 @@ input,textarea,select{font-family:var(--sans)}
 .plan-desc{font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--w4);text-transform:uppercase;margin-bottom:22px}
 .plan-feats{margin-bottom:22px}
 .plan-feat{font-size:13px;color:var(--w3);padding:6px 0;display:flex;align-items:flex-start;gap:9px;line-height:1.5;border-bottom:1px solid rgba(255,255,255,.03)}
-.plan-feat .mi{font-size:11px;color:var(--w4);margin-top:2px;flex-shrink:0}
+.plan-feat .mi{width:11px;height:11px;color:var(--w4);margin-top:2px;flex-shrink:0}
 .plan-cta{width:100%;padding:13px;background:var(--w);border:none;color:#000;font-family:var(--sans);font-weight:700;font-size:10px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:opacity .2s}
 .plan-cta:hover{opacity:.85}
 .plan-cta.ghost{background:none;border:1px solid var(--border2);color:var(--w3)}
@@ -542,14 +536,14 @@ input,textarea,select{font-family:var(--sans)}
 .plan-dot.on{background:var(--w);width:16px}
 .plan-back{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--w3);cursor:pointer;background:none;border:none}
 .plan-back:hover{color:var(--w)}
-.plan-back .mi{font-size:14px}
+.plan-back .mi{width:14px;height:14px}
 /* Scroll hint — icon only, no text */
 .plan-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;animation:floatY 2s ease-in-out infinite;z-index:20;pointer-events:none}
-.plan-hint .mi{font-size:28px;color:rgba(255,255,255,.3)}
+.plan-hint .mi{width:28px;height:28px;color:rgba(255,255,255,.3)}
 .sub-coming-card{width:100%;max-width:520px;background:rgba(0,0,0,.10);backdrop-filter:blur(36px);border:1px solid rgba(255,255,255,.09);overflow:hidden;animation:fadeUp .5s ease both;position:relative}
 .sub-coming-blur{padding:36px;filter:blur(5px);pointer-events:none;user-select:none;opacity:.6}
 .sub-coming-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
-.sub-coming-icon .mi{font-size:34px;color:var(--w3)}
+.sub-coming-icon .mi{width:34px;height:34px;color:var(--w3)}
 .sub-coming-ttl{font-family:var(--disp);font-size:34px;letter-spacing:4px;color:var(--w);text-align:center;line-height:1}
 .sub-coming-sub{font-family:var(--mono);font-size:8px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;text-align:center;line-height:2}
 .sub-coming-badge{padding:5px 16px;border:1px solid rgba(255,255,255,.14);font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-top:4px}
@@ -563,7 +557,7 @@ input,textarea,select{font-family:var(--sans)}
 .priv-h2{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--w2);margin-bottom:10px;font-family:var(--mono)}
 .priv-p{font-size:13px;line-height:1.8;color:var(--w3);font-weight:300;margin-bottom:9px}
 .priv-li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--w3);padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-.priv-li .mi{font-size:11px;color:var(--w4);margin-top:2px;flex-shrink:0}
+.priv-li .mi{width:11px;height:11px;color:var(--w4);margin-top:2px;flex-shrink:0}
 
 /* SETTINGS MODAL */
 .settings-modal{position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s both}
@@ -588,14 +582,14 @@ input,textarea,select{font-family:var(--sans)}
 /* Settings btn — icon only */
 .settings-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--w3);cursor:pointer;transition:all .15s;flex-shrink:0}
 .settings-btn:hover{border-color:var(--border2);color:var(--w)}
-.settings-btn .mi{font-size:16px}
+.settings-btn .mi{width:16px;height:16px}
 .settings-btn.danger{border-color:rgba(255,100,80,.2);color:rgba(255,100,80,.6)}
 .settings-btn.danger:hover{border-color:rgba(255,100,80,.4);color:rgba(255,100,80,.9);background:rgba(255,100,80,.05)}
 
 /* Settings btn */
 .settings-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--w3);cursor:pointer;transition:all .15s;flex-shrink:0}
 .settings-btn:hover{border-color:var(--border2);color:var(--w)}
-.settings-btn .mi{font-size:16px}
+.settings-btn .mi{width:16px;height:16px}
 .settings-btn.danger{border-color:rgba(255,100,80,.2);color:rgba(255,100,80,.6)}
 .settings-btn.danger:hover{border-color:rgba(255,100,80,.4);color:rgba(255,100,80,.9);background:rgba(255,100,80,.05)}
 .settings-close{width:100%;padding:11px;background:none;border:1px solid var(--border);color:var(--w4);font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .15s;margin-top:18px}
@@ -605,7 +599,7 @@ input,textarea,select{font-family:var(--sans)}
 .tx-feed{margin-bottom:8px}
 .tx-row{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);animation:txSlide .3s ease both;gap:8px}
 .tx-icon{width:28px;height:28px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.tx-icon .mi{font-size:13px;color:var(--w4)}
+.tx-icon .mi{width:13px;height:13px;color:var(--w4)}
 .tx-body{flex:1;min-width:0}
 .tx-hash{font-family:var(--mono);font-size:9px;color:var(--w3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
 .tx-meta{font-family:var(--mono);font-size:7px;color:var(--w4);letter-spacing:1px}
@@ -957,6 +951,66 @@ async function fetchMempoolTxs() {
 <script type="text/babel" data-presets="react">
 
 /* ═══════════════════════ SHELL COMPONENTS ═══════════════════════ */
+const ICONS = {
+  add:              "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
+  arrow_back:       "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z",
+  arrow_upward:     "M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z",
+  article:          "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z",
+  bolt:             "M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C14.96 17.55 13 21 11 21z",
+  candlestick_chart:"M9 4H7v2H5v10h2v2h2v-2h2V6H9zm0 10H7V8h2v6zm8-6h-2V6h-2v2h-2v6h2v2h2v-2h2V8zm0 4h-2v-2h2v2z",
+  check:            "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z",
+  check_circle:     "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z",
+  chevron_right:    "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
+  close:            "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
+  donut_small:      "M11 9.16V2c-4.95.49-8.75 4.67-8.75 9.73 0 5.06 3.8 9.24 8.75 9.73v-7.16c-1.44-.5-2.5-1.87-2.5-3.32 0-1.45 1.06-2.82 2.5-3.32zM14.86 11.5h2.53c-.36-2.46-2.27-4.37-4.73-4.73v2.53c1.05.3 1.9 1.15 2.2 2.2zM12.66 16.47v2.53c2.46-.36 4.37-2.27 4.73-4.73h-2.53c-.3 1.05-1.15 1.9-2.2 2.2z",
+  edit:             "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z",
+  error_outline:    "M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z",
+  expand_more:      "M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z",
+  fiber_manual_record:"M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm-8 4c0-4.42 3.58-8 8-8s8 3.58 8 8-3.58 8-8 8-8-3.58-8-8z",
+  grade:            "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
+  grid_view:        "M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z",
+  info:             "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
+  link:             "M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z",
+  list:             "M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z",
+  lock:             "M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z",
+  logout:           "M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z",
+  manage_accounts:  "M10 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM2 18c0-4 4-6 8-6 .34 0 .67.01 1 .04V20H2v-2zm18-2v-3h-2v3h-3v2h3v3h2v-3h3v-2h-3z",
+  newspaper:        "M22 3l-1.67 1.67L18.67 3 17 4.67 15.33 3l-1.66 1.67L12 3l-1.67 1.67L8.67 3 7 4.67 5.33 3 3.67 4.67 2 3v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V3zM11 17H4v-2h7v2zm9-4H4v-2h16v2zm0-4H4V7h16v2z",
+  payments:         "M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z",
+  person:           "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z",
+  refresh:          "M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z",
+  school:           "M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z",
+  search:           "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
+  send:             "M2.01 21L23 12 2.01 3 2 10l15 2-15 2z",
+  settings:         "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
+  shield:           "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z",
+  show_chart:       "M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z",
+  smart_toy:        "M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3zm-2 10H6V7h12v12zm-9-9c-.83 0-1.5.67-1.5 1.5S8.17 13 9 13s1.5-.67 1.5-1.5S9.83 10 9 10zm6 0c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm-3 6.5c1.53 0 2.88-.8 3.67-2H8.33C9.12 15.7 10.47 16.5 12 16.5z",
+  swap_horiz:       "M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z",
+  wifi_off:         "M2.28 3L1 4.27l2.47 2.47C1.36 8.35.7 10.13.7 12c0 3.31 2.69 6 6 6H20l1.73 1.73 1.27-1.26L2.28 3zm4.98 7.66L8.7 12.1C8.27 12.43 8 12.93 8 13.5c0 1.1.9 2 2 2s2-.9 2-2c0-.57-.23-1.07-.6-1.43l1.5 1.5c.07.29.1.59.1.93 0 2.21-1.79 4-4 4s-4-1.79-4-4c0-1.2.53-2.28 1.36-3.01L7.26 10.66zM12 4C9.03 4 6.37 5.11 4.38 6.96L5.82 8.4C7.43 6.93 9.61 6 12 6c2.39 0 4.57.93 6.18 2.4l1.44-1.44C17.63 5.11 14.97 4 12 4zm0 4c-1.57 0-3 .6-4.08 1.58L9.35 11c.74-.62 1.7-1 2.65-1 .95 0 1.81.31 2.52.83l1.44-1.44C14.87 8.52 13.5 8 12 8z",
+  account_balance_wallet: "M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z",
+  workspace_premium:"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-5.13V17h2v-2.13c1.73-.45 3-2.01 3-3.87 0-2.21-1.79-4-4-4s-4 1.79-4 4c0 1.86 1.27 3.42 3 3.87zM12 9c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z",
+};
+
+function MI({n, style, className}) {
+  const d = ICONS[n];
+  if (!d) return null;
+  // Convert fontSize to width/height so SVG actually sizes correctly
+  const s = style || {};
+  const sz = s.fontSize || s.width;
+  const svgStyle = {...s};
+  if (sz !== undefined) {
+    svgStyle.width  = typeof sz === 'number' ? sz + 'px' : sz;
+    svgStyle.height = typeof sz === 'number' ? sz + 'px' : sz;
+    delete svgStyle.fontSize;
+  }
+  return (
+    <svg viewBox="0 0 24 24" className={'mi' + (className ? ' '+className : '')} style={svgStyle}>
+      <path d={d}/>
+    </svg>
+  );
+}
+
 const {useState, useEffect, useRef, useCallback, useMemo} = React;
 
 function Spark({prices, ch, w=46, h=20}) {
@@ -1035,7 +1089,7 @@ function PriceError({errors, onRetry}) {
     <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',
       alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,.94)',
       backdropFilter:'blur(20px)',padding:32,textAlign:'center'}}>
-      <span className="mi" style={{fontSize:38,color:'rgba(255,100,80,.8)',marginBottom:18}}>wifi_off</span>
+      <MI n="wifi_off" style={{fontSize:38,color:'rgba(255,100,80,.8)',marginBottom:18}}/>
       <div style={{fontFamily:'var(--disp)',fontSize:30,letterSpacing:3,marginBottom:10}}>COULD NOT LOAD PRICES</div>
       <div style={{fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:2,lineHeight:2.4,marginBottom:26,maxWidth:380}}>
         KRYPTIV REQUIRES A LIVE INTERNET CONNECTION.<br/>
@@ -1083,27 +1137,27 @@ function SettingsModal({onClose}) {
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:22}}>
           <div className="settings-title" style={{marginBottom:0}}>SETTINGS</div>
           <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w4)',display:'flex',alignItems:'center'}}>
-            <span className="mi" style={{fontSize:22}}>close</span>
+            <MI n="close" style={{fontSize:22}}/>
           </button>
         </div>
         {rows.map(r=>(
           <div key={r.lbl} className="settings-row">
             <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
-              <span className="mi" style={{fontSize:20,color:r.danger?'rgba(255,100,80,.55)':'var(--w4)',flexShrink:0}}>{r.icon}</span>
+              <MI n={r.icon} style={{fontSize:20,color:r.danger?'rgba(255,100,80,.55)':'var(--w4)',flexShrink:0}}/>
               <div>
                 <div className="settings-lbl">{r.lbl}</div>
                 <div className="settings-sub">{r.sub}</div>
               </div>
             </div>
             <button className={`settings-btn${r.danger?' danger':''}`} onClick={r.fn}>
-              <span className="mi">chevron_right</span>
+              <MI n="chevron_right"/>
             </button>
           </div>
         ))}
         {msg&&(
           <div style={{fontFamily:'var(--mono)',fontSize:8,color:'rgba(130,255,150,.7)',
             padding:'10px 0',letterSpacing:2,display:'flex',alignItems:'center',gap:6}}>
-            <span className="mi" style={{fontSize:12}}>check_circle</span>{msg}
+            <MI n="check_circle" style={{fontSize:12}}/>{msg}
           </div>
         )}
       </div>
@@ -1117,13 +1171,13 @@ function NavOverlay({view, go, onClose}) {
       <div className="nav-ov-header" onClick={e=>e.stopPropagation()}>
         <div className="nav-ov-logo">KRYPTIV</div>
         <button className="nav-ov-close-btn" onClick={onClose}>
-          <span className="mi">close</span>
+          <MI n="close"/>
         </button>
       </div>
       <div className="nav-ov-list" onClick={e=>e.stopPropagation()}>
         {NAV_ITEMS.map(n => (
           <div key={n.id} className={`nav-ov-it${view===n.id?' on':''}`} onClick={()=>go(n.id)}>
-            <span className="mi">{n.icon}</span>{n.lbl}
+            <MI n={n.icon}/>{n.lbl}
           </div>
         ))}
       </div>
@@ -1158,6 +1212,7 @@ function AppShell({user, setUser, view, children}) {
 
   const go = id => {
     setNavOpen(false);
+    if (id === view) return;
     const n = NAV_ITEMS.find(x => x.id===id);
     if (n) navigate(n.path);
   };
@@ -1182,7 +1237,7 @@ function AppShell({user, setUser, view, children}) {
           <div className="nav-grp">Navigation</div>
           {NAV_ITEMS.map(n => (
             <div key={n.id} className={`nav-it${view===n.id?' on':''}`} onClick={()=>go(n.id)}>
-              <span className="mi">{n.icon}</span>
+              <MI n={n.icon}/>
               {n.lbl}
               {n.id==='ai' && <span className="nav-badge">FREE</span>}
             </div>
@@ -1196,13 +1251,13 @@ function AppShell({user, setUser, view, children}) {
               <div className="tier-lbl">Plan</div>
               <div className="tier-nm">{(user.tier||'free').toUpperCase()}</div>
             </div>
-            <span className="mi" style={{fontSize:14,color:'var(--w4)'}}>chevron_right</span>
+            <MI n="chevron_right" style={{fontSize:14,color:'var(--w4)'}}/>
           </div>
           <div className="sb-settings" onClick={()=>setSettOpen(true)}>
-            <span className="mi">settings</span>Settings
+            <MI n="settings"/>Settings
           </div>
           <div className="sb-logout" onClick={handleSignOut}>
-            <span className="mi">logout</span>{user.name}
+            <MI n="logout"/>{user.name}
           </div>
         </div>
       </div>
@@ -1215,10 +1270,10 @@ function AppShell({user, setUser, view, children}) {
           <Ticker coins={coins}/>
           <div className="tb-right">
             <div className="ic-btn" title={`Live · ${priceSrc}`}>
-              <span className="mi" style={{fontSize:9,color:'rgba(130,255,150,.8)'}}>fiber_manual_record</span>
+              <MI n="fiber_manual_record" style={{fontSize:9,color:'rgba(130,255,150,.8)'}}/>
             </div>
             <div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
-              <span className="mi">settings</span>
+              <MI n="settings"/>
             </div>
             <div className="tier-chip" onClick={()=>go('plans')}>{(user.tier||'free').toUpperCase()}</div>
           </div>
@@ -1234,12 +1289,12 @@ function AppShell({user, setUser, view, children}) {
           const n = NAV_ITEMS.find(x=>x.id===id);
           return (
             <button key={id} className={`bn-it${view===id?' on':''}`} onClick={()=>go(id)}>
-              <span className="mi">{n.icon}</span>{n.lbl}
+              <MI n={n.icon}/>{n.lbl}
             </button>
           );
         })}
         <button className="bn-more-btn" onClick={()=>setNavOpen(true)}>
-          <div className="bn-sq"><span className="mi">grid_view</span></div>
+          <div className="bn-sq"><MI n="grid_view"/></div>
           <div className="bn-sq-lbl">More</div>
         </button>
       </div>
@@ -1252,73 +1307,81 @@ function AppShell({user, setUser, view, children}) {
 
 
 /* ═══════════════ AI PAGE ═══════════════ */
-const PRESET_TYPES = [
-  {id:'invest',  label:'Investment Case', desc:'Should I invest in {coin}?'},
-  {id:'outlook', label:'Market Outlook',  desc:'Full outlook for {coin}'},
-  {id:'cashout', label:'Take Profit?',    desc:'Should I cash out of {coin}?'},
-  {id:'compare', label:'BTC vs Coin',     desc:'Which is the better buy?'},
-];
-
 function AIView({user, coins, availCoins, priceSrc}) {
-  const [msgs,    setMsgs]    = useState([{role:'ai',text:'KRYPTIV AI ready. I have access to live market prices right now. Select a question type, pick a coin, then tap ASK for a thorough analysis backed by real data.'}]);
-  const [loading, setLoading] = useState(false);
-  const [selType, setSelType] = useState('invest');
-  const [selCoin, setSelCoin] = useState('BTC');
-  const [freeInput,setFreeInput]=useState('');
+  const [msgs,     setMsgs]    = useState([{role:'ai', text:'Llama 3.2 ready. Ask me anything about crypto — I have live market prices. Type a question and hit ASK.'}]);
+  const [loading,  setLoading] = useState(false);
+  const [input,    setInput]   = useState('');
+  const [selCoin,  setSelCoin] = useState('BTC');
+  const [engine,   setEngine]  = useState(null);
+  const [initMsg,  setInitMsg] = useState('');
   const endRef = useRef(null);
 
   useEffect(()=>endRef.current?.scrollIntoView({behavior:'smooth'}), [msgs]);
   useEffect(()=>{ if (availCoins?.length&&!availCoins.find(c=>c.sym===selCoin)) setSelCoin(availCoins[0].sym); }, [availCoins]);
 
+  // Load WebLLM on mount
+  useEffect(()=>{
+    let cancelled = false;
+    async function initLLM() {
+      try {
+        setInitMsg('Loading Llama 3.2…');
+        const { CreateMLCEngine } = await import('https://esm.run/@mlc-ai/web-llm');
+        const eng = await CreateMLCEngine('Llama-3.2-1B-Instruct-q4f16_1-MLC', {
+          initProgressCallback: p => {
+            if (!cancelled) setInitMsg(p.text || 'Loading model…');
+          }
+        });
+        if (!cancelled) { setEngine(eng); setInitMsg(''); }
+      } catch(e) {
+        if (!cancelled) setInitMsg('WebGPU not available — using fallback.');
+      }
+    }
+    initLLM();
+    return ()=>{cancelled=true;};
+  },[]);
+
   if (!availCoins) return null;
   const coin = coins?.find(c=>c.sym===selCoin)||availCoins.find(c=>c.sym===selCoin);
 
-  const buildPrompt = () => {
-    if (freeInput.trim()) return freeInput.trim();
-    const preset = AI_PRESETS.find(p=>p.id===selType);
-    return preset ? preset.build(selCoin, coin, coins) : `Tell me about ${selCoin}.`;
-  };
-
-  const displayQ = () => {
-    if (freeInput.trim()) return freeInput.trim();
-    const t = PRESET_TYPES.find(p=>p.id===selType);
-    return t ? t.desc.replace('{coin}', selCoin) : selCoin;
-  };
-
   const send = async () => {
-    if (loading) return;
-    const prompt  = buildPrompt();
-    const display = displayQ();
-    if (!prompt.trim()) return;
-    setMsgs(m=>[...m,{role:'user',text:display}]);
-    setFreeInput('');
+    if (loading || !input.trim()) return;
+    const q = input.trim();
+    setInput('');
+    setMsgs(m=>[...m,{role:'user',text:q}]);
     setLoading(true);
+
+    const priceCtx = coin ? `Live price context: ${coin.sym} = ${fp(coin.price)}, 24h change: ${fc(coin.ch)}.` : '';
+    const system = `You are a concise crypto analyst. ${priceCtx} Answer in 2-3 paragraphs. End with: Not financial advice.`;
+
     try {
-      const history = [];
-      msgs.forEach(m=>{
-        if (m.role==='user') history.push({role:'user',content:m.text});
-        else                 history.push({role:'assistant',content:m.text});
-      });
-      history.push({role:'user',content:prompt});
-      const res = await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          model:'claude-haiku-4-5-20251001',
-          max_tokens:1000,
-          system:`You are KRYPTIV AI, a professional crypto analyst. You are given REAL LIVE market prices fetched directly from ${priceSrc||'CoinGecko'}. These are current prices — use them as the basis for your analysis. Give thorough, direct, actionable analysis. Always end with: "Not financial advice." User plan: ${user.tier}. KryptID: ${user.kryptid}.`,
-          messages:history
-        })
-      });
-      const d = await res.json();
-      setMsgs(m=>[...m,{role:'ai',text:d.content?.[0]?.text||'No response. Try again.'}]);
+      if (engine) {
+        const history = [{role:'system', content:system}];
+        msgs.forEach(m=>history.push({role:m.role==='ai'?'assistant':'user', content:m.text}));
+        history.push({role:'user', content:q});
+        let reply = '';
+        const stream = await engine.chat.completions.create({messages:history, stream:true, max_tokens:600});
+        for await (const chunk of stream) {
+          reply += chunk.choices[0]?.delta?.content || '';
+          setMsgs(m=>[...m.slice(0,-1).concat(m[m.length-1]?.role==='ai'&&m[m.length-1]?.streaming ? [{role:'ai',text:reply,streaming:true}] : m.slice(-1)), {role:'ai',text:reply,streaming:true}]);
+        }
+        setMsgs(m=>[...m.slice(0,-1),{role:'ai',text:reply}]);
+      } else {
+        // Fallback to Anthropic API
+        const history = msgs.map(m=>({role:m.role==='ai'?'assistant':'user',content:m.text}));
+        history.push({role:'user',content:q});
+        const res = await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system,messages:history})
+        });
+        const d = await res.json();
+        setMsgs(m=>[...m,{role:'ai',text:d.content?.[0]?.text||'No response.'}]);
+      }
     } catch {
-      setMsgs(m=>[...m,{role:'ai',text:'Connection error. Check your network and try again.'}]);
+      setMsgs(m=>[...m,{role:'ai',text:'Error. Check your connection and try again.'}]);
     }
     setLoading(false);
   };
-
-  const handleKey = e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); } };
 
   return (
     <div className="ai-wrap">
@@ -1326,38 +1389,25 @@ function AIView({user, coins, availCoins, priceSrc}) {
       <div className="ai-header">
         <div className="ai-model-row">
           <div className="ai-dot"/>
-          <div className="ai-mb">CLAUDE · KRYPTIV AI</div>
-          <div style={{fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:2,marginLeft:'auto'}}>{user.tier.toUpperCase()}</div>
+          <div className="ai-mb">LLAMA 3.2 · KRYPTIV AI</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginLeft:'auto'}}>MLC WebLLM</div>
         </div>
+        {initMsg&&<div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.5)',letterSpacing:2,marginTop:4}}>{initMsg}</div>}
         {coin&&(
           <div className="live-price-row">
-            <span className="mi">fiber_manual_record</span>
-            {coin.sym}: {fp(coin.price)} · {fc(coin.ch)} 24h · from {priceSrc}
+            <MI n="fiber_manual_record"/>
+            {coin.sym}: {fp(coin.price)} · {fc(coin.ch)} 24h
           </div>
         )}
-        <div className="ai-dis">AI analysis based on live prices. Not financial advice. Do your own research.</div>
       </div>
 
-      {/* Quick Builder */}
+      {/* Coin selector */}
       <div className="qb-wrap">
-        <div className="qb-lbl">Quick analysis</div>
-        <div className="qb-grid">
-          {PRESET_TYPES.map(t=>(
-            <button key={t.id} className={`preset-btn${selType===t.id?' on':''}`} onClick={()=>{setSelType(t.id);setFreeInput('');}}>
-              <span className="preset-lbl">{t.label}</span>
-              <span>{t.desc.replace('{coin}',selCoin)}</span>
-            </button>
-          ))}
-        </div>
-        <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:3,color:'var(--w4)',textTransform:'uppercase',marginBottom:7}}>Coin</div>
         <div className="coin-pills">
           {availCoins.map(c=>(
             <button key={c.id} className={`coin-pill${selCoin===c.sym?' on':''}`} onClick={()=>setSelCoin(c.sym)}>{c.sym}</button>
           ))}
         </div>
-        <button className="ask-btn" disabled={loading||(!coin&&!freeInput)} onClick={send}>
-          {loading?'ANALYSING…':`ASK ${freeInput?'':'ABOUT '+selCoin}`}
-        </button>
       </div>
 
       {/* Messages */}
@@ -1365,27 +1415,28 @@ function AIView({user, coins, availCoins, priceSrc}) {
         {msgs.map((m,i)=>(
           <div key={i} className="msg-wrap">
             <div className="msg-meta">
-              <span className="mi">{m.role==='ai'?'smart_toy':'person'}</span>
-              {m.role==='ai'?'KRYPTIV AI':user.kryptid}
+              <MI n={m.role==='ai'?'smart_toy':'person'}/>
+              {m.role==='ai'?'LLAMA':user.kryptid}
             </div>
             <div className={`msg-body${m.role==='user'?' usr':''}`}>{m.text}</div>
           </div>
         ))}
         {loading&&(
           <div className="msg-wrap">
-            <div className="msg-meta"><span className="mi">smart_toy</span>KRYPTIV AI</div>
+            <div className="msg-meta"><MI n="smart_toy"/>LLAMA</div>
             <div className="thinking"><span/><span/><span/></div>
           </div>
         )}
         <div ref={endRef}/>
       </div>
 
-      {/* Free input */}
+      {/* Input */}
       <div className="ai-bar">
-        <textarea className="ai-in" placeholder="Or type your own question…" rows={1}
-          value={freeInput} onChange={e=>setFreeInput(e.target.value)} onKeyDown={handleKey}/>
-        <button className="ai-send" disabled={loading} onClick={send}>
-          <span className="mi">send</span>
+        <textarea className="ai-in" placeholder="Ask about any crypto…" rows={1}
+          value={input} onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}}/>
+        <button className="ai-send" disabled={loading||!input.trim()} onClick={send}>
+          <MI n="send"/>
         </button>
       </div>
     </div>
@@ -1393,9 +1444,11 @@ function AIView({user, coins, availCoins, priceSrc}) {
 }
 
 function Page() {
-  const user = requireAuth();
-  if (!user) return null;
-  const [u, setU] = useState(user);
+  const [u, setU] = React.useState(() => LS.get());
+  React.useEffect(() => {
+    if (!u?.kryptid) { window.location.href = '/'; }
+  }, []);
+  if (!u?.kryptid) return null;
   return (<>
     <div className="wall clear"/>
     <AppShell user={u} setUser={setU} view="ai">
