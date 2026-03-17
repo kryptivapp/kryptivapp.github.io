@@ -23,3 +23,44 @@
     "published": "2025-03-17T07:45:00.000Z",
     "coins": ["SOL"]
   },
+  {
+    "id": "4",
+    "title": "Federal Reserve signals potential rate cuts, crypto markets respond positively",
+    "url": "https://cointelegraph.com",
+    "source": "CoinTelegraph",
+    "published": "2025-03-17T07:00:00.000Z",
+    "coins": ["BTC", "ETH"]
+  },
+  {
+    "id": "5",
+    "title": "Chainlink CCIP adoption grows as cross-chain DeFi expands",
+    "url": "https://decrypt.co",
+    "source": "Decrypt",
+    "published": "2025-03-16T22:00:00.000Z",
+    "coins": ["LINK"]
+  },
+  {
+    "id": "6",
+    "title": "XRP legal clarity boosts Ripple's institutional partnerships",
+    "url": "https://coindesk.com",
+    "source": "CoinDesk",
+    "published": "2025-03-16T20:00:00.000Z",
+    "coins": ["XRP"]
+  },
+  {
+    "id": "7",
+    "title": "Avalanche gaming ecosystem sees 500% user growth in Q1 2025",
+    "url": "https://bitcoinmagazine.com",
+    "source": "Bitcoin Magazine",
+    "published": "2025-03-16T18:00:00.000Z",
+    "coins": ["AVAX"]
+  },
+  {
+    "id": "8",
+    "title": "Uniswap v4 launches with hooks feature, DeFi liquidity hits new records",
+    "url": "https://decrypt.co",
+    "source": "Decrypt",
+    "published": "2025-03-16T16:00:00.000Z",
+    "coins": ["UNI"]
+  }
+]
