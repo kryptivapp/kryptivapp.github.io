@@ -549,7 +549,7 @@ input,textarea,select{font-family:var(--sans)}
 .sub-coming-badge{padding:5px 16px;border:1px solid rgba(255,255,255,.14);font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-top:4px}
 
 /* PRIVACY */
-.privacy-wrap{padding:28px;max-width:700px}
+.privacy-wrap{padding:28px 28px 120px;max-width:700px}
 @media(max-width:768px){.privacy-wrap{padding:16px 14px;padding-bottom:90px}}
 .priv-h1{font-family:var(--disp);font-size:36px;letter-spacing:2px;margin-bottom:6px}
 .priv-sub{font-family:var(--mono);font-size:8px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;margin-bottom:28px}
@@ -623,6 +623,10 @@ input,textarea,select{font-family:var(--sans)}
 <body>
 <div id="root"></div>
 <!-- React + Babel via CDN (cached by browser after first load) -->
+<!-- preload so subsequent pages load from disk cache instantly -->
+<link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" as="script" crossorigin>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" crossorigin></script>
@@ -730,7 +734,7 @@ const fp = p => {
   if (p >= 0.01) return '$' + p.toFixed(4);
   return '$' + p.toFixed(6);
 };
-const fc = c => { if (c == null || isNaN(c)) return '—'; return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; };
+const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
   if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
@@ -888,14 +892,12 @@ function requireAuth() {
 
 /* ── PAGE NAVIGATE with transition ── */
 function navigate(path) {
-  // Show transition overlay
+  // Minimal transition — just a thin progress bar, no logo text
   const ov = document.createElement('div');
   ov.className = 'page-transition';
-  ov.innerHTML = `<div class="pt-logo">KRYPTIV</div>
-    <div class="pt-bar"><div class="pt-fill"></div></div>
-    <div class="pt-txt">Loading…</div>`;
+  ov.innerHTML = '<div class="pt-bar" style="position:fixed;top:0;left:0;right:0;width:100%;height:2px;background:rgba(255,255,255,.08)"><div class="pt-fill"></div></div>';
   document.body.appendChild(ov);
-  setTimeout(() => { window.location.href = path; }, 280);
+  setTimeout(function() { window.location.href = path; }, 180);
 }
 
 /* ── MEMPOOL (live BTC chain data via Blockchain.info public API) ── */
@@ -1300,8 +1302,7 @@ function AppShell({user, setUser, view, children}) {
 /* ═══════════════ PRIVACY PAGE ═══════════════ */
 function Privacy({user, coins, availCoins, priceSrc}) {
   return (
-    <div className="main">
-      <div className="privacy-wrap">
+    <div className="privacy-wrap">
         <div className="priv-h1">PRIVACY & TERMS</div>
         <div className="priv-sub">Last updated · March 2025</div>
 
@@ -1347,7 +1348,6 @@ function Privacy({user, coins, availCoins, priceSrc}) {
         <div style={{paddingTop:20,fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,lineHeight:2}}>
           KRYPTIV v0.3.0 · EDUCATIONAL PLATFORM · NOT FINANCIAL ADVICE
         </div>
-      </div>
     </div>
   );
 }
