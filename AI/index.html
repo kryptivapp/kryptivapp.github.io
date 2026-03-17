@@ -199,7 +199,7 @@ input,textarea,select{font-family:var(--sans)}
 .ic-btn .mi{width:14px;height:14px}
 .tier-chip{height:30px;padding:0 10px;font-family:var(--mono);font-size:8px;letter-spacing:3px;border:1px solid var(--border);color:var(--w3);cursor:pointer;background:rgba(255,255,255,.03);display:flex;align-items:center;transition:all .15s}
 .tier-chip:hover{border-color:var(--border2);color:var(--w2)}
-.main{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
+.main{flex:1;overflow-y:auto;overflow-x:hidden}
 .scr{padding:24px 28px;min-height:100%}
 @media(max-width:768px){.scr{padding:16px 14px;padding-bottom:90px}}
 
@@ -620,9 +620,10 @@ input,textarea,select{font-family:var(--sans)}
 
 </style>
 <style>
-/* AI page: .main must not scroll — ai-wrap controls its own layout */
-.main { overflow: hidden !important; }
-.qb-wrap { max-height: none; overflow-y: visible; }
+/* AI page layout — ai-wrap fills .main and manages its own scrolling */
+.main { overflow: hidden; display: flex; flex-direction: column; }
+.ai-wrap { flex: 1; min-height: 0; }
+.qb-wrap { max-height: 40vh; overflow-y: auto; }
 .coin-pills { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
 .coin-pills::-webkit-scrollbar { height: 1px; }
 .coin-pills::-webkit-scrollbar-thumb { background: var(--border2); }
