@@ -639,20 +639,37 @@ input,textarea,select{font-family:var(--sans)}
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" crossorigin></script>
-<script type="module">
-window._llm = window._llm || { engine:null, loading:false, progress:'', error:'' };
-if (!window._llm.engine && !window._llm.loading) {
+<script>
+/* WebLLM loader — uses dynamic script tag so no module/CORS issues */
+window._llm = { engine:null, loading:false, progress:'', error:'' };
+(function() {
+  // Check prerequisites first
+  if (!navigator.gpu) {
+    window._llm.error = 'WebGPU not available in this browser';
+    return;
+  }
+  if (typeof SharedArrayBuffer === 'undefined') {
+    window._llm.error = 'SharedArrayBuffer blocked (missing COOP/COEP headers on this host)';
+    return;
+  }
+  // Load WebLLM as an ES module via a dynamically created script
   window._llm.loading = true;
-  import('https://esm.run/@mlc-ai/web-llm').then(function(mod) {
-    return mod.CreateMLCEngine('Llama-3.2-1B-Instruct-q4f16_1-MLC', {
-      initProgressCallback: function(p) { window._llm.progress = p.text||''; }
-    });
-  }).then(function(eng) {
-    window._llm.engine = eng; window._llm.loading = false; window._llm.progress = '';
-  }).catch(function(e) {
-    window._llm.loading = false; window._llm.error = e.message||'WebGPU not supported';
-  });
-}
+  window._llm.progress = 'Loading Llama 3.2…';
+  var s = document.createElement('script');
+  s.type = 'module';
+  s.textContent = [
+    'import("https://esm.run/@mlc-ai/web-llm").then(function(m){',
+    '  return m.CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC",{',
+    '    initProgressCallback:function(p){window._llm.progress=p.text||"";}',
+    '  });',
+    '}).then(function(e){',
+    '  window._llm.engine=e;window._llm.loading=false;window._llm.progress="";',
+    '}).catch(function(e){',
+    '  window._llm.loading=false;window._llm.error=e.message||"Load failed";',
+    '});'
+  ].join('');
+  document.head.appendChild(s);
+})();
 </script>
 
 <script>
