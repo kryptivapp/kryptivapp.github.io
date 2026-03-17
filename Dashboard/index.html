@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>KRYPTIV · Feed</title>
+<title>KRYPTIV · Intelligence for Crypto</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp">
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=block">
 <style>
@@ -45,11 +46,16 @@ html,body{background:#000;color:#fff;font-family:var(--sans);height:100%;overflo
 
 /* Material Icons — force block display so ligature text never shows */
 .mi{
-  width:1em;height:1em;
-  display:inline-block;
+  font-family:'Material Icons Sharp';
+  font-size:inherit;
   vertical-align:middle;
-  flex-shrink:0;
-  fill:currentColor;
+  line-height:1;
+  font-style:normal;
+  display:inline-block;
+  font-feature-settings:'liga';
+  -webkit-font-feature-settings:'liga';
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
   user-select:none;
 }
 
@@ -940,625 +946,159 @@ async function fetchMempoolTxs() {
 
 </script>
 <script type="text/babel" data-presets="react">
-
-/* ═══════════════════════ SHELL COMPONENTS ═══════════════════════ */
-const ICONS = {
-  add:              "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
-  arrow_back:       "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z",
-  arrow_upward:     "M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z",
-  article:          "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z",
-  bolt:             "M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C14.96 17.55 13 21 11 21z",
-  candlestick_chart:"M9 4H7v2H5v10h2v2h2v-2h2V6H9zm0 10H7V8h2v6zm8-6h-2V6h-2v2h-2v6h2v2h2v-2h2V8zm0 4h-2v-2h2v2z",
-  check:            "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z",
-  check_circle:     "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z",
-  chevron_right:    "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
-  close:            "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
-  donut_small:      "M11 9.16V2c-4.95.49-8.75 4.67-8.75 9.73 0 5.06 3.8 9.24 8.75 9.73v-7.16c-1.44-.5-2.5-1.87-2.5-3.32 0-1.45 1.06-2.82 2.5-3.32zM14.86 11.5h2.53c-.36-2.46-2.27-4.37-4.73-4.73v2.53c1.05.3 1.9 1.15 2.2 2.2zM12.66 16.47v2.53c2.46-.36 4.37-2.27 4.73-4.73h-2.53c-.3 1.05-1.15 1.9-2.2 2.2z",
-  edit:             "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z",
-  error_outline:    "M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z",
-  expand_more:      "M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z",
-  fiber_manual_record:"M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm-8 4c0-4.42 3.58-8 8-8s8 3.58 8 8-3.58 8-8 8-8-3.58-8-8z",
-  grade:            "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
-  grid_view:        "M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z",
-  info:             "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
-  link:             "M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z",
-  list:             "M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z",
-  lock:             "M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z",
-  logout:           "M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z",
-  manage_accounts:  "M10 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM2 18c0-4 4-6 8-6 .34 0 .67.01 1 .04V20H2v-2zm18-2v-3h-2v3h-3v2h3v3h2v-3h3v-2h-3z",
-  newspaper:        "M22 3l-1.67 1.67L18.67 3 17 4.67 15.33 3l-1.66 1.67L12 3l-1.67 1.67L8.67 3 7 4.67 5.33 3 3.67 4.67 2 3v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V3zM11 17H4v-2h7v2zm9-4H4v-2h16v2zm0-4H4V7h16v2z",
-  payments:         "M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z",
-  person:           "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z",
-  refresh:          "M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z",
-  school:           "M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z",
-  search:           "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
-  send:             "M2.01 21L23 12 2.01 3 2 10l15 2-15 2z",
-  settings:         "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
-  shield:           "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z",
-  show_chart:       "M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z",
-  smart_toy:        "M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3zm-2 10H6V7h12v12zm-9-9c-.83 0-1.5.67-1.5 1.5S8.17 13 9 13s1.5-.67 1.5-1.5S9.83 10 9 10zm6 0c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm-3 6.5c1.53 0 2.88-.8 3.67-2H8.33C9.12 15.7 10.47 16.5 12 16.5z",
-  swap_horiz:       "M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z",
-  wifi_off:         "M2.28 3L1 4.27l2.47 2.47C1.36 8.35.7 10.13.7 12c0 3.31 2.69 6 6 6H20l1.73 1.73 1.27-1.26L2.28 3zm4.98 7.66L8.7 12.1C8.27 12.43 8 12.93 8 13.5c0 1.1.9 2 2 2s2-.9 2-2c0-.57-.23-1.07-.6-1.43l1.5 1.5c.07.29.1.59.1.93 0 2.21-1.79 4-4 4s-4-1.79-4-4c0-1.2.53-2.28 1.36-3.01L7.26 10.66zM12 4C9.03 4 6.37 5.11 4.38 6.96L5.82 8.4C7.43 6.93 9.61 6 12 6c2.39 0 4.57.93 6.18 2.4l1.44-1.44C17.63 5.11 14.97 4 12 4zm0 4c-1.57 0-3 .6-4.08 1.58L9.35 11c.74-.62 1.7-1 2.65-1 .95 0 1.81.31 2.52.83l1.44-1.44C14.87 8.52 13.5 8 12 8z",
-  workspace_premium:"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-5.13V17h2v-2.13c1.73-.45 3-2.01 3-3.87 0-2.21-1.79-4-4-4s-4 1.79-4 4c0 1.86 1.27 3.42 3 3.87zM12 9c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z",
-};
-
-function MI({n, style, className}) {
-  const d = ICONS[n];
-  if (!d) return null;
-  return (
-    <svg viewBox="0 0 24 24" className={'mi' + (className ? ' '+className : '')} style={style||{}}>
-      <path d={d}/>
-    </svg>
-  );
-}
-
 const {useState, useEffect, useRef, useCallback, useMemo} = React;
 
-function Spark({prices, ch, w=46, h=20}) {
-  let pts;
-  if (prices && prices.length >= 2) {
-    const vals = prices.slice(-14);
-    const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx-mn||1;
-    pts = vals.map((v,i) => ({ x:(i/(vals.length-1))*w, y:h-((v-mn)/rng)*h }));
-  } else {
-    pts = Array.from({length:12}, (_,i) => {
-      const t=i/11, tr=(ch||0)>=0?t*.3:-t*.3;
-      return { x:(i/11)*w, y:h-(0.5+tr+Math.sin(i*1.4)*.07)*h };
-    });
-  }
-  const d = pts.map((p,i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const color = (ch||0)>=0 ? 'rgba(130,255,150,.75)' : 'rgba(255,100,80,.6)';
-  return (
-    <svg width={w} height={h} style={{display:'block'}}>
-      <path d={d} fill="none" stroke={color} strokeWidth="1.2"/>
-    </svg>
-  );
-}
+/* ═══════════════ AUTH / INDEX PAGE ═══════════════ */
 
-function BigSpark({prices, ch}) {
-  const sw=340, sh=76;
-  let pts;
-  if (prices && prices.length >= 2) {
-    const vals = prices.map(p => typeof p==='number'?p:p[1]);
-    const mn=Math.min(...vals), mx=Math.max(...vals), rng=mx-mn||1;
-    pts = vals.map((v,i) => ({ x:(i/(vals.length-1))*sw, y:sh-((v-mn)/rng)*sh }));
-  } else {
-    pts = Array.from({length:24}, (_,i) => {
-      const t=i/23, base=(ch||0)/100*1.5;
-      return { x:(i/23)*sw, y:sh-(0.5+base*t+Math.sin(i*.8)*.06)*sh };
-    });
-  }
-  const d = pts.map((p,i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const color = (ch||0)>=0 ? 'rgba(130,255,150,.65)' : 'rgba(255,100,80,.5)';
-  const fill  = (ch||0)>=0 ? 'rgba(130,255,150,.06)' : 'rgba(255,100,80,.04)';
-  return (
-    <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none" style={{width:'100%',height:sh,display:'block'}}>
-      <defs>
-        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fff" stopOpacity={(ch||0)>=0?.09:.03}/>
-          <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d={`${d} L${sw},${sh} L0,${sh} Z`} fill="url(#sg)"/>
-      <path d={d} fill="none" stroke={color} strokeWidth="1.5"/>
-    </svg>
-  );
-}
+function Auth() {
+  const [tab,   setTab]   = useState('login');
+  const [lmode, setLmode] = useState('email');
+  const [name,  setName]  = useState('');
+  const [email, setEmail] = useState('');
+  const [pw,    setPw]    = useState('');
+  const [kid,   setKid]   = useState('');
+  const [tier,  setTier]  = useState('free');
+  const [step,  setStep]  = useState(1);
+  const [nid]             = useState(genId);
+  const [loading,setLoading]=useState(false);
+  const [err,   setErr]   = useState('');
+  const [ok,    setOk]    = useState('');
 
-function Ticker({coins}) {
-  if (!coins || !coins.length) return <div className="tb-ticker"/>;
-  const items = [...coins, ...coins];
-  return (
-    <div className="tb-ticker">
-      <div className="ticker-track">
-        {items.map((c,i) => (
-          <div key={i} className="tick">
-            <span className="tick-sym">{c.sym}</span>
-            <span className="tick-pr">{fp(c.price)}</span>
-            <span className={`tick-ch ${(c.ch||0)>=0?'up':'dn'}`}>
-              {(c.ch||0)>=0?'▴':'▾'}{Math.abs(c.ch||0).toFixed(2)}%
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+  const reset = t => { setTab(t);setStep(1);setErr('');setOk('');setName('');setEmail('');setPw('');setKid(''); };
+  const goApp = () => { window.location.href = '/Dashboard/'; };
 
-function PriceError({errors, onRetry}) {
-  return (
-    <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',
-      alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,.94)',
-      backdropFilter:'blur(20px)',padding:32,textAlign:'center'}}>
-      <MI n="wifi_off" style={{fontSize:38,color:'rgba(255,100,80,.8)',marginBottom:18}}/>
-      <div style={{fontFamily:'var(--disp)',fontSize:30,letterSpacing:3,marginBottom:10}}>COULD NOT LOAD PRICES</div>
-      <div style={{fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:2,lineHeight:2.4,marginBottom:26,maxWidth:380}}>
-        KRYPTIV REQUIRES A LIVE INTERNET CONNECTION.<br/>
-        TRIED COINGECKO, BINANCE, AND KRAKEN — ALL FAILED.
-      </div>
-      {errors?.length > 0 && (
-        <div style={{fontFamily:'var(--mono)',fontSize:8,color:'rgba(255,100,80,.5)',marginBottom:22,lineHeight:2.2}}>
-          {errors.map((e,i)=><div key={i}>{e}</div>)}
-        </div>
-      )}
-      <button onClick={onRetry} style={{padding:'12px 26px',background:'var(--w)',color:'#000',border:'none',
-        fontFamily:'var(--sans)',fontWeight:700,fontSize:9,letterSpacing:3,textTransform:'uppercase',cursor:'pointer'}}>
-        RETRY
-      </button>
-    </div>
-  );
-}
-
-function PriceLoading() {
-  return (
-    <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',
-      alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,.92)',backdropFilter:'blur(12px)'}}>
-      <div style={{fontFamily:'var(--disp)',fontSize:46,letterSpacing:2,marginBottom:10,animation:'pulse 1.8s ease-in-out infinite'}}>KRYPTIV</div>
-      <div style={{fontFamily:'var(--mono)',fontSize:8,letterSpacing:5,color:'var(--w4)',textTransform:'uppercase',marginBottom:18}}>Fetching live prices…</div>
-      <div style={{display:'flex',gap:6}}>
-        {[0,1,2].map(i=><div key={i} style={{width:4,height:4,background:'var(--w4)',animation:`pulse 1.2s ease-in-out ${i*.2}s infinite`}}/>)}
-      </div>
-    </div>
-  );
-}
-
-function SettingsModal({onClose}) {
-  const [msg, setMsg] = useState('');
-  const act = (fn, txt) => { fn(); setMsg(txt); };
-  const rows = [
-    {icon:'refresh',       lbl:'Refresh Prices',   sub:'Force live price reload',   fn:()=>act(clearAllCache,'Prices will refresh.'),                                             danger:false},
-    {icon:'delete_sweep',  lbl:'Clear Holdings',    sub:'Remove all saved positions',fn:()=>act(()=>localStorage.removeItem('kryptiv_holdings'),'Holdings cleared.'),              danger:true },
-    {icon:'logout',        lbl:'Sign Out',          sub:'Keeps your account data',   fn:()=>{ LS.clear(); navigate('/'); },                                                         danger:false},
-    {icon:'delete_forever',lbl:'Reset Everything',  sub:'Wipe all data and sign out',fn:()=>{ if(confirm('Delete all data? Cannot be undone.')) nukeEverything(); },               danger:true },
-  ];
-  return (
-    <div className="settings-modal">
-      <div className="settings-bd" onClick={onClose}/>
-      <div className="settings-panel">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:22}}>
-          <div className="settings-title" style={{marginBottom:0}}>SETTINGS</div>
-          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w4)',display:'flex',alignItems:'center'}}>
-            <MI n="close" style={{fontSize:22}}/>
-          </button>
-        </div>
-        {rows.map(r=>(
-          <div key={r.lbl} className="settings-row">
-            <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
-              <MI n={r.icon} style={{fontSize:20,color:r.danger?'rgba(255,100,80,.55)':'var(--w4)',flexShrink:0}}/>
-              <div>
-                <div className="settings-lbl">{r.lbl}</div>
-                <div className="settings-sub">{r.sub}</div>
-              </div>
-            </div>
-            <button className={`settings-btn${r.danger?' danger':''}`} onClick={r.fn}>
-              <MI n="chevron_right"/>
-            </button>
-          </div>
-        ))}
-        {msg&&(
-          <div style={{fontFamily:'var(--mono)',fontSize:8,color:'rgba(130,255,150,.7)',
-            padding:'10px 0',letterSpacing:2,display:'flex',alignItems:'center',gap:6}}>
-            <MI n="check_circle" style={{fontSize:12}}/>{msg}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function NavOverlay({view, go, onClose}) {
-  return (
-    <div className="nav-ov" onClick={onClose}>
-      <div className="nav-ov-header" onClick={e=>e.stopPropagation()}>
-        <div className="nav-ov-logo">KRYPTIV</div>
-        <button className="nav-ov-close-btn" onClick={onClose}>
-          <MI n="close"/>
-        </button>
-      </div>
-      <div className="nav-ov-list" onClick={e=>e.stopPropagation()}>
-        {NAV_ITEMS.map(n => (
-          <div key={n.id} className={`nav-ov-it${view===n.id?' on':''}`} onClick={()=>go(n.id)}>
-            <MI n={n.icon}/>{n.lbl}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AppShell({user, setUser, view, children}) {
-  const [navOpen,  setNavOpen]  = useState(false);
-  const [settOpen, setSettOpen] = useState(false);
-  const [coins,    setCoins]    = useState(null);
-  const [priceErr, setPriceErr] = useState(null);
-  const [priceSrc, setPriceSrc] = useState('');
-  const [retryKey, setRetryKey] = useState(0);
-
-  useEffect(() => {
-    let stopped = false;
-    const stop = startPriceUpdates(
-      (newCoins, src) => {
-        if (stopped) return;
-        setCoins(newCoins);
-        setPriceSrc(src);
-        setPriceErr(null);
-      },
-      (errors) => {
-        if (stopped) return;
-        setCoins(prev => { if (!prev) setPriceErr(errors); return prev; });
-      }
-    );
-    return () => { stopped=true; stop(); };
-  }, [retryKey]);
-
-  const go = id => {
-    setNavOpen(false);
-    const n = NAV_ITEMS.find(x => x.id===id);
-    if (n) navigate(n.path);
+  const handleLogin = () => {
+    setErr('');
+    if (lmode==='email'&&(!email||!pw)) { setErr('EMAIL AND PASSWORD REQUIRED'); return; }
+    if (lmode==='id'&&(!kid||!pw))      { setErr('KRYPTID AND PASSWORD REQUIRED'); return; }
+    setLoading(true);
+    const saved = LS.get();
+    if (lmode==='id') {
+      if (saved&&saved.kryptid===kid.toUpperCase()&&saved.pw===pw) goApp();
+      else setErr('KRYPTID OR PASSWORD INCORRECT');
+    } else {
+      if (saved&&saved.email===email.toLowerCase()&&saved.pw===pw) goApp();
+      else setErr('EMAIL OR PASSWORD INCORRECT');
+    }
+    setLoading(false);
   };
 
-  const handleSignOut = () => { LS.clear(); navigate('/'); };
+  const handleSignupNext = () => {
+    setErr('');
+    if (!name.trim())                           { setErr('NAME REQUIRED'); return; }
+    if (!email.trim()||!email.includes('@'))     { setErr('VALID EMAIL REQUIRED'); return; }
+    if (pw.length<6)                             { setErr('PASSWORD MIN 6 CHARACTERS'); return; }
+    setStep(2);
+  };
 
-  if (priceErr) return <PriceError errors={priceErr} onRetry={()=>{setPriceErr(null);setRetryKey(k=>k+1);}}/>;
-  if (!coins)   return <PriceLoading/>;
+  const handleJoin = () => {
+    if (tier!=='free') setOk('PAYMENT PROCESSORS BEING ADDED SOON. ACCOUNT CREATED ON FREE PLAN.');
+    const u = {id:'local-'+Date.now(),email:email.toLowerCase(),name,kryptid:nid,tier:'free',pw,created_at:new Date().toISOString()};
+    LS.set(u);
+    setTimeout(()=>goApp(), tier==='free'?0:1600);
+  };
 
-  const availCoins = user.tier==='free' ? coins.filter(c=>FREE_COINS.includes(c.sym)) : coins;
+  const handleSkip = () => {
+    const guest = {id:'guest-'+Date.now(),email:'guest@kryptiv.app',name:'Guest',kryptid:genId(),tier:'free',pw:'',created_at:new Date().toISOString()};
+    LS.set(guest);
+    goApp();
+  };
 
-  return (
-    <div className="app">
-      {/* SIDEBAR */}
-      <div className="sidebar">
-        <div className="sb-head">
-          <div className="sb-logo">KRYPTIV</div>
-          <div className="sb-uid">ID <span>{user.kryptid}</span></div>
-        </div>
-        <div className="sb-hr"/>
-        <nav className="sb-nav">
-          <div className="nav-grp">Navigation</div>
-          {NAV_ITEMS.map(n => (
-            <div key={n.id} className={`nav-it${view===n.id?' on':''}`} onClick={()=>go(n.id)}>
-              <MI n={n.icon}/>
-              {n.lbl}
-              {n.id==='ai' && <span className="nav-badge">FREE</span>}
-            </div>
-          ))}
-        </nav>
-        <div className="sb-foot">
-          <div className="sb-hr" style={{marginBottom:8}}/>
-          <div className="tier-row" onClick={()=>go('plans')}>
-            <div className="tier-dot"/>
-            <div className="tier-info">
-              <div className="tier-lbl">Plan</div>
-              <div className="tier-nm">{(user.tier||'free').toUpperCase()}</div>
-            </div>
-            <MI n="chevron_right" style={{fontSize:14,color:'var(--w4)'}}/>
-          </div>
-          <div className="sb-settings" onClick={()=>setSettOpen(true)}>
-            <MI n="settings"/>Settings
-          </div>
-          <div className="sb-logout" onClick={handleSignOut}>
-            <MI n="logout"/>{user.name}
-          </div>
-        </div>
-      </div>
-
-      {/* MAIN CONTENT */}
-      <div className="content">
-        <div className="topbar">
-          <div className="tb-logo">KRYPTIV</div>
-          <div className="tb-title">{NAV_ITEMS.find(n=>n.id===view)?.lbl}</div>
-          <Ticker coins={coins}/>
-          <div className="tb-right">
-            <div className="ic-btn" title={`Live · ${priceSrc}`}>
-              <MI n="fiber_manual_record" style={{fontSize:9,color:'rgba(130,255,150,.8)'}}/>
-            </div>
-            <div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
-              <MI n="settings"/>
-            </div>
-            <div className="tier-chip" onClick={()=>go('plans')}>{(user.tier||'free').toUpperCase()}</div>
-          </div>
-        </div>
-        <div className="main">
-          {React.cloneElement(children, { coins, availCoins, priceSrc })}
-        </div>
-      </div>
-
-      {/* BOTTOM NAV */}
-      <div className="botnav">
-        {['dashboard','markets','ai','news'].map(id => {
-          const n = NAV_ITEMS.find(x=>x.id===id);
-          return (
-            <button key={id} className={`bn-it${view===id?' on':''}`} onClick={()=>go(id)}>
-              <MI n={n.icon}/>{n.lbl}
-            </button>
-          );
-        })}
-        <button className="bn-more-btn" onClick={()=>setNavOpen(true)}>
-          <div className="bn-sq"><MI n="grid_view"/></div>
-          <div className="bn-sq-lbl">More</div>
-        </button>
-      </div>
-
-      {navOpen && <NavOverlay view={view} go={go} onClose={()=>setNavOpen(false)}/>}
-      {settOpen && <SettingsModal onClose={()=>setSettOpen(false)}/>}
-    </div>
-  );
-}
-
-
-/* ═══════════════ DASHBOARD PAGE ═══════════════ */
-
-function CoinPicker({coins, availCoins, selectedSym, isFree, onSelect, onClose}) {
-  return (
-    <div className="cp-modal">
-      <div className="cp-bd" onClick={onClose}/>
-      <div className="cp-panel">
-        <div className="cp-title">SELECT COIN</div>
-        <div className="cp-sub">{isFree?'FREE PLAN · BTC & SOL ONLY · UPGRADE FOR ALL COINS':`ALL ${coins?.length||15} LIVE COINS`}</div>
-        <div className="cp-list">
-          {availCoins?.map(c=>(
-            <div key={c.id} className="cp-row" onClick={()=>{onSelect(c.sym);onClose();}}>
-              <span className="cp-sym">{c.sym}</span>
-              <span className="cp-nm">{c.name}</span>
-              <span className="cp-pr">{fp(c.price)}</span>
-              <span className={`cp-ch ${(c.ch||0)>=0?'up':'dn'}`}>{fc(c.ch)}</span>
-              <span className="cp-tick">{c.sym===selectedSym?'✓':''}</span>
-            </div>
-          ))}
-          {isFree && coins && availCoins && coins.length > availCoins.length && (
-            <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',padding:'10px 0',
-              display:'flex',alignItems:'center',gap:5,borderTop:'1px solid rgba(255,255,255,.05)'}}>
-              <MI n="lock" style={{fontSize:10}}/>
-              BUDGET+ UNLOCKS ALL {coins.length} COINS ·{' '}
-              <span onClick={()=>navigate('/Plans/')} style={{color:'var(--w3)',cursor:'pointer'}}>UPGRADE ▸</span>
-            </div>
-          )}
-        </div>
-        <button className="cp-close" onClick={onClose}>CLOSE</button>
-      </div>
-    </div>
-  );
-}
-
-function MempoolFeed({btcPrice}) {
-  const [txs, setTxs] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      const data = await fetchMempoolTxs();
-      if (!cancelled) { setTxs(data); setLoading(false); }
-    }
-    load();
-    const iv = setInterval(load, 20_000);
-    return () => { cancelled=true; clearInterval(iv); };
-  }, []);
-
-  if (loading && !txs) return (
-    <div style={{padding:'16px 0',fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',
-      letterSpacing:3,display:'flex',alignItems:'center',gap:8}}>
-      <MI n="refresh" className="spin-icon" style={{fontSize:14}}/>
-      LOADING MEMPOOL…
-    </div>
-  );
-
-  if (!txs || !txs.length) return (
-    <div style={{padding:'12px 0',fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:2}}>
-      MEMPOOL DATA UNAVAILABLE · CHECK CONNECTION
-    </div>
-  );
+  const PLAN_LABELS = {free:'$0',budget:'$3.90/mo',pro:'$14.90/mo',atmosphere:'$44.90/mo'};
 
   return (
-    <div className="tx-feed">
-      {txs.map((tx,i)=>{
-        const usdVal = btcPrice ? (parseFloat(tx.btc)*btcPrice) : 0;
-        const big = usdVal > 100_000;
-        return (
-          <div key={tx.hash} className="tx-row" style={{animationDelay:`${i*0.05}s`}}>
-            <div className="tx-icon" style={big?{borderColor:'rgba(130,255,150,.3)'}:{}}>
-              <MI n="payments" style={{fontSize:13,color:big?'rgba(130,255,150,.7)':'var(--w4)'}}/>
-            </div>
-            <div className="tx-body">
-              <div className="tx-hash">{tx.shortHash}</div>
-              <div className="tx-meta">{tx.inputs}→{tx.outputs} · fee {tx.fee} sats</div>
-            </div>
-            <div>
-              <div className="tx-val">{tx.btc} BTC</div>
-              {usdVal > 0 && <div className="tx-fee">{fv(usdVal)}</div>}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function Dashboard({user, coins, availCoins, priceSrc}) {
-  const isFree = user.tier==='free';
-  const [selectedSym, setSelectedSym] = useState('BTC');
-  const [pickerOpen,  setPickerOpen]  = useState(false);
-  const [pinned, setPinned] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('kryptiv_pinned')||'["BTC","SOL"]'); } catch { return ['BTC','SOL']; }
-  });
-
-  useEffect(()=>{ localStorage.setItem('kryptiv_pinned', JSON.stringify(pinned)); }, [pinned]);
-  useEffect(()=>{ if (isFree && !FREE_COINS.includes(selectedSym)) setSelectedSym('BTC'); }, []);
-
-  const selected = useMemo(()=>availCoins?.find(c=>c.sym===selectedSym)||availCoins?.[0], [availCoins,selectedSym]);
-  const togglePin = sym => setPinned(prev => prev.includes(sym)?prev.filter(s=>s!==sym):prev.length<(isFree?2:99)?[...prev,sym]:prev);
-
-  // Always use full coins list for market stats
-  const allCoins = coins || availCoins || [];
-  const gainers = useMemo(()=>[...allCoins].sort((a,b)=>(b.ch||0)-(a.ch||0)).slice(0,5), [allCoins]);
-  const losers  = useMemo(()=>[...allCoins].sort((a,b)=>(a.ch||0)-(b.ch||0)).slice(0,5), [allCoins]);
-  const avgCh   = allCoins.reduce((a,c)=>a+(c.ch||0),0)/Math.max(allCoins.length,1);
-  const totalMc = allCoins.reduce((a,c)=>a+(c.mc||0),0);
-  const btc     = allCoins.find(c=>c.sym==='BTC');
-
-  if (!availCoins) return null;
-
-  return (
-    <div className="scr">
-
-      {/* HERO */}
-      <div className="s-mb">
-        <div className="s-lbl">
-          <MI n="show_chart"/>YOUR COIN
-          <span className="live-badge" style={{marginLeft:'auto'}}>
-            <span className="live-dot"/>LIVE · {priceSrc||'…'}
-          </span>
-        </div>
-        {selected && (<>
-          <div className="hero-coin">
-            <div>
-              <div className="hero-sym">{selected.sym}</div>
-              <div className="hero-nm">{selected.name}{selected.rank?` · #${selected.rank}`:''}</div>
-            </div>
-            <div className="hero-right">
-              <div className="hero-price">{fp(selected.price)}</div>
-              <div className={`hero-ch ${(selected.ch||0)>=0?'up':'dn'}`}>
-                {(selected.ch||0)>=0?'▴':'▾'} {fc(selected.ch)} 24h
-              </div>
-              {selected.ch7d!=null&&<div className="hero-meta">7D: {fc(selected.ch7d)}</div>}
-              {selected.ch1h!=null&&<div className="hero-meta">1H: {fc(selected.ch1h)}</div>}
-              {selected.mc&&<div className="hero-meta">MCap: {fv(selected.mc*1e9)}</div>}
-            </div>
-          </div>
-          <button className="change-btn" onClick={()=>setPickerOpen(true)}>
-            <MI n="swap_horiz"/>CHANGE COIN
-          </button>
-        </>)}
-      </div>
-
-      {/* MARKET STRIP — uses full coins, not just available */}
-      <div className="mkt-strip">
-        <div className="strip-cell">
-          <div className="strip-lbl">Market Avg</div>
-          <div className={`strip-val ${avgCh>=0?'up':'dn'}`}>{avgCh>=0?'+':''}{avgCh.toFixed(2)}%</div>
-        </div>
-        <div className="strip-cell">
-          <div className="strip-lbl">Total MCap</div>
-          <div className="strip-val">{fv(totalMc*1e9)}</div>
-        </div>
-        <div className="strip-cell">
-          <div className="strip-lbl">BTC Dom</div>
-          <div className="strip-val">{totalMc>0?(((btc?.mc||0)/totalMc)*100).toFixed(1)+'%':'—'}</div>
-        </div>
-        {gainers[0] && (
-          <div className="strip-cell">
-            <div className="strip-lbl">Best 24h</div>
-            <div className="strip-val up">{gainers[0].sym} {fc(gainers[0].ch)}</div>
-          </div>
-        )}
-      </div>
-
-      {/* TOP MOVERS — all 5, always from full list */}
-      <div className="s-mb">
-        <div className="s-lbl"><MI n="arrow_upward"/>TOP MOVERS 24H</div>
-        {gainers.map((c,i)=>(
-          <div key={c.id} className="mover-row" onClick={()=>navigate('/Markets/')}>
-            <div className="mover-rank">{i+1}</div>
-            <div className="mover-sym">{c.sym}</div>
-            <div className="mover-nm">{c.name}</div>
-            <div className="mover-price">{fp(c.price)}</div>
-            <div className="mover-ch up">▴ {(c.ch||0).toFixed(2)}%</div>
-          </div>
+    <div className="auth">
+      <div className="auth-logo">KRYPTIV</div>
+      <div className="auth-tag">Trade with intelligence, not noise.</div>
+      <div className="auth-tabs">
+        {['login','signup'].map(t=>(
+          <button key={t} className={`auth-tab${tab===t?' on':''}`} onClick={()=>reset(t)}>{t.toUpperCase()}</button>
         ))}
       </div>
 
-      {/* LIVE BTC MEMPOOL */}
-      <div className="s-mb">
-        <div className="s-lbl">
-          <MI n="swap_horiz"/>LIVE BTC CHAIN
-          <span className="live-badge" style={{marginLeft:'auto'}}>
-            <span className="live-dot"/>MEMPOOL · 20S
-          </span>
+      {tab==='login'?(<>
+        <div className="auth-modetabs">
+          <button className={`auth-modetab${lmode==='email'?' on':''}`} onClick={()=>{setLmode('email');setErr('');}}>EMAIL</button>
+          <button className={`auth-modetab${lmode==='id'?' on':''}`}    onClick={()=>{setLmode('id');setErr('');}}>KRYPTID</button>
         </div>
-        <MempoolFeed btcPrice={btc?.price}/>
-        <div style={{paddingTop:8,fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2}}>
-          UNCONFIRMED TRANSACTIONS · BLOCKCHAIN.INFO · REAL DATA
+        <div className="auth-fields">
+          {lmode==='email'
+            ?<div className="af"><label className="af-lbl">Email</label><input className="af-in" type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="your@email.com"/></div>
+            :<div className="af"><label className="af-lbl">KryptID</label><input className="af-in" value={kid} onChange={e=>setKid(e.target.value.toUpperCase())} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="e.g. X7KPQ" maxLength={5} style={{letterSpacing:10,fontSize:20,fontFamily:'var(--mono)'}}/></div>
+          }
+          <div className="af"><label className="af-lbl">Password</label><input className="af-in" type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} placeholder="Password"/></div>
+          {err&&<div className="af-err"><span className="mi" style={{fontSize:11}}>error_outline</span> {err}</div>}
+          {ok&&<div className="af-ok"><span className="mi" style={{fontSize:11}}>check_circle</span> {ok}</div>}
+          <button className="auth-btn" disabled={loading} onClick={handleLogin}>{loading?'SIGNING IN…':'ENTER KRYPTIV'}</button>
+          <button className="auth-skip" onClick={handleSkip}>SKIP → BROWSE AS GUEST</button>
         </div>
-      </div>
-
-      {/* WATCHLIST */}
-      <div className="s-mb">
-        <div className="s-lbl">
-          <MI n="grade"/>WATCHLIST
-          {isFree&&<span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)'}}>
-            {pinned.length}/2 pinned
-          </span>}
+      </>):step===1?(<>
+        <div className="auth-fields">
+          <div className="af"><label className="af-lbl">Display Name</label><input className="af-in" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/></div>
+          <div className="af"><label className="af-lbl">Email</label><input className="af-in" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com"/></div>
+          <div className="af"><label className="af-lbl">Password</label><input className="af-in" type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSignupNext()} placeholder="Min 6 characters"/></div>
+          {err&&<div className="af-err"><span className="mi" style={{fontSize:11}}>error_outline</span> {err}</div>}
+          <button className="auth-btn" onClick={handleSignupNext}>GENERATE KRYPTID</button>
+          <button className="auth-skip" onClick={handleSkip}>SKIP → BROWSE AS GUEST</button>
         </div>
-        {availCoins.map((c,i)=>{
-          const isPinned = pinned.includes(c.sym);
-          const locked   = isFree && !isPinned;
-          const row = (
-            <div key={c.sym} className="coin-line" style={{opacity:locked?1:1}}>
-              <span className={`hl-star${isPinned?' on':''}`} onClick={e=>{e.stopPropagation();if(!locked)togglePin(c.sym);}}>★</span>
-              <div className="c-rank">{c.rank||i+1}</div>
-              <div className="c-sym">{c.sym}</div>
-              <div className="c-nm">{c.name}</div>
-              <div className="c-spark"><Spark ch={c.ch}/></div>
-              <div className="c-pr">{fp(c.price)}</div>
-              <div className={`c-ch ${(c.ch||0)>=0?'up':'dn'}`}>{(c.ch||0)>=0?'▴':'▾'}{Math.abs(c.ch||0).toFixed(2)}%</div>
-            </div>
-          );
-          if (!locked) return row;
-          return (
-            <div key={c.sym} className="pro-blur-wrap">
-              <div className="pro-blur-content">{row}</div>
-              <div className="pro-lock-ov">
-                <div className="pro-lock-left">
-                  <MI n="lock" className="pro-lock-icon"/>
-                  <div className="pro-lock-lbl">BUDGET & PRO</div>
-                </div>
-                <button className="pro-lock-btn" onClick={()=>navigate('/Plans/')}>UPGRADE</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* AI CTA */}
-      <div className="s-mb">
-        <div className="s-lbl"><MI n="smart_toy"/>AI ANALYSIS</div>
-        <div style={{padding:'16px 0',borderBottom:'1px solid rgba(255,255,255,.05)',display:'flex',
-          alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
-          <div style={{fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:2,lineHeight:2}}>
-            ASK THE AI ABOUT ANY COIN<br/>
-            POWERED BY CLAUDE · REAL PRICES INCLUDED
+      </>):step===2?(<>
+        <div className="auth-fields">
+          <div className="kid-reveal">
+            <div className="kid-lbl">Your KryptID — save this</div>
+            <div className="kid-val">{nid}<span className="cursor">_</span></div>
+            <div className="kid-hint">Your permanent identity on KRYPTIV</div>
           </div>
-          <button onClick={()=>navigate('/AI/')} style={{padding:'11px 20px',background:'var(--w)',color:'#000',
-            border:'none',fontFamily:'var(--sans)',fontWeight:700,fontSize:9,letterSpacing:2,
-            textTransform:'uppercase',cursor:'pointer',flexShrink:0}}>
-            OPEN AI ▸
-          </button>
+          <button className="auth-btn" onClick={()=>setStep(3)}>CHOOSE PLAN</button>
+          <button className="auth-link" onClick={()=>setStep(1)}>← Back</button>
         </div>
-      </div>
-
-      {pickerOpen&&(
-        <CoinPicker coins={coins} availCoins={availCoins} selectedSym={selectedSym}
-          isFree={isFree} onSelect={setSelectedSym} onClose={()=>setPickerOpen(false)}/>
-      )}
+      </>):(<>
+        <div className="auth-fields">
+          <div className="af">
+            <label className="af-lbl">Choose Plan</label>
+            <div className="plan-sel-row">
+              {PLANS.map(p=>(
+                <button key={p.id} className={`plan-sel-opt${tier===p.id?' on':''}`} onClick={()=>setTier(p.id)}>
+                  <span>{p.nm}</span><span className="ps-price">{PLAN_LABELS[p.id]}</span>
+                </button>
+              ))}
+            </div>
+            {tier!=='free'&&(
+              <div className="plan-sel-note">
+                <span className="mi" style={{fontSize:10,marginRight:4}}>info</span>
+                PAYMENT PROCESSORS COMING SOON — ACCOUNT STARTS ON FREE PLAN
+              </div>
+            )}
+          </div>
+          {err&&<div className="af-err"><span className="mi" style={{fontSize:11}}>error_outline</span> {err}</div>}
+          {ok&&<div className="af-ok"><span className="mi" style={{fontSize:11}}>check_circle</span> {ok}</div>}
+          <button className="auth-btn" disabled={loading} onClick={handleJoin}>{loading?'CREATING…':'JOIN KRYPTIV'}</button>
+          <button className="auth-link" onClick={()=>setStep(2)}>← Back</button>
+        </div>
+      </>)}
     </div>
   );
 }
 
-function Page() {
-  const [u, setU] = React.useState(() => LS.get());
-  React.useEffect(() => {
-    if (!u?.kryptid) { window.location.href = '/'; }
-  }, []);
-  if (!u?.kryptid) return null;
+function Root() {
+  const [ready, setReady] = useState(false);
+  const wallRef = useRef(null);
+  useEffect(()=>{
+    const saved = LS.get();
+    if (saved?.kryptid) { window.location.href='/Dashboard/'; return; }
+    requestAnimationFrame(()=>{
+      if (wallRef.current) wallRef.current.className='wall intro';
+      requestAnimationFrame(()=>{
+        if (wallRef.current) wallRef.current.className='wall clear';
+        setReady(true);
+      });
+    });
+  },[]);
   return (<>
-    <div className="wall clear"/>
-    <AppShell user={u} setUser={setU} view="dashboard">
-      <Dashboard user={u}/>
-    </AppShell>
+    <div className="wall intro" ref={wallRef}/>
+    {ready&&<Auth/>}
   </>);
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
 
 </script>
 </body>
