@@ -569,7 +569,7 @@ input,textarea,select{font-family:var(--sans)}
 .settings-sub{font-size:11px;color:var(--w4);margin-top:3px}
 
 /* PRO BLUR LOCK */
-.pro-blur-wrap{position:relative;overflow:hidden;border-bottom:1px solid rgba(255,255,255,.04);min-height:52px}
+.pro-blur-wrap{position:relative;overflow:hidden;border-bottom:1px solid rgba(255,255,255,.04);min-height:52px}@media(min-width:769px){.pro-blur-wrap.sim-lock{min-height:160px}}
 .pro-blur-content{filter:blur(7px);pointer-events:none;user-select:none;border-bottom:none!important}
 .pro-blur-content .coin-line{border-bottom:none!important}
 .pro-blur-content .holding-row{border-bottom:none!important}
@@ -623,6 +623,10 @@ input,textarea,select{font-family:var(--sans)}
 <body>
 <div id="root"></div>
 <!-- React + Babel via CDN (cached by browser after first load) -->
+<!-- preload so subsequent pages load from disk cache instantly -->
+<link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" as="script" crossorigin>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" crossorigin></script>
@@ -730,7 +734,7 @@ const fp = p => {
   if (p >= 0.01) return '$' + p.toFixed(4);
   return '$' + p.toFixed(6);
 };
-const fc = c => { if (c == null || isNaN(c)) return '—'; return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; };
+const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
   if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
@@ -1406,6 +1410,8 @@ function AddModal({coins, availCoins, isFree, onAdd, onClose}) {
 
 function Portfolio({user, coins, availCoins, priceSrc}) {
   const isFree = user.tier==='free';
+  const tierRank = {free:0,budget:1,pro:2,atmosphere:3};
+  const rank = tierRank[user.tier]||0;
   const [holdings, setHoldings] = useState(loadHoldings);
   const [showAdd,  setShowAdd]  = useState(false);
   const [simCoin,  setSimCoin]  = useState('BTC');
@@ -1550,11 +1556,26 @@ function Portfolio({user, coins, availCoins, priceSrc}) {
           <MI n="fiber_manual_record" style={{fontSize:9}}/>
           REAL PRICE DATA FROM {priceSrc||'…'}
         </div>
-        <div className="pro-blur-wrap">
-        {isFree&&<div className="pro-lock-ov" style={{zIndex:6}}>
-          <MI n="school" className="pro-lock-icon"/>
-          <div className="pro-lock-lbl">SIMULATOR · AVAILABLE IN BUDGET & PRO</div>
-          <button className="pro-lock-btn" onClick={()=>navigate('/Plans/')}>UPGRADE</button>
+        <div className="pro-blur-wrap sim-lock">
+        {isFree&&<div className="pro-lock-ov" style={{zIndex:6,flexDirection:'column',alignItems:'flex-start',padding:'20px 24px',gap:12}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,width:'100%'}}>
+            <MI n="school" className="pro-lock-icon"/>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--w2)',letterSpacing:2,marginBottom:3}}>INVESTMENT SIMULATOR</div>
+              <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1,lineHeight:1.7}}>
+                Backtest any crypto with real historical prices.<br/>
+                Available from BUDGET · $3.90/mo
+              </div>
+            </div>
+            <button className="pro-lock-btn" style={{padding:'8px 18px',fontSize:8}} onClick={()=>navigate('/Plans/')}>UPGRADE</button>
+          </div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {['budget','pro','atmosphere'].map(t=>(
+              <div key={t} style={{padding:'4px 10px',border:'1px solid rgba(255,255,255,.1)',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2}}>
+                {t.toUpperCase()} {t==='budget'?'✓ Simulator':t==='pro'?'✓ Unlimited + AI signals':t==='atmosphere'?'✓ Whale alerts':''} 
+              </div>
+            ))}
+          </div>
         </div>}
         <div className={isFree?'pro-blur-content':''}>
         <div className="sim-box">
