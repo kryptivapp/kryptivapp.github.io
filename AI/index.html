@@ -654,26 +654,7 @@ if (!window._llm.engine && !window._llm.loading) {
   });
 }
 </script>
-<!-- WebLLM: load as real ES module so no Babel/for-await issues. Engine persists on window. -->
-<script type="module">
-import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
-if (!window._kryptivLLM) {
-  window._kryptivLLM = { engine: null, loading: true, progress: 'Checking WebGPU…', error: null };
-  CreateMLCEngine('Llama-3.2-1B-Instruct-q4f16_1-MLC', {
-    initProgressCallback: p => {
-      if (window._kryptivLLM) window._kryptivLLM.progress = p.text || 'Loading…';
-    }
-  }).then(eng => {
-    window._kryptivLLM.engine = eng;
-    window._kryptivLLM.loading = false;
-    window._kryptivLLM.progress = '';
-  }).catch(err => {
-    window._kryptivLLM.loading = false;
-    window._kryptivLLM.progress = '';
-    window._kryptivLLM.error = err.message;
-  });
-}
-</script>
+
 <script>
 /* ═══════════════════════════════════════════════════
    KRYPTIV v14 · GLOBALS
