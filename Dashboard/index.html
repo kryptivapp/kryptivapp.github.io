@@ -892,14 +892,12 @@ function requireAuth() {
 
 /* ── PAGE NAVIGATE with transition ── */
 function navigate(path) {
-  // Show transition overlay
+  // Minimal transition — just a thin progress bar, no logo text
   const ov = document.createElement('div');
   ov.className = 'page-transition';
-  ov.innerHTML = `<div class="pt-logo">KRYPTIV</div>
-    <div class="pt-bar"><div class="pt-fill"></div></div>
-    <div class="pt-txt">Loading…</div>`;
+  ov.innerHTML = '<div class="pt-bar" style="position:fixed;top:0;left:0;right:0;width:100%;height:2px;background:rgba(255,255,255,.08)"><div class="pt-fill"></div></div>';
   document.body.appendChild(ov);
-  setTimeout(() => { window.location.href = path; }, 280);
+  setTimeout(function() { window.location.href = path; }, 180);
 }
 
 /* ── MEMPOOL (live BTC chain data via Blockchain.info public API) ── */
@@ -1263,10 +1261,7 @@ function AppShell({user, setUser, view, children}) {
           <div className="tb-title">{NAV_ITEMS.find(n=>n.id===view)?.lbl}</div>
           <Ticker coins={coins}/>
           <div className="tb-right">
-            <div className="ic-btn" title={`Live · ${priceSrc}`}>
-              <MI n="fiber_manual_record" style={{fontSize:9,color:'rgba(130,255,150,.8)'}}/>
-            </div>
-            <div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
+<div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
               <MI n="settings"/>
             </div>
             <div className="tier-chip" onClick={()=>go('plans')}>{(user.tier||'free').toUpperCase()}</div>
