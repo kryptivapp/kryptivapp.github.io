@@ -575,13 +575,16 @@ input,textarea,select{font-family:var(--sans)}
 .settings-sub{font-size:11px;color:var(--w4);margin-top:3px}
 
 /* PRO BLUR LOCK */
-.pro-blur-wrap{position:relative;overflow:hidden}
-.pro-blur-content{filter:blur(6px);pointer-events:none;user-select:none;transition:filter .3s}
-.pro-lock-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:5;background:rgba(0,0,0,.45)}
-.pro-lock-icon{font-size:20px!important;color:var(--w4)}
-.pro-lock-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;text-align:center;line-height:1.8}
-.pro-lock-btn{padding:6px 16px;background:var(--w);color:#000;border:none;font-family:var(--sans);font-weight:700;font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:4px;transition:opacity .2s}
-.pro-lock-btn:hover{opacity:.85}
+.pro-blur-wrap{position:relative;overflow:hidden;border-bottom:1px solid rgba(255,255,255,.04);min-height:52px}
+.pro-blur-content{filter:blur(7px);pointer-events:none;user-select:none;border-bottom:none!important}
+.pro-blur-content .coin-line{border-bottom:none!important}
+.pro-blur-content .holding-row{border-bottom:none!important}
+.pro-lock-ov{position:absolute;inset:0;display:flex;flex-direction:row;align-items:center;justify-content:space-between;padding:0 12px;z-index:5;background:rgba(0,0,0,.55);gap:10px}
+.pro-lock-left{display:flex;align-items:center;gap:8px}
+.pro-lock-icon{font-size:14px!important;color:var(--w4)}
+.pro-lock-lbl{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:var(--w4);text-transform:uppercase;line-height:1.5}
+.pro-lock-btn{padding:4px 12px;background:rgba(255,255,255,.12);color:var(--w3);border:1px solid var(--border2);font-family:var(--mono);font-weight:600;font-size:7px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.pro-lock-btn:hover{background:rgba(255,255,255,.2);color:var(--w)}
 /* Settings btn — icon only */
 .settings-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--w3);cursor:pointer;transition:all .15s;flex-shrink:0}
 .settings-btn:hover{border-color:var(--border2);color:var(--w)}
@@ -1311,7 +1314,7 @@ function MempoolFeed({btcPrice}) {
         return (
           <div key={tx.hash} className="tx-row" style={{animationDelay:`${i*0.05}s`}}>
             <div className="tx-icon" style={big?{borderColor:'rgba(130,255,150,.3)'}:{}}>
-              <span className="mi" style={big?{color:'rgba(130,255,150,.7)'}:{}}>{big?'arrow_upward':'swap_horiz'}</span>
+              <span className="mi" style={{fontSize:13,color:big?'rgba(130,255,150,.7)':'var(--w4)'}}>payments</span>
             </div>
             <div className="tx-body">
               <div className="tx-hash">{tx.shortHash}</div>
@@ -1459,11 +1462,13 @@ function Dashboard({user, coins, availCoins, priceSrc}) {
           );
           if (!locked) return row;
           return (
-            <div key={c.sym} className="pro-blur-wrap" style={{marginBottom:0}}>
+            <div key={c.sym} className="pro-blur-wrap">
               <div className="pro-blur-content">{row}</div>
               <div className="pro-lock-ov">
-                <span className="mi pro-lock-icon">lock</span>
-                <div className="pro-lock-lbl">AVAILABLE IN BUDGET & PRO</div>
+                <div className="pro-lock-left">
+                  <span className="mi pro-lock-icon">lock</span>
+                  <div className="pro-lock-lbl">BUDGET & PRO</div>
+                </div>
                 <button className="pro-lock-btn" onClick={()=>navigate('/Plans/')}>UPGRADE</button>
               </div>
             </div>
