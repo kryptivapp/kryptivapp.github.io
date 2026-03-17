@@ -730,7 +730,7 @@ const fp = p => {
   if (p >= 0.01) return '$' + p.toFixed(4);
   return '$' + p.toFixed(6);
 };
-const fc = c => { if (c == null || isNaN(c)) return '—'; return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; };
+const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
   if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
@@ -1306,21 +1306,43 @@ function timeAgo(dateStr) {
   return Math.floor(secs/86400)+'d ago';
 }
 
-/* CryptoCompare News API — free, no key, CORS-enabled */
+/* News: CryptoCompare primary, Coinpaprika fallback */
 async function fetchAllNews() {
-  const r = await fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50');
-  if (!r.ok) throw new Error('CryptoCompare ' + r.status);
-  const d = await r.json();
-  if (!d.Data?.length) throw new Error('No articles');
-  return d.Data.map((a,i)=>({
-    id: String(a.id||i),
-    title: a.title,
-    url: a.url,
-    source: (a.source_info?.name||a.source||'CRYPTOCOMPARE').toUpperCase(),
-    published: new Date(a.published_on*1000).toISOString(),
-    coins: a.categories ? a.categories.split('|').filter(Boolean).slice(0,3) : [],
-    imageurl: a.imageurl||'',
-  }));
+  // Primary: CryptoCompare free public API
+  try {
+    const r = await fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50');
+    if (r.ok) {
+      const d = await r.json();
+      if (d.Data?.length) {
+        return d.Data.map((a,i)=>({
+          id: String(a.id||i),
+          title: a.title,
+          url: a.url,
+          source: (a.source_info?.name||a.source||'CRYPTOCOMPARE').toUpperCase(),
+          published: new Date(a.published_on*1000).toISOString(),
+          coins: a.categories ? a.categories.split('|').filter(c=>c&&c.length<10).slice(0,3) : [],
+        }));
+      }
+    }
+  } catch {}
+  // Fallback: Coinpaprika (also free, CORS-enabled)
+  try {
+    const r2 = await fetch('https://api.coinpaprika.com/v1/news?limit=50');
+    if (r2.ok) {
+      const d2 = await r2.json();
+      if (d2?.length) {
+        return d2.map((a,i)=>({
+          id: String(i),
+          title: a.title,
+          url: a.url,
+          source: (a.source||'COINPAPRIKA').toUpperCase(),
+          published: a.date||new Date().toISOString(),
+          coins: a.currencies?.slice(0,3).map(c=>c.symbol)||[],
+        }));
+      }
+    }
+  } catch {}
+  throw new Error('All news sources failed');
 }
 
 const FILTERS = [
@@ -1345,7 +1367,7 @@ function NewsView({user, coins, availCoins, priceSrc}) {
     setError('');
     fetchAllNews().then(items=>{
       if (cancelled) return;
-      if (items.length>0) { setAllItems(items); setSrc(`${items.length} articles · CryptoCompare`); }
+      if (items.length>0) { setAllItems(items); setSrc(`${items.length} articles`); }
       else setError('Could not load news. Check your internet connection.');
       setLoading(false);
     }).catch(()=>{ if (!cancelled) { setError('News feed error.'); setLoading(false); } });
