@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="google-site-verification" content="54wUlayKH8wNj5XodoXcNkgKF0-Df-EhIikW-YPMTkU" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>KRYPTIV · Intelligence for Crypto</title>
 
@@ -624,6 +623,10 @@ input,textarea,select{font-family:var(--sans)}
 <body>
 <div id="root"></div>
 <!-- React + Babel via CDN (cached by browser after first load) -->
+<!-- preload so subsequent pages load from disk cache instantly -->
+<link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" as="script" crossorigin>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" crossorigin></script>
@@ -674,7 +677,6 @@ const COIN_LIST = [
   { id:'polkadot',       sym:'DOT',  name:'Polkadot'   },
   { id:'chainlink',      sym:'LINK', name:'Chainlink'  },
   { id:'dogecoin',       sym:'DOGE', name:'Dogecoin'   },
-  { id:'matic-network',  sym:'POL',  name:'Polygon'    },
   { id:'uniswap',        sym:'UNI',  name:'Uniswap'    },
   { id:'near',           sym:'NEAR', name:'NEAR'       },
   { id:'arbitrum',       sym:'ARB',  name:'Arbitrum'   },
@@ -724,26 +726,43 @@ function genId() {
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({length:5}, ()=>c[Math.floor(Math.random()*c.length)]).join('');
 }
+const CURRENCY_KEY = 'kryptiv_currency'; // 'usd' | 'eur'
+const EUR_RATE     = 0.92; // approx USD→EUR — good enough for display
+function getCurrency() { try { return localStorage.getItem(CURRENCY_KEY)||'usd'; } catch { return 'usd'; } }
+function setCurrency(v) { try { localStorage.setItem(CURRENCY_KEY,v); } catch {} }
+function csym() { return getCurrency()==='eur'?'€':'$'; }
+function cval(p) { return getCurrency()==='eur'?p*EUR_RATE:p; }
+
 const fp = p => {
   if (p == null || isNaN(p)) return '—';
-  if (p >= 1000) return '$' + p.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
-  if (p >= 1)    return '$' + p.toFixed(2);
-  if (p >= 0.01) return '$' + p.toFixed(4);
-  return '$' + p.toFixed(6);
+  const v = cval(p), s = csym();
+  if (v >= 1000) return s + v.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
+  if (v >= 1)    return s + v.toFixed(2);
+  if (v >= 0.01) return s + v.toFixed(4);
+  if (v > 0)     return '~'+s+'1';  // show ~$1 / ~€1 for tiny amounts
+  return s + v.toFixed(6);
 };
-const fc = c => { if (c == null || isNaN(c)) return '—'; return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; };
+const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
-  if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
-  if (v >= 1e9)  return '$' + (v/1e9).toFixed(2) + 'B';
-  if (v >= 1e6)  return '$' + (v/1e6).toFixed(2) + 'M';
-  return '$' + v.toLocaleString('en', {maximumFractionDigits:0});
+  const val = cval(v), s = csym();
+  if (val >= 1e12) return s + (val/1e12).toFixed(2) + 'T';
+  if (val >= 1e9)  return s + (val/1e9).toFixed(2) + 'B';
+  if (val >= 1e6)  return s + (val/1e6).toFixed(2) + 'M';
+  return s + val.toLocaleString('en', {maximumFractionDigits:0});
 };
 const fbtc = sats => (sats / 1e8).toFixed(6) + ' BTC';
 
 /* ── PRICE CACHE ── */
-const PRICE_CACHE_KEY = 'kryptiv_prices';
-const CACHE_TTL_MS    = 30_000; // 30s — more frequent updates
+const PRICE_CACHE_KEY   = 'kryptiv_prices';
+const FLASH_MODE_KEY    = 'kryptiv_flash';
+// Normal: 60s live TTL, 5s UI refresh (shows cached). Flash: 5s live TTL.
+const LIVE_TTL_NORMAL   = 60_000;
+const LIVE_TTL_FLASH    = 5_000;
+const UI_TICK_MS        = 5_000;   // always refresh UI display every 5s
+
+function isFlashMode() { try { return localStorage.getItem(FLASH_MODE_KEY)==='1'; } catch { return false; } }
+function setFlashMode(on) { try { localStorage.setItem(FLASH_MODE_KEY, on?'1':'0'); } catch {} }
 
 function cgToCoins(data) {
   return data.map((c, i) => ({
@@ -764,11 +783,11 @@ function cgToCoins(data) {
 
 const BINANCE_SYMS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT',
                       'ADAUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','DOGEUSDT',
-                      'MATICUSDT','UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
+                      'UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
 const BINANCE_MAP  = {
   'BTCUSDT':'BTC','ETHUSDT':'ETH','SOLUSDT':'SOL','BNBUSDT':'BNB','XRPUSDT':'XRP',
   'ADAUSDT':'ADA','AVAXUSDT':'AVAX','DOTUSDT':'DOT','LINKUSDT':'LINK','DOGEUSDT':'DOGE',
-  'MATICUSDT':'POL','UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
+  'UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
 };
 
 async function fetchBinance() {
@@ -787,11 +806,13 @@ async function fetchBinance() {
 }
 
 async function fetchCoinGecko() {
+  // Single request for all 15 coins — avoids per-coin API limits
   const ids = COIN_LIST.map(c => c.id).join(',');
-  const url = `https://api.coingecko.com/api/v3/coins/markets` +
-    `?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=15&page=1` +
-    `&sparkline=false&price_change_percentage=1h%2C24h%2C7d`;
+  const url = 'https://api.coingecko.com/api/v3/coins/markets' +
+    '?vs_currency=usd&ids=' + ids + '&order=market_cap_desc&per_page=15&page=1' +
+    '&sparkline=false&price_change_percentage=1h%2C24h%2C7d';
   const r = await fetch(url);
+  if (r.status === 429) throw new Error('RATE_LIMITED');
   if (!r.ok) throw new Error('CoinGecko ' + r.status);
   const data = await r.json();
   if (!Array.isArray(data) || !data.length) throw new Error('CoinGecko: empty');
@@ -800,7 +821,7 @@ async function fetchCoinGecko() {
 
 async function fetchKraken() {
   const pairs = 'XBTUSD,ETHUSD,SOLUSD,XRPUSD,ADAUSD,LINKUSD,DOGEUSD,UNIUSD,NEARUSD';
-  const r = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${pairs}`);
+  const r = await fetch('https://api.kraken.com/0/public/Ticker?pair=' + pairs);
   if (!r.ok) throw new Error('Kraken ' + r.status);
   const data = await r.json();
   if (data.error?.length) throw new Error('Kraken: ' + data.error[0]);
@@ -818,30 +839,41 @@ async function fetchKraken() {
   }).filter(c => c.price > 0);
 }
 
+// Returns {coins, src, cached, ageMs, rateLimited}
 async function fetchLivePrices() {
+  const flash = isFlashMode();
+  const ttl   = flash ? LIVE_TTL_FLASH : LIVE_TTL_NORMAL;
   try {
-    const cached = JSON.parse(sessionStorage.getItem(PRICE_CACHE_KEY) || 'null');
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
-      return { coins: cached.coins, src: cached.src + ' (cached)' };
+    const stored = JSON.parse(sessionStorage.getItem(PRICE_CACHE_KEY) || 'null');
+    if (stored && (Date.now() - stored.ts) < ttl) {
+      return { coins:stored.coins, src:stored.src, cached:true, ageMs:Date.now()-stored.ts, rateLimited:false };
     }
   } catch {}
-  const errors = [];
+  // Try live fetch
+  let rateLimited = false;
   try {
     const coins = await fetchCoinGecko();
     sessionStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ coins, ts:Date.now(), src:'CoinGecko' }));
-    return { coins, src:'CoinGecko' };
-  } catch(e) { errors.push('CoinGecko: ' + e.message); }
+    return { coins, src:'CoinGecko', cached:false, ageMs:0, rateLimited:false };
+  } catch(e) {
+    if (e.message === 'RATE_LIMITED') rateLimited = true;
+  }
   try {
     const coins = await fetchBinance();
     sessionStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ coins, ts:Date.now(), src:'Binance' }));
-    return { coins, src:'Binance' };
-  } catch(e) { errors.push('Binance: ' + e.message); }
+    return { coins, src:'Binance', cached:false, ageMs:0, rateLimited:false };
+  } catch {}
   try {
     const coins = await fetchKraken();
     sessionStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ coins, ts:Date.now(), src:'Kraken' }));
-    return { coins, src:'Kraken' };
-  } catch(e) { errors.push('Kraken: ' + e.message); }
-  return { coins:null, src:null, errors };
+    return { coins, src:'Kraken', cached:false, ageMs:0, rateLimited:false };
+  } catch {}
+  // If all fail, return last cached even if stale
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(PRICE_CACHE_KEY) || 'null');
+    if (stored) return { coins:stored.coins, src:stored.src, cached:true, ageMs:Date.now()-stored.ts, rateLimited };
+  } catch {}
+  return { coins:null, src:null, cached:false, ageMs:0, rateLimited };
 }
 
 /* ── SPARKLINE CACHE ── */
@@ -850,7 +882,7 @@ async function fetchSparkline(coinId) {
   if (SPARK_CACHE[coinId]) return SPARK_CACHE[coinId];
   try {
     const r = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=7&interval=hourly`
+      'https://api.coingecko.com/api/v3/coins/' + coinId + '/market_chart?vs_currency=usd&days=7&interval=hourly'
     );
     if (!r.ok) return null;
     const d = await r.json();
@@ -866,16 +898,19 @@ function startPriceUpdates(onUpdate, onError) {
   async function tick() {
     const result = await fetchLivePrices();
     if (result.coins) {
-      window._liveCoins = result.coins;
+      window._liveCoins   = result.coins;
       window._priceSource = result.src;
-      if (onUpdate) onUpdate(result.coins, result.src);
+      window._priceAge    = result.ageMs;
+      window._rateLimited = result.rateLimited;
+      if (onUpdate) onUpdate(result.coins, result.src, result);
     } else {
-      if (onError) onError(result.errors);
+      if (onError) onError(result.rateLimited);
     }
   }
   tick();
   if (_priceInterval) clearInterval(_priceInterval);
-  _priceInterval = setInterval(tick, 30_000);
+  // Always tick every 5s — uses cache if still fresh, fetches live when cache expires
+  _priceInterval = setInterval(tick, UI_TICK_MS);
   return () => clearInterval(_priceInterval);
 }
 
@@ -889,14 +924,12 @@ function requireAuth() {
 
 /* ── PAGE NAVIGATE with transition ── */
 function navigate(path) {
-  // Show transition overlay
+  // Minimal transition — just a thin progress bar, no logo text
   const ov = document.createElement('div');
   ov.className = 'page-transition';
-  ov.innerHTML = `<div class="pt-logo">KRYPTIV</div>
-    <div class="pt-bar"><div class="pt-fill"></div></div>
-    <div class="pt-txt">Loading…</div>`;
+  ov.innerHTML = '<div class="pt-bar" style="position:fixed;top:0;left:0;right:0;width:100%;height:2px;background:rgba(255,255,255,.08)"><div class="pt-fill"></div></div>';
   document.body.appendChild(ov);
-  setTimeout(() => { window.location.href = path; }, 280);
+  setTimeout(function() { window.location.href = path; }, 180);
 }
 
 /* ── MEMPOOL (live BTC chain data via Blockchain.info public API) ── */
