@@ -5,6 +5,30 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>KRYPTIV · Intelligence for Crypto</title>
 
+<!-- ── STATE GATE: check state.txt before anything loads ── -->
+<script>
+(function(){
+  function check(){
+    fetch('state.txt?_='+Date.now())
+      .then(function(r){return r.ok?r.text():null;})
+      .then(function(txt){
+        if(!txt){return;}
+        var lines=txt.split('\n');
+        for(var i=0;i<lines.length;i++){
+          var l=lines[i].trim();
+          if(!l||l[0]==='#') continue;
+          if(l[0]==='!' && l.slice(1).toUpperCase()!=='ONLINE'){
+            window.location.replace('msg.html');
+          }
+          break;
+        }
+      })
+      .catch(function(){});
+  }
+  check();
+})();
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
