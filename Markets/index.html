@@ -5,6 +5,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>KRYPTIV · Markets</title>
 
+<!-- ── STATE GATE ── -->
+<script>
+(function(){
+  fetch('../state.txt?_='+Date.now())
+    .then(function(r){return r.ok?r.text():null;})
+    .then(function(txt){
+      if(!txt) return;
+      var lines=txt.split('\n');
+      for(var i=0;i<lines.length;i++){
+        var l=lines[i].trim();
+        if(!l||l[0]==='#') continue;
+        if(l[0]==='!'&&l.slice(1).toUpperCase()!=='ONLINE') window.location.replace('../msg.html');
+        break;
+      }
+    }).catch(function(){});
+})();
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
@@ -1038,23 +1056,220 @@ function MI({n, style, className}) {
 
 const {useState, useEffect, useRef, useCallback, useMemo} = React;
 
+/* ── KRYPTIV CUSTOM SPARK ── TV-inspired mini chart with area fill + VWAP band ── */
 function Spark({prices, ch, w=46, h=20}) {
-  let pts;
+  const isUp = (ch||0) >= 0;
+  const colLine = isUp ? 'rgba(130,255,150,.85)' : 'rgba(255,100,80,.75)';
+  const colFill = isUp ? 'rgba(130,255,150,.13)' : 'rgba(255,100,80,.10)';
+  const uid = Math.random().toString(36).slice(2,7);
+
+  let vals;
   if (prices && prices.length >= 2) {
-    const vals = prices.slice(-14);
-    const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx-mn||1;
-    pts = vals.map((v,i) => ({ x:(i/(vals.length-1))*w, y:h-((v-mn)/rng)*h }));
+    vals = prices.slice(-18).map(p => typeof p === 'number' ? p : p[1]);
   } else {
-    pts = Array.from({length:12}, (_,i) => {
-      const t=i/11, tr=(ch||0)>=0?t*.3:-t*.3;
-      return { x:(i/11)*w, y:h-(0.5+tr+Math.sin(i*1.4)*.07)*h };
+    // Deterministic placeholder shaped by ch
+    const seed = Math.abs(ch||1.3) * 137.5;
+    vals = Array.from({length:18}, (_,i) => {
+      const t = i/17;
+      const trend = (ch||0)/100 * 2 * t;
+      const wave  = Math.sin(i*1.1 + seed) * 0.04 + Math.sin(i*2.7 + seed*0.3) * 0.015;
+      return 100 + trend + wave;
     });
   }
-  const d = pts.map((p,i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const color = (ch||0)>=0 ? 'rgba(130,255,150,.75)' : 'rgba(255,100,80,.6)';
+
+  const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
+  const pad = 1;
+  const toX = i => pad + (i / (vals.length-1)) * (w - pad*2);
+  const toY = v => (h - pad) - ((v - mn) / rng) * (h - pad*2);
+
+  // Catmull-Rom smooth path
+  function smoothPath(xs, ys) {
+    if (xs.length < 2) return '';
+    let d = `M${xs[0].toFixed(1)},${ys[0].toFixed(1)}`;
+    for (let i = 0; i < xs.length - 1; i++) {
+      const p0x = xs[Math.max(0,i-1)], p0y = ys[Math.max(0,i-1)];
+      const p1x = xs[i],   p1y = ys[i];
+      const p2x = xs[i+1], p2y = ys[i+1];
+      const p3x = xs[Math.min(xs.length-1,i+2)], p3y = ys[Math.min(ys.length-1,i+2)];
+      const cp1x = p1x + (p2x-p0x)/6, cp1y = p1y + (p2y-p0y)/6;
+      const cp2x = p2x - (p3x-p1x)/6, cp2y = p2y - (p3y-p1y)/6;
+      d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2x.toFixed(1)},${p2y.toFixed(1)}`;
+    }
+    return d;
+  }
+
+  const xs = vals.map((_,i) => toX(i));
+  const ys = vals.map(v => toY(v));
+  const linePath = smoothPath(xs, ys);
+  const areaPath = linePath + ` L${xs[xs.length-1].toFixed(1)},${h} L${xs[0].toFixed(1)},${h} Z`;
+
+  // Simple VWAP-style midline (rolling mean of first half vs second half)
+  const mid = (mn + mx) / 2;
+  const midY = toY(mid).toFixed(1);
+
+  // Last-point dot
+  const lx = xs[xs.length-1].toFixed(1);
+  const ly = ys[ys.length-1].toFixed(1);
+
   return (
-    <svg width={w} height={h} style={{display:'block'}}>
-      <path d={d} fill="none" stroke={color} strokeWidth="1.2"/>
+    <svg width={w} height={h} style={{display:'block',overflow:'visible'}}>
+      <defs>
+        <linearGradient id={`spfg-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={colLine} stopOpacity="0.35"/>
+          <stop offset="100%" stopColor={colLine} stopOpacity="0"/>
+        </linearGradient>
+        <clipPath id={`spclip-${uid}`}><rect x="0" y="0" width={w} height={h}/></clipPath>
+      </defs>
+      {/* Mid reference dashes */}
+      <line x1={pad} y1={midY} x2={w-pad} y2={midY}
+        stroke={colLine} strokeWidth="0.4" strokeDasharray="2,2" opacity="0.25"
+        clipPath={`url(#spclip-${uid})`}/>
+      {/* Area fill */}
+      <path d={areaPath} fill={`url(#spfg-${uid})`} clipPath={`url(#spclip-${uid})`}/>
+      {/* Price line */}
+      <path d={linePath} fill="none" stroke={colLine} strokeWidth="1.3"
+        clipPath={`url(#spclip-${uid})`}/>
+      {/* Live dot */}
+      <circle cx={lx} cy={ly} r="1.6" fill={colLine} opacity="0.9"/>
+    </svg>
+  );
+}
+
+/* ── KRYPTIV CUSTOM BIGSPARK ── Full 7d area chart with bands and volume bars ── */
+function BigSpark({prices, ch}) {
+  const sw=340, sh=76;
+  const isUp = (ch||0) >= 0;
+  const colLine = isUp ? 'rgba(130,255,150,.85)' : 'rgba(255,100,80,.75)';
+  const uid = 'bs' + Math.random().toString(36).slice(2,6);
+
+  let vals;
+  if (prices && prices.length >= 2) {
+    vals = prices.map(p => typeof p === 'number' ? p : p[1]);
+  } else {
+    vals = Array.from({length:48}, (_,i) => {
+      const t = i/47, base=(ch||0)/100*2;
+      return 100 + base*t + Math.sin(i*0.9)*0.05 + Math.sin(i*2.3)*0.02;
+    });
+  }
+
+  const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx-mn||1;
+  const padX=2, padT=6, padB=12;
+  const toX = i => padX + (i/(vals.length-1))*(sw-padX*2);
+  const toY = v => padT + (1-((v-mn)/rng))*(sh-padT-padB);
+
+  // Smooth path
+  function smoothPath(xs, ys) {
+    let d = `M${xs[0].toFixed(1)},${ys[0].toFixed(1)}`;
+    for (let i=0;i<xs.length-1;i++){
+      const p0x=xs[Math.max(0,i-1)],p0y=ys[Math.max(0,i-1)];
+      const p1x=xs[i],p1y=ys[i],p2x=xs[i+1],p2y=ys[i+1];
+      const p3x=xs[Math.min(xs.length-1,i+2)],p3y=ys[Math.min(ys.length-1,i+2)];
+      const c1x=p1x+(p2x-p0x)/6,c1y=p1y+(p2y-p0y)/6;
+      const c2x=p2x-(p3x-p1x)/6,c2y=p2y-(p3y-p1y)/6;
+      d+=` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2x.toFixed(1)},${p2y.toFixed(1)}`;
+    }
+    return d;
+  }
+
+  const xs = vals.map((_,i)=>toX(i));
+  const ys = vals.map(v=>toY(v));
+  const linePath = smoothPath(xs,ys);
+  const areaPath = linePath + ` L${xs[xs.length-1].toFixed(1)},${sh} L${xs[0].toFixed(1)},${sh} Z`;
+
+  // Bollinger-style band (rolling 20-period ±1σ)
+  const W=20;
+  const bands = vals.map((_,i)=>{
+    if(i<W-1) return null;
+    const slice=vals.slice(i-W+1,i+1);
+    const avg=slice.reduce((a,b)=>a+b,0)/W;
+    const σ=Math.sqrt(slice.reduce((a,b)=>a+(b-avg)**2,0)/W);
+    return {hi:avg+σ, lo:avg-σ, mid:avg};
+  }).filter(Boolean);
+  const bOff = vals.length - bands.length;
+  const bandHiPath = bands.map((b,i)=>`${i===0?'M':'L'}${toX(i+bOff).toFixed(1)},${toY(b.hi).toFixed(1)}`).join(' ');
+  const bandLoPath = bands.map((b,i)=>`${i===0?'M':'L'}${toX(i+bOff).toFixed(1)},${toY(b.lo).toFixed(1)}`).join(' ');
+  const bandFillPath = bandHiPath + ' ' + bands.map((b,i)=>`L${toX(bands.length-1-i+bOff).toFixed(1)},${toY(bands[bands.length-1-i].lo).toFixed(1)}`).join(' ') + ' Z';
+
+  // Volume-proxy bars (use price delta as volume proxy when no real vol)
+  const barCount = Math.min(24, vals.length);
+  const step = Math.max(1, Math.floor(vals.length/barCount));
+  const volBars = [];
+  for(let i=step;i<vals.length;i+=step){
+    const delta=Math.abs(vals[i]-vals[i-step]);
+    volBars.push({x:toX(i), delta});
+  }
+  const maxDelta=Math.max(...volBars.map(b=>b.delta),0.0001);
+  const barMaxH=8;
+
+  // Grid lines (3 horizontal)
+  const gridLevels=[0.25,0.5,0.75].map(t=>({y:toY(mn+t*rng).toFixed(1),v:mn+t*rng}));
+
+  const lx=xs[xs.length-1].toFixed(1), ly=ys[ys.length-1].toFixed(1);
+  const lastPrice=vals[vals.length-1];
+  const firstPrice=vals[0];
+  const pctChange=((lastPrice-firstPrice)/firstPrice*100);
+
+  return (
+    <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none"
+      style={{width:'100%',height:sh,display:'block'}}>
+      <defs>
+        <linearGradient id={`bsfg-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={colLine} stopOpacity="0.18"/>
+          <stop offset="75%" stopColor={colLine} stopOpacity="0.03"/>
+          <stop offset="100%" stopColor={colLine} stopOpacity="0"/>
+        </linearGradient>
+        <linearGradient id={`bsband-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={colLine} stopOpacity="0.07"/>
+          <stop offset="100%" stopColor={colLine} stopOpacity="0.02"/>
+        </linearGradient>
+        <clipPath id={`bsclip-${uid}`}><rect x="0" y="0" width={sw} height={sh}/></clipPath>
+      </defs>
+
+      {/* Horizontal grid lines */}
+      {gridLevels.map((g,i)=>(
+        <line key={i} x1={padX} y1={g.y} x2={sw-padX} y2={g.y}
+          stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
+      ))}
+
+      {/* Volume bars at bottom */}
+      {volBars.map((b,i)=>{
+        const bh = Math.max(1, (b.delta/maxDelta)*barMaxH);
+        return <rect key={i} x={b.x-1} y={sh-padB+2+barMaxH-bh}
+          width={2} height={bh} fill={colLine} opacity="0.18"
+          clipPath={`url(#bsclip-${uid})`}/>;
+      })}
+
+      {/* Bollinger band fill */}
+      {bands.length>1 && <path d={bandFillPath} fill={`url(#bsband-${uid})`}
+        clipPath={`url(#bsclip-${uid})`}/>}
+      {/* Bollinger band hi/lo outlines */}
+      {bands.length>1 && <>
+        <path d={bandHiPath} fill="none" stroke={colLine} strokeWidth="0.5" opacity="0.2"
+          strokeDasharray="2,3" clipPath={`url(#bsclip-${uid})`}/>
+        <path d={bandLoPath} fill="none" stroke={colLine} strokeWidth="0.5" opacity="0.2"
+          strokeDasharray="2,3" clipPath={`url(#bsclip-${uid})`}/>
+      </>}
+
+      {/* Area fill */}
+      <path d={areaPath} fill={`url(#bsfg-${uid})`} clipPath={`url(#bsclip-${uid})`}/>
+
+      {/* Main price line */}
+      <path d={linePath} fill="none" stroke={colLine} strokeWidth="1.5"
+        clipPath={`url(#bsclip-${uid})`}/>
+
+      {/* Start price horizontal reference */}
+      <line x1={padX} y1={toY(firstPrice).toFixed(1)} x2={sw-padX} y2={toY(firstPrice).toFixed(1)}
+        stroke="rgba(255,255,255,.12)" strokeWidth="0.6" strokeDasharray="3,4"/>
+
+      {/* Live dot + ring */}
+      <circle cx={lx} cy={ly} r="3.5" fill={colLine} opacity="0.9"/>
+      <circle cx={lx} cy={ly} r="6" fill="none" stroke={colLine} strokeWidth="0.8" opacity="0.3"/>
+
+      {/* Price label top-right */}
+      <text x={sw-3} y={padT+1} textAnchor="end" dominantBaseline="hanging"
+        fill="rgba(255,255,255,.35)" fontSize="6" fontFamily="monospace">
+        {pctChange>=0?'+':''}{pctChange.toFixed(2)}%
+      </text>
     </svg>
   );
 }
@@ -1347,29 +1562,6 @@ function ProbCalc({coin}) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function SparklineChart({coinId, ch}) {
-  const [prices, setPrices] = useState(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(()=>{
-    let cancelled = false;
-    setLoading(true);
-    fetchSparkline(coinId).then(p=>{
-      if (!cancelled) { setPrices(p); setLoading(false); }
-    });
-    return ()=>{cancelled=true;};
-  }, [coinId]);
-  if (loading) return <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,padding:'16px 0'}}>LOADING 7D CHART…</div>;
-  if (!prices)  return <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,padding:'16px 0'}}>7D CHART UNAVAILABLE</div>;
-  return (
-    <div>
-      <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:8}}>
-        7-DAY PRICE CHART · {prices.length} HOURLY POINTS
-      </div>
-      <BigSpark prices={prices} ch={ch}/>
     </div>
   );
 }
@@ -1674,29 +1866,6 @@ function AppShell({user, setUser, view, children}) {
 
 
 /* ═══════════════ MARKETS PAGE ═══════════════ */
-
-function SparklineChart({coinId, ch}) {
-  const [prices, setPrices] = useState(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(()=>{
-    let cancelled = false;
-    setLoading(true);
-    fetchSparkline(coinId).then(p=>{
-      if (!cancelled) { setPrices(p); setLoading(false); }
-    });
-    return ()=>{cancelled=true;};
-  }, [coinId]);
-  if (loading) return <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,padding:'16px 0'}}>LOADING 7D CHART…</div>;
-  if (!prices)  return <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,padding:'16px 0'}}>7D CHART UNAVAILABLE · RATE LIMITED</div>;
-  return (
-    <div>
-      <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:8}}>
-        7-DAY PRICE CHART · {prices.length} HOURLY DATA POINTS
-      </div>
-      <BigSpark prices={prices} ch={ch}/>
-    </div>
-  );
-}
 
 function getVerdict(c) {
   const ch=c.ch||0, ch7=c.ch7d||0;
