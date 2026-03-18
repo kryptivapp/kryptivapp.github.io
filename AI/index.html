@@ -710,7 +710,6 @@ const COIN_LIST = [
   { id:'polkadot',       sym:'DOT',  name:'Polkadot'   },
   { id:'chainlink',      sym:'LINK', name:'Chainlink'  },
   { id:'dogecoin',       sym:'DOGE', name:'Dogecoin'   },
-  { id:'matic-network',  sym:'POL',  name:'Polygon'    },
   { id:'uniswap',        sym:'UNI',  name:'Uniswap'    },
   { id:'near',           sym:'NEAR', name:'NEAR'       },
   { id:'arbitrum',       sym:'ARB',  name:'Arbitrum'   },
@@ -748,20 +747,30 @@ function genId() {
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({length:5}, ()=>c[Math.floor(Math.random()*c.length)]).join('');
 }
+const CURRENCY_KEY = 'kryptiv_currency'; // 'usd' | 'eur'
+const EUR_RATE     = 0.92; // approx USD→EUR — good enough for display
+function getCurrency() { try { return localStorage.getItem(CURRENCY_KEY)||'usd'; } catch { return 'usd'; } }
+function setCurrency(v) { try { localStorage.setItem(CURRENCY_KEY,v); } catch {} }
+function csym() { return getCurrency()==='eur'?'€':'$'; }
+function cval(p) { return getCurrency()==='eur'?p*EUR_RATE:p; }
+
 const fp = p => {
   if (p == null || isNaN(p)) return '—';
-  if (p >= 1000) return '$' + p.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
-  if (p >= 1)    return '$' + p.toFixed(2);
-  if (p >= 0.01) return '$' + p.toFixed(4);
-  return '$' + p.toFixed(6);
+  const v = cval(p), s = csym();
+  if (v >= 1000) return s + v.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
+  if (v >= 1)    return s + v.toFixed(2);
+  if (v >= 0.01) return s + v.toFixed(4);
+  if (v > 0)     return '~'+s+'1';  // show ~$1 / ~€1 for tiny amounts
+  return s + v.toFixed(6);
 };
 const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
-  if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
-  if (v >= 1e9)  return '$' + (v/1e9).toFixed(2) + 'B';
-  if (v >= 1e6)  return '$' + (v/1e6).toFixed(2) + 'M';
-  return '$' + v.toLocaleString('en', {maximumFractionDigits:0});
+  const val = cval(v), s = csym();
+  if (val >= 1e12) return s + (val/1e12).toFixed(2) + 'T';
+  if (val >= 1e9)  return s + (val/1e9).toFixed(2) + 'B';
+  if (val >= 1e6)  return s + (val/1e6).toFixed(2) + 'M';
+  return s + val.toLocaleString('en', {maximumFractionDigits:0});
 };
 const fbtc = sats => (sats / 1e8).toFixed(6) + ' BTC';
 
@@ -795,11 +804,11 @@ function cgToCoins(data) {
 
 const BINANCE_SYMS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT',
                       'ADAUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','DOGEUSDT',
-                      'MATICUSDT','UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
+                      'UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
 const BINANCE_MAP  = {
   'BTCUSDT':'BTC','ETHUSDT':'ETH','SOLUSDT':'SOL','BNBUSDT':'BNB','XRPUSDT':'XRP',
   'ADAUSDT':'ADA','AVAXUSDT':'AVAX','DOTUSDT':'DOT','LINKUSDT':'LINK','DOGEUSDT':'DOGE',
-  'MATICUSDT':'POL','UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
+  'UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
 };
 
 async function fetchBinance() {
@@ -1175,6 +1184,24 @@ function SettingsModal({onClose, flash, onToggleFlash}) {
           <div className="settings-title" style={{marginBottom:0}}>SETTINGS</div>
           <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w4)',display:'flex',alignItems:'center'}}>
             <MI n="close" style={{fontSize:22}}/>
+          </button>
+        </div>
+
+        {/* Currency toggle */}
+        <div className="settings-row" style={{marginBottom:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
+            <MI n="swap_horiz" style={{fontSize:20,color:'var(--w4)',flexShrink:0}}/>
+            <div>
+              <div className="settings-lbl">CURRENCY</div>
+              <div className="settings-sub">Display prices in USD or EUR</div>
+            </div>
+          </div>
+          <button
+            onClick={()=>{setCurrency(getCurrency()==='eur'?'usd':'eur');window.location.reload();}}
+            style={{padding:'5px 14px',background:'rgba(255,255,255,.06)',
+              border:'1px solid var(--border2)',
+              color:'var(--w3)',fontFamily:'var(--mono)',fontSize:8,letterSpacing:2,cursor:'pointer'}}>
+            {getCurrency()==='eur'?'€ EUR':'$ USD'}
           </button>
         </div>
 
