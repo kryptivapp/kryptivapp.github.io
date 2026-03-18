@@ -623,6 +623,10 @@ input,textarea,select{font-family:var(--sans)}
 <body>
 <div id="root"></div>
 <!-- React + Babel via CDN (cached by browser after first load) -->
+<!-- preload so subsequent pages load from disk cache instantly -->
+<link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin>
+<link rel="preload" href="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" as="script" crossorigin>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" crossorigin></script>
@@ -673,7 +677,6 @@ const COIN_LIST = [
   { id:'polkadot',       sym:'DOT',  name:'Polkadot'   },
   { id:'chainlink',      sym:'LINK', name:'Chainlink'  },
   { id:'dogecoin',       sym:'DOGE', name:'Dogecoin'   },
-  { id:'matic-network',  sym:'POL',  name:'Polygon'    },
   { id:'uniswap',        sym:'UNI',  name:'Uniswap'    },
   { id:'near',           sym:'NEAR', name:'NEAR'       },
   { id:'arbitrum',       sym:'ARB',  name:'Arbitrum'   },
@@ -723,26 +726,43 @@ function genId() {
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({length:5}, ()=>c[Math.floor(Math.random()*c.length)]).join('');
 }
+const CURRENCY_KEY = 'kryptiv_currency'; // 'usd' | 'eur'
+const EUR_RATE     = 0.92; // approx USD→EUR — good enough for display
+function getCurrency() { try { return localStorage.getItem(CURRENCY_KEY)||'usd'; } catch { return 'usd'; } }
+function setCurrency(v) { try { localStorage.setItem(CURRENCY_KEY,v); } catch {} }
+function csym() { return getCurrency()==='eur'?'€':'$'; }
+function cval(p) { return getCurrency()==='eur'?p*EUR_RATE:p; }
+
 const fp = p => {
   if (p == null || isNaN(p)) return '—';
-  if (p >= 1000) return '$' + p.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
-  if (p >= 1)    return '$' + p.toFixed(2);
-  if (p >= 0.01) return '$' + p.toFixed(4);
-  return '$' + p.toFixed(6);
+  const v = cval(p), s = csym();
+  if (v >= 1000) return s + v.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
+  if (v >= 1)    return s + v.toFixed(2);
+  if (v >= 0.01) return s + v.toFixed(4);
+  if (v > 0)     return '~'+s+'1';  // show ~$1 / ~€1 for tiny amounts
+  return s + v.toFixed(6);
 };
-const fc = c => { if (c == null || isNaN(c)) return '—'; return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; };
+const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
-  if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
-  if (v >= 1e9)  return '$' + (v/1e9).toFixed(2) + 'B';
-  if (v >= 1e6)  return '$' + (v/1e6).toFixed(2) + 'M';
-  return '$' + v.toLocaleString('en', {maximumFractionDigits:0});
+  const val = cval(v), s = csym();
+  if (val >= 1e12) return s + (val/1e12).toFixed(2) + 'T';
+  if (val >= 1e9)  return s + (val/1e9).toFixed(2) + 'B';
+  if (val >= 1e6)  return s + (val/1e6).toFixed(2) + 'M';
+  return s + val.toLocaleString('en', {maximumFractionDigits:0});
 };
 const fbtc = sats => (sats / 1e8).toFixed(6) + ' BTC';
 
 /* ── PRICE CACHE ── */
-const PRICE_CACHE_KEY = 'kryptiv_prices';
-const CACHE_TTL_MS    = 30_000; // 30s — more frequent updates
+const PRICE_CACHE_KEY   = 'kryptiv_prices';
+const FLASH_MODE_KEY    = 'kryptiv_flash';
+// Normal: 60s live TTL, 5s UI refresh (shows cached). Flash: 5s live TTL.
+const LIVE_TTL_NORMAL   = 60_000;
+const LIVE_TTL_FLASH    = 5_000;
+const UI_TICK_MS        = 5_000;   // always refresh UI display every 5s
+
+function isFlashMode() { try { return localStorage.getItem(FLASH_MODE_KEY)==='1'; } catch { return false; } }
+function setFlashMode(on) { try { localStorage.setItem(FLASH_MODE_KEY, on?'1':'0'); } catch {} }
 
 function cgToCoins(data) {
   return data.map((c, i) => ({
@@ -763,11 +783,11 @@ function cgToCoins(data) {
 
 const BINANCE_SYMS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT',
                       'ADAUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','DOGEUSDT',
-                      'MATICUSDT','UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
+                      'UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
 const BINANCE_MAP  = {
   'BTCUSDT':'BTC','ETHUSDT':'ETH','SOLUSDT':'SOL','BNBUSDT':'BNB','XRPUSDT':'XRP',
   'ADAUSDT':'ADA','AVAXUSDT':'AVAX','DOTUSDT':'DOT','LINKUSDT':'LINK','DOGEUSDT':'DOGE',
-  'MATICUSDT':'POL','UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
+  'UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
 };
 
 async function fetchBinance() {
@@ -786,11 +806,13 @@ async function fetchBinance() {
 }
 
 async function fetchCoinGecko() {
+  // Single request for all 15 coins — avoids per-coin API limits
   const ids = COIN_LIST.map(c => c.id).join(',');
-  const url = `https://api.coingecko.com/api/v3/coins/markets` +
-    `?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=15&page=1` +
-    `&sparkline=false&price_change_percentage=1h%2C24h%2C7d`;
+  const url = 'https://api.coingecko.com/api/v3/coins/markets' +
+    '?vs_currency=usd&ids=' + ids + '&order=market_cap_desc&per_page=15&page=1' +
+    '&sparkline=false&price_change_percentage=1h%2C24h%2C7d';
   const r = await fetch(url);
+  if (r.status === 429) throw new Error('RATE_LIMITED');
   if (!r.ok) throw new Error('CoinGecko ' + r.status);
   const data = await r.json();
   if (!Array.isArray(data) || !data.length) throw new Error('CoinGecko: empty');
@@ -799,7 +821,7 @@ async function fetchCoinGecko() {
 
 async function fetchKraken() {
   const pairs = 'XBTUSD,ETHUSD,SOLUSD,XRPUSD,ADAUSD,LINKUSD,DOGEUSD,UNIUSD,NEARUSD';
-  const r = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${pairs}`);
+  const r = await fetch('https://api.kraken.com/0/public/Ticker?pair=' + pairs);
   if (!r.ok) throw new Error('Kraken ' + r.status);
   const data = await r.json();
   if (data.error?.length) throw new Error('Kraken: ' + data.error[0]);
@@ -817,30 +839,41 @@ async function fetchKraken() {
   }).filter(c => c.price > 0);
 }
 
+// Returns {coins, src, cached, ageMs, rateLimited}
 async function fetchLivePrices() {
+  const flash = isFlashMode();
+  const ttl   = flash ? LIVE_TTL_FLASH : LIVE_TTL_NORMAL;
   try {
-    const cached = JSON.parse(sessionStorage.getItem(PRICE_CACHE_KEY) || 'null');
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
-      return { coins: cached.coins, src: cached.src + ' (cached)' };
+    const stored = JSON.parse(sessionStorage.getItem(PRICE_CACHE_KEY) || 'null');
+    if (stored && (Date.now() - stored.ts) < ttl) {
+      return { coins:stored.coins, src:stored.src, cached:true, ageMs:Date.now()-stored.ts, rateLimited:false };
     }
   } catch {}
-  const errors = [];
+  // Try live fetch
+  let rateLimited = false;
   try {
     const coins = await fetchCoinGecko();
     sessionStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ coins, ts:Date.now(), src:'CoinGecko' }));
-    return { coins, src:'CoinGecko' };
-  } catch(e) { errors.push('CoinGecko: ' + e.message); }
+    return { coins, src:'CoinGecko', cached:false, ageMs:0, rateLimited:false };
+  } catch(e) {
+    if (e.message === 'RATE_LIMITED') rateLimited = true;
+  }
   try {
     const coins = await fetchBinance();
     sessionStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ coins, ts:Date.now(), src:'Binance' }));
-    return { coins, src:'Binance' };
-  } catch(e) { errors.push('Binance: ' + e.message); }
+    return { coins, src:'Binance', cached:false, ageMs:0, rateLimited:false };
+  } catch {}
   try {
     const coins = await fetchKraken();
     sessionStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ coins, ts:Date.now(), src:'Kraken' }));
-    return { coins, src:'Kraken' };
-  } catch(e) { errors.push('Kraken: ' + e.message); }
-  return { coins:null, src:null, errors };
+    return { coins, src:'Kraken', cached:false, ageMs:0, rateLimited:false };
+  } catch {}
+  // If all fail, return last cached even if stale
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(PRICE_CACHE_KEY) || 'null');
+    if (stored) return { coins:stored.coins, src:stored.src, cached:true, ageMs:Date.now()-stored.ts, rateLimited };
+  } catch {}
+  return { coins:null, src:null, cached:false, ageMs:0, rateLimited };
 }
 
 /* ── SPARKLINE CACHE ── */
@@ -849,7 +882,7 @@ async function fetchSparkline(coinId) {
   if (SPARK_CACHE[coinId]) return SPARK_CACHE[coinId];
   try {
     const r = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=7&interval=hourly`
+      'https://api.coingecko.com/api/v3/coins/' + coinId + '/market_chart?vs_currency=usd&days=7&interval=hourly'
     );
     if (!r.ok) return null;
     const d = await r.json();
@@ -865,16 +898,19 @@ function startPriceUpdates(onUpdate, onError) {
   async function tick() {
     const result = await fetchLivePrices();
     if (result.coins) {
-      window._liveCoins = result.coins;
+      window._liveCoins   = result.coins;
       window._priceSource = result.src;
-      if (onUpdate) onUpdate(result.coins, result.src);
+      window._priceAge    = result.ageMs;
+      window._rateLimited = result.rateLimited;
+      if (onUpdate) onUpdate(result.coins, result.src, result);
     } else {
-      if (onError) onError(result.errors);
+      if (onError) onError(result.rateLimited);
     }
   }
   tick();
   if (_priceInterval) clearInterval(_priceInterval);
-  _priceInterval = setInterval(tick, 30_000);
+  // Always tick every 5s — uses cache if still fresh, fetches live when cache expires
+  _priceInterval = setInterval(tick, UI_TICK_MS);
   return () => clearInterval(_priceInterval);
 }
 
@@ -888,14 +924,12 @@ function requireAuth() {
 
 /* ── PAGE NAVIGATE with transition ── */
 function navigate(path) {
-  // Show transition overlay
+  // Minimal transition — just a thin progress bar, no logo text
   const ov = document.createElement('div');
   ov.className = 'page-transition';
-  ov.innerHTML = `<div class="pt-logo">KRYPTIV</div>
-    <div class="pt-bar"><div class="pt-fill"></div></div>
-    <div class="pt-txt">Loading…</div>`;
+  ov.innerHTML = '<div class="pt-bar" style="position:fixed;top:0;left:0;right:0;width:100%;height:2px;background:rgba(255,255,255,.08)"><div class="pt-fill"></div></div>';
   document.body.appendChild(ov);
-  setTimeout(() => { window.location.href = path; }, 280);
+  setTimeout(function() { window.location.href = path; }, 180);
 }
 
 /* ── MEMPOOL (live BTC chain data via Blockchain.info public API) ── */
@@ -1112,14 +1146,14 @@ function PriceLoading() {
   );
 }
 
-function SettingsModal({onClose}) {
+function SettingsModal({onClose, flash, onToggleFlash}) {
   const [msg, setMsg] = useState('');
   const act = (fn, txt) => { fn(); setMsg(txt); };
   const rows = [
-    {icon:'refresh',       lbl:'Refresh Prices',   sub:'Force live price reload',   fn:()=>act(clearAllCache,'Prices will refresh.'),                                             danger:false},
-    {icon:'delete_sweep',  lbl:'Clear Holdings',    sub:'Remove all saved positions',fn:()=>act(()=>localStorage.removeItem('kryptiv_holdings'),'Holdings cleared.'),              danger:true },
-    {icon:'logout',        lbl:'Sign Out',          sub:'Keeps your account data',   fn:()=>{ LS.clear(); navigate('/'); },                                                         danger:false},
-    {icon:'delete_forever',lbl:'Reset Everything',  sub:'Wipe all data and sign out',fn:()=>{ if(confirm('Delete all data? Cannot be undone.')) nukeEverything(); },               danger:true },
+    {icon:'refresh',       lbl:'Refresh Prices',   sub:'Force live price reload',   fn:()=>act(clearAllCache,'Prices will refresh.'),        danger:false},
+    {icon:'delete_sweep',  lbl:'Clear Holdings',    sub:'Remove all saved positions',fn:()=>act(()=>localStorage.removeItem('kryptiv_holdings'),'Holdings cleared.'), danger:true},
+    {icon:'logout',        lbl:'Sign Out',          sub:'Keeps your account data',   fn:()=>{ LS.clear(); navigate('/'); },                   danger:false},
+    {icon:'delete_forever',lbl:'Reset Everything',  sub:'Wipe all data and sign out',fn:()=>{ if(confirm('Delete all data? Cannot be undone.')) nukeEverything(); },  danger:true},
   ];
   return (
     <div className="settings-modal">
@@ -1131,6 +1165,47 @@ function SettingsModal({onClose}) {
             <MI n="close" style={{fontSize:22}}/>
           </button>
         </div>
+
+        {/* Currency toggle */}
+        <div className="settings-row" style={{marginBottom:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
+            <MI n="swap_horiz" style={{fontSize:20,color:'var(--w4)',flexShrink:0}}/>
+            <div>
+              <div className="settings-lbl">CURRENCY</div>
+              <div className="settings-sub">Display prices in USD or EUR</div>
+            </div>
+          </div>
+          <button
+            onClick={()=>{setCurrency(getCurrency()==='eur'?'usd':'eur');window.location.reload();}}
+            style={{padding:'5px 14px',background:'rgba(255,255,255,.06)',
+              border:'1px solid var(--border2)',
+              color:'var(--w3)',fontFamily:'var(--mono)',fontSize:8,letterSpacing:2,cursor:'pointer'}}>
+            {getCurrency()==='eur'?'€ EUR':'$ USD'}
+          </button>
+        </div>
+
+        {/* Flash Mode toggle */}
+        <div className="settings-row" style={{marginBottom:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
+            <MI n="bolt" style={{fontSize:20,color:flash?'rgba(255,200,0,.8)':'var(--w4)',flexShrink:0}}/>
+            <div>
+              <div className="settings-lbl" style={{color:flash?'rgba(255,200,0,.9)':'var(--w3)'}}>⚡ FLASH MODE</div>
+              <div className="settings-sub">{flash?'5s live refresh — may hit API limits':'Normal mode · 60s cache · 5s display'}</div>
+            </div>
+          </div>
+          <button
+            onClick={()=>{if(onToggleFlash)onToggleFlash();setMsg(flash?'Flash mode off — 60s cache.':'Flash mode on — 5s live refresh!');}}
+            style={{padding:'5px 14px',background:flash?'rgba(255,200,0,.15)':'rgba(255,255,255,.06)',
+              border:'1px solid '+(flash?'rgba(255,200,0,.4)':'var(--border2)'),
+              color:flash?'rgba(255,200,0,.9)':'var(--w3)',fontFamily:'var(--mono)',fontSize:8,letterSpacing:2,cursor:'pointer'}}>
+            {flash?'ON':'OFF'}
+          </button>
+        </div>
+
+        {flash&&<div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,140,0,.7)',letterSpacing:1,marginBottom:14,padding:'6px 10px',border:'1px solid rgba(255,140,0,.2)',lineHeight:1.7}}>
+          Flash mode refreshes every 5s. CoinGecko free API limit is ~10-30 req/min. You may get rate-limited — prices will show cached data with a warning.
+        </div>}
+
         {rows.map(r=>(
           <div key={r.lbl} className="settings-row">
             <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
@@ -1184,22 +1259,37 @@ function AppShell({user, setUser, view, children}) {
   const [priceSrc, setPriceSrc] = useState('');
   const [retryKey, setRetryKey] = useState(0);
 
+  const [flash,     setFlash]     = useState(()=>isFlashMode());
+  const [cacheAge,  setCacheAge]  = useState(0);
+  const [rateLim,   setRateLim]   = useState(false);
+
   useEffect(() => {
     let stopped = false;
     const stop = startPriceUpdates(
-      (newCoins, src) => {
+      (newCoins, src, result) => {
         if (stopped) return;
         setCoins(newCoins);
         setPriceSrc(src);
         setPriceErr(null);
+        setCacheAge(result ? result.ageMs : 0);
+        setRateLim(result ? result.rateLimited : false);
       },
-      (errors) => {
+      (rateLimited) => {
         if (stopped) return;
-        setCoins(prev => { if (!prev) setPriceErr(errors); return prev; });
+        setCoins(prev => { if (!prev) setPriceErr(true); return prev; });
+        setRateLim(rateLimited);
       }
     );
     return () => { stopped=true; stop(); };
-  }, [retryKey]);
+  }, [retryKey, flash]);
+
+  const toggleFlash = () => {
+    const next = !flash;
+    setFlashMode(next);
+    setFlash(next);
+    clearAllCache();
+    setRetryKey(k=>k+1);
+  };
 
   const go = id => {
     setNavOpen(false);
@@ -1260,9 +1350,10 @@ function AppShell({user, setUser, view, children}) {
           <div className="tb-title">{NAV_ITEMS.find(n=>n.id===view)?.lbl}</div>
           <Ticker coins={coins}/>
           <div className="tb-right">
-            <div className="ic-btn" title={`Live · ${priceSrc}`}>
-              <MI n="fiber_manual_record" style={{fontSize:9,color:'rgba(130,255,150,.8)'}}/>
-            </div>
+            {rateLim && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,140,0,.8)',letterSpacing:1,padding:'0 8px',border:'1px solid rgba(255,140,0,.3)'}}>RATE LIMITED · CACHED</div>}
+            {!rateLim && cacheAge<=10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.7)',letterSpacing:2,display:'flex',alignItems:'center',gap:4}}><span style={{width:5,height:5,background:'rgba(130,255,150,.8)',borderRadius:'50%',display:'inline-block',animation:'pulse 2s infinite'}}/> LIVE</div>}
+            {!rateLim && cacheAge>10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1}}>NEXT UPDATE {Math.max(0,Math.round((60000-cacheAge)/1000))}s</div>}
+            {flash && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,200,0,.8)',letterSpacing:2,padding:'0 8px',border:'1px solid rgba(255,200,0,.25)'}}>⚡ FLASH</div>}
             <div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
               <MI n="settings"/>
             </div>
@@ -1291,14 +1382,14 @@ function AppShell({user, setUser, view, children}) {
       </div>
 
       {navOpen && <NavOverlay view={view} go={go} onClose={()=>setNavOpen(false)}/>}
-      {settOpen && <SettingsModal onClose={()=>setSettOpen(false)}/>}
+      {settOpen && <SettingsModal onClose={()=>setSettOpen(false)} flash={flash} onToggleFlash={toggleFlash}/>}
     </div>
   );
 }
 
 
 /* ═══════════════ ACCOUNT PAGE ═══════════════ */
-const APP_VERSION = '0.3.0';
+const APP_VERSION = '0.4.0';
 
 function Account({user, setUser, coins, availCoins, priceSrc}) {
   const [editing,  setEditing]  = useState(false);
@@ -1372,11 +1463,11 @@ function Account({user, setUser, coins, availCoins, priceSrc}) {
         <div className="s-lbl"><MI n="link"/>QUICK LINKS</div>
         {[
           {id:'plans',    icon:'workspace_premium', lbl:'Upgrade Plan',   sub:'View plans & pricing'},
-          {id:'ai',       icon:'smart_toy',         lbl:'AI Analysis',    sub:'Powered by Claude'},
+          {id:'ai',       icon:'smart_toy',         lbl:'AI Analysis',    sub:'Llama 3.2 · on-device inference'},
           {id:'portfolio',icon:'donut_small',       lbl:'My Portfolio',   sub:'Track positions & P&L'},
           {id:'privacy',  icon:'shield',            lbl:'Privacy & Terms',sub:'How your data is used'},
         ].map(n=>(
-          <div key={n.id} onClick={()=>navigate('/'+n.id.charAt(0).toUpperCase()+n.id.slice(1)+'/')}
+          <div key={n.id} onClick={()=>navigate({plans:'/Plans/',ai:'/AI/',portfolio:'/Portfolio/',privacy:'/Privacy/'}[n.id]||'/')}
             style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',
               borderBottom:'1px solid rgba(255,255,255,.04)',cursor:'pointer',transition:'padding-left .15s'}}
             onMouseEnter={e=>e.currentTarget.style.paddingLeft='8px'}
