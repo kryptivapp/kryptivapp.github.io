@@ -1,4 +1,4 @@
-!MAINTENCE
+!MAINTENANCE
 
 # Possible states (uncomment to use):
 # !ONLINE
