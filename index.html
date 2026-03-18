@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>KRYPTIV · Intelligence for Crypto</title>
-
+  
 <!-- ── STATE GATE: check state.txt before anything loads ── -->
 <script>
 (function(){
@@ -15,9 +15,9 @@
         if(!txt){return;}
         var lines=txt.split('\n');
         for(var i=0;i<lines.length;i++){
-          var l=lines[i].trim();
+          var l=lines[i].trim().toLowerCase();
           if(!l||l[0]==='#') continue;
-          if(l[0]==='!' && l.slice(1).toUpperCase()!=='ONLINE'){
+          if(l!=='online'){
             window.location.replace('msg.html');
           }
           break;
@@ -28,6 +28,7 @@
   check();
 })();
 </script>
+
 
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
