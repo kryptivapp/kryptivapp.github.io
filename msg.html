@@ -29,24 +29,41 @@
     <div id="status-message"></div>
 
     <script>
-        // Hardcode for testing
-        const currentState = "!MAINTENANCE";
-        const states = {
-            "!ONLINE": "",
-            "!MAINTENANCE": "We’re currently performing maintenance. We’ll be back shortly.",
-            "!UPDATE": "We’re currently working on a new update. See you soon!",
-            "!OFFLINE": "We’re temporarily offline. Please check back later.",
-            "!ERROR": "Something went wrong. We’re working to fix it.",
-        };
+        // Fetch the state.txt file from GitHub
+        fetch('https://raw.githubusercontent.com/kryptivapp/kryptivapp.github.io/refs/heads/main/state.txt')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.text();
+            })
+            .then(data => {
+                // Trim any whitespace from the fetched data
+                const currentState = data.trim();
+                const states = {
+                    "!ONLINE": "",
+                    "!MAINTENANCE": "We’re currently performing maintenance. We’ll be back shortly.",
+                    "!UPDATE": "We’re currently working on a new update. See you soon!",
+                    "!OFFLINE": "We’re temporarily offline. Please check back later.",
+                    "!ERROR": "Something went wrong. We’re working to fix it.",
+                };
 
-        if (currentState !== "!ONLINE") {
-            const statusMessageElement = document.getElementById("status-message");
-            if (statusMessageElement) {
-                statusMessageElement.innerHTML = `<p>${states[currentState]}</p>`;
-            } else {
-                console.error("Element with ID 'status-message' not found.");
-            }
-        }
+                if (currentState && currentState !== "!ONLINE") {
+                    const statusMessageElement = document.getElementById("status-message");
+                    if (statusMessageElement) {
+                        statusMessageElement.innerHTML = `<p>${states[currentState]}</p>`;
+                    } else {
+                        console.error("Element with ID 'status-message' not found.");
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                const statusMessageElement = document.getElementById("status-message");
+                if (statusMessageElement) {
+                    statusMessageElement.innerHTML = `<p>Something went wrong. We’re working to fix it.</p>`;
+                }
+            });
     </script>
 </body>
 </html>
