@@ -677,7 +677,6 @@ const COIN_LIST = [
   { id:'polkadot',       sym:'DOT',  name:'Polkadot'   },
   { id:'chainlink',      sym:'LINK', name:'Chainlink'  },
   { id:'dogecoin',       sym:'DOGE', name:'Dogecoin'   },
-  { id:'matic-network',  sym:'POL',  name:'Polygon'    },
   { id:'uniswap',        sym:'UNI',  name:'Uniswap'    },
   { id:'near',           sym:'NEAR', name:'NEAR'       },
   { id:'arbitrum',       sym:'ARB',  name:'Arbitrum'   },
@@ -727,20 +726,30 @@ function genId() {
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({length:5}, ()=>c[Math.floor(Math.random()*c.length)]).join('');
 }
+const CURRENCY_KEY = 'kryptiv_currency'; // 'usd' | 'eur'
+const EUR_RATE     = 0.92; // approx USD→EUR — good enough for display
+function getCurrency() { try { return localStorage.getItem(CURRENCY_KEY)||'usd'; } catch { return 'usd'; } }
+function setCurrency(v) { try { localStorage.setItem(CURRENCY_KEY,v); } catch {} }
+function csym() { return getCurrency()==='eur'?'€':'$'; }
+function cval(p) { return getCurrency()==='eur'?p*EUR_RATE:p; }
+
 const fp = p => {
   if (p == null || isNaN(p)) return '—';
-  if (p >= 1000) return '$' + p.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
-  if (p >= 1)    return '$' + p.toFixed(2);
-  if (p >= 0.01) return '$' + p.toFixed(4);
-  return '$' + p.toFixed(6);
+  const v = cval(p), s = csym();
+  if (v >= 1000) return s + v.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
+  if (v >= 1)    return s + v.toFixed(2);
+  if (v >= 0.01) return s + v.toFixed(4);
+  if (v > 0)     return '~'+s+'1';  // show ~$1 / ~€1 for tiny amounts
+  return s + v.toFixed(6);
 };
 const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
-  if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
-  if (v >= 1e9)  return '$' + (v/1e9).toFixed(2) + 'B';
-  if (v >= 1e6)  return '$' + (v/1e6).toFixed(2) + 'M';
-  return '$' + v.toLocaleString('en', {maximumFractionDigits:0});
+  const val = cval(v), s = csym();
+  if (val >= 1e12) return s + (val/1e12).toFixed(2) + 'T';
+  if (val >= 1e9)  return s + (val/1e9).toFixed(2) + 'B';
+  if (val >= 1e6)  return s + (val/1e6).toFixed(2) + 'M';
+  return s + val.toLocaleString('en', {maximumFractionDigits:0});
 };
 const fbtc = sats => (sats / 1e8).toFixed(6) + ' BTC';
 
@@ -774,11 +783,11 @@ function cgToCoins(data) {
 
 const BINANCE_SYMS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT',
                       'ADAUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','DOGEUSDT',
-                      'MATICUSDT','UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
+                      'UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
 const BINANCE_MAP  = {
   'BTCUSDT':'BTC','ETHUSDT':'ETH','SOLUSDT':'SOL','BNBUSDT':'BNB','XRPUSDT':'XRP',
   'ADAUSDT':'ADA','AVAXUSDT':'AVAX','DOTUSDT':'DOT','LINKUSDT':'LINK','DOGEUSDT':'DOGE',
-  'MATICUSDT':'POL','UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
+  'UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
 };
 
 async function fetchBinance() {
@@ -1079,6 +1088,99 @@ function BigSpark({prices, ch}) {
   );
 }
 
+/* ── HERO CHART for Dashboard selected coin ── */
+function HeroChart({coinId, coin, range, onRangeChange}) {
+  const [prices, setPrices]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hover,   setHover]   = useState(null);
+  const svgRef = useRef(null);
+  const W = 600, H = 140;
+  const RMINI = [{id:'1h',label:'1H',last:60},{id:'12h',label:'12H',last:720},{id:'1d',label:'24H',last:9999}];
+
+  useEffect(()=>{
+    if (!coinId) return;
+    let cancelled = false;
+    setLoading(true);
+    setPrices(null);
+    fetch('https://api.coingecko.com/api/v3/coins/'+coinId+'/market_chart?vs_currency=usd&days=1&interval=minutely')
+      .then(r=>r.ok?r.json():null)
+      .then(d=>{
+        if (cancelled||!d||!d.prices) return;
+        const rm = RMINI.find(x=>x.id===(range||'1d'))||RMINI[2];
+        let pts = d.prices.map(p=>({t:p[0],v:p[1]}));
+        if (rm.last<pts.length) pts=pts.slice(-rm.last);
+        if (!cancelled){ setPrices(pts); setLoading(false); }
+      }).catch(()=>{ if(!cancelled) setLoading(false); });
+    return ()=>{cancelled=true;};
+  },[coinId, range]);
+
+  function handleMouseMove(e){
+    if (!prices||!svgRef.current) return;
+    const rect=svgRef.current.getBoundingClientRect();
+    const idx=Math.min(Math.max(0,Math.round(((e.clientX-rect.left)/rect.width)*(prices.length-1))),prices.length-1);
+    setHover({price:prices[idx].v, time:prices[idx].t, idx});
+  }
+
+  if (loading||!prices||prices.length<2) return (
+    <div style={{height:H,display:'flex',alignItems:'center',justifyContent:'center',
+      fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:3}}>
+      {loading?'LOADING…':'CHART UNAVAILABLE'}
+    </div>
+  );
+
+  const vals=prices.map(p=>p.v);
+  const mn=Math.min(...vals),mx=Math.max(...vals),rng=mx-mn||1;
+  const toY=v=>H-((v-mn)/rng)*(H-16)-8;
+  const toX=i=>(i/(prices.length-1))*W;
+  const isUp=prices[prices.length-1].v>=prices[0].v;
+  const col=isUp?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
+  const step=Math.max(1,Math.floor(prices.length/180));
+  const sp=prices.filter((_,i)=>i%step===0||i===prices.length-1);
+  function mkPath(pts){
+    let d=`M ${toX(prices.indexOf(pts[0])).toFixed(1)},${toY(pts[0].v).toFixed(1)}`;
+    for(let i=1;i<pts.length;i++){
+      const pi=prices.indexOf(pts[i-1]),ci=prices.indexOf(pts[i]);
+      d+=` C ${(toX(pi)+(toX(ci)-toX(pi))*.4).toFixed(1)},${toY(pts[i-1].v).toFixed(1)} ${(toX(ci)-(toX(ci)-toX(pi))*.4).toFixed(1)},${toY(pts[i].v).toFixed(1)} ${toX(ci).toFixed(1)},${toY(pts[i].v).toFixed(1)}`;
+    }
+    return d;
+  }
+  const pd=mkPath(sp);
+  const hx=hover?toX(hover.idx):null, hy=hover?toY(hover.price):null;
+  return (
+    <div style={{position:'relative',marginTop:10}}>
+      <div style={{display:'flex',gap:4,marginBottom:6,alignItems:'center'}}>
+        {RMINI.map(r=>(
+          <button key={r.id} onClick={()=>onRangeChange&&onRangeChange(r.id)}
+            style={{padding:'3px 9px',background:(range||'1d')===r.id?'rgba(255,255,255,.1)':'none',
+              border:'1px solid '+((range||'1d')===r.id?'rgba(255,255,255,.2)':'rgba(255,255,255,.07)'),
+              color:(range||'1d')===r.id?'var(--w)':'var(--w4)',
+              fontFamily:'var(--mono)',fontSize:7,letterSpacing:2,cursor:'pointer'}}>
+            {r.label}
+          </button>
+        ))}
+        {hover&&<span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:8,color:col}}>{fp(hover.price)}</span>}
+      </div>
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+        style={{width:'100%',height:H,display:'block',cursor:'crosshair'}}
+        onMouseMove={handleMouseMove} onMouseLeave={()=>setHover(null)}>
+        <defs>
+          <linearGradient id="hcg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={isUp?'rgba(130,255,150,1)':'rgba(255,100,80,1)'} stopOpacity="0.12"/>
+            <stop offset="100%" stopColor="transparent" stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d={pd+` L${W},${H} L0,${H} Z`} fill="url(#hcg)"/>
+        <path d={pd} fill="none" stroke={col} strokeWidth="1.5"/>
+        {hx!==null&&<>
+          <line x1={hx.toFixed(1)} y1="0" x2={hx.toFixed(1)} y2={H} stroke="rgba(255,255,255,.18)" strokeWidth="1" strokeDasharray="3,3"/>
+          <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="3.5" fill={col}/>
+        </>}
+        {!hover&&<circle cx={W} cy={toY(vals[vals.length-1]).toFixed(1)} r="3" fill={col}/>}
+      </svg>
+    </div>
+  );
+}
+
 function Ticker({coins}) {
   if (!coins || !coins.length) return <div className="tb-ticker"/>;
   const items = [...coins, ...coins];
@@ -1153,6 +1255,24 @@ function SettingsModal({onClose, flash, onToggleFlash}) {
           <div className="settings-title" style={{marginBottom:0}}>SETTINGS</div>
           <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w4)',display:'flex',alignItems:'center'}}>
             <MI n="close" style={{fontSize:22}}/>
+          </button>
+        </div>
+
+        {/* Currency toggle */}
+        <div className="settings-row" style={{marginBottom:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
+            <MI n="swap_horiz" style={{fontSize:20,color:'var(--w4)',flexShrink:0}}/>
+            <div>
+              <div className="settings-lbl">CURRENCY</div>
+              <div className="settings-sub">Display prices in USD or EUR</div>
+            </div>
+          </div>
+          <button
+            onClick={()=>{setCurrency(getCurrency()==='eur'?'usd':'eur');window.location.reload();}}
+            style={{padding:'5px 14px',background:'rgba(255,255,255,.06)',
+              border:'1px solid var(--border2)',
+              color:'var(--w3)',fontFamily:'var(--mono)',fontSize:8,letterSpacing:2,cursor:'pointer'}}>
+            {getCurrency()==='eur'?'€ EUR':'$ USD'}
           </button>
         </div>
 
@@ -1322,8 +1442,9 @@ function AppShell({user, setUser, view, children}) {
           <div className="tb-title">{NAV_ITEMS.find(n=>n.id===view)?.lbl}</div>
           <Ticker coins={coins}/>
           <div className="tb-right">
-            {rateLim && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,140,0,.8)',letterSpacing:1,padding:'0 8px',border:'1px solid rgba(255,140,0,.3)'}}>RATE LIMITED</div>}
-            {!rateLim && cacheAge>5000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1,padding:'0 6px'}}>~{Math.round(cacheAge/1000)}s ago</div>}
+            {rateLim && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,140,0,.8)',letterSpacing:1,padding:'0 8px',border:'1px solid rgba(255,140,0,.3)'}}>RATE LIMITED · CACHED</div>}
+            {!rateLim && cacheAge<=10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.7)',letterSpacing:2,display:'flex',alignItems:'center',gap:4}}><span style={{width:5,height:5,background:'rgba(130,255,150,.8)',borderRadius:'50%',display:'inline-block',animation:'pulse 2s infinite'}}/> LIVE</div>}
+            {!rateLim && cacheAge>10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1}}>NEXT UPDATE {Math.max(0,Math.round((60000-cacheAge)/1000))}s</div>}
             {flash && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,200,0,.8)',letterSpacing:2,padding:'0 8px',border:'1px solid rgba(255,200,0,.25)'}}>⚡ FLASH</div>}
             <div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
               <MI n="settings"/>
@@ -1439,7 +1560,7 @@ function MempoolFeed({btcPrice}) {
             </div>
             <div>
               <div className="tx-val">{tx.btc} BTC</div>
-              {usdVal > 0 && <div className="tx-fee">{fv(usdVal)}</div>}
+              {usdVal > 0 && <div className="tx-fee">{usdVal < 1 ? "~"+csym()+"1" : fv(usdVal)}</div>}
             </div>
           </div>
         );
@@ -1452,6 +1573,7 @@ function Dashboard({user, coins, availCoins, priceSrc}) {
   const isFree = user.tier==='free';
   const [selectedSym, setSelectedSym] = useState('BTC');
   const [pickerOpen,  setPickerOpen]  = useState(false);
+  const [heroRange,   setHeroRange]   = useState('1d');
   const [pinned, setPinned] = useState(() => {
     try { return JSON.parse(localStorage.getItem('kryptiv_pinned')||'["BTC","SOL"]'); } catch { return ['BTC','SOL']; }
   });
@@ -1469,8 +1591,8 @@ function Dashboard({user, coins, availCoins, priceSrc}) {
 
   // Always use full coins list for market stats
   const allCoins = coins || availCoins || [];
-  const gainers = useMemo(()=>[...allCoins].sort((a,b)=>(b.ch||0)-(a.ch||0)).slice(0,5), [allCoins]);
-  const losers  = useMemo(()=>[...allCoins].sort((a,b)=>(a.ch||0)-(b.ch||0)).slice(0,5), [allCoins]);
+  const gainers = useMemo(()=>[...allCoins].sort((a,b)=>(b.ch||0)-(a.ch||0)).slice(0,3), [allCoins]);
+  const losers  = useMemo(()=>[...allCoins].sort((a,b)=>(a.ch||0)-(b.ch||0)).slice(0,3), [allCoins]);
   const avgCh   = allCoins.reduce((a,c)=>a+(c.ch||0),0)/Math.max(allCoins.length,1);
   const totalMc = allCoins.reduce((a,c)=>a+(c.mc||0),0);
   const btc     = allCoins.find(c=>c.sym==='BTC');
@@ -1499,12 +1621,12 @@ function Dashboard({user, coins, availCoins, priceSrc}) {
               <div className={`hero-ch ${(selected.ch||0)>=0?'up':'dn'}`}>
                 {(selected.ch||0)>=0?'▴':'▾'} {fc(selected.ch)} 24h
               </div>
-              {selected.ch7d!=null&&<div className="hero-meta">7D: {fc(selected.ch7d)}</div>}
               {selected.ch1h!=null&&<div className="hero-meta">1H: {fc(selected.ch1h)}</div>}
-              {selected.mc&&<div className="hero-meta">MCap: {fv(selected.mc*1e9)}</div>}
+              {selected.ch7d!=null&&<div className="hero-meta">7D: {fc(selected.ch7d)}</div>}
             </div>
           </div>
-          <button className="change-btn" onClick={()=>setPickerOpen(true)}>
+          <HeroChart coinId={selected.id} coin={selected} range={heroRange} onRangeChange={setHeroRange}/>
+          <button className="change-btn" style={{marginTop:8}} onClick={()=>setPickerOpen(true)}>
             <MI n="swap_horiz"/>CHANGE COIN
           </button>
         </>)}
