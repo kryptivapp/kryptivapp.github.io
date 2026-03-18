@@ -3,67 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Status Message</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+    <title>KRYPTIV</title>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap"></noscript>
     <style>
         body {
             font-family: 'Space Grotesk', sans-serif;
+            background-color: white;
+            color: black;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
-        }
-        #status-message {
             text-align: center;
             padding: 20px;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .container {
+            max-width: 600px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            letter-spacing: 0.2em;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
-    <div id="status-message"></div>
+    <div class="container">
+        <h1>K R Y P T I V</h1>
+        <p>Invest Smart. Trade Smarter.</p>
+        <div id="status-message"></div>
+    </div>
 
     <script>
-        // Fetch the state.txt file from GitHub
-        fetch('https://raw.githubusercontent.com/kryptivapp/kryptivapp.github.io/refs/heads/main/state.txt')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok ' + response.statusText);
-                }
-                return response.text();
-            })
-            .then(data => {
-                // Trim any whitespace from the fetched data
-                const currentState = data.trim();
-                const states = {
-                    "!ONLINE": "",
-                    "!MAINTENANCE": "We’re currently performing maintenance. We’ll be back shortly.",
-                    "!UPDATE": "We’re currently working on a new update. See you soon!",
-                    "!OFFLINE": "We’re temporarily offline. Please check back later.",
-                    "!ERROR": "Something went wrong. We’re working to fix it.",
-                };
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hardcoded messages for each status
+            const statusMessages = {
+                "online": "",
+                "maintenance": "We’re currently performing maintenance. We’ll be back shortly.",
+                "update": "We’re currently working on a new update. See you soon!",
+                "offline": "We’re temporarily offline. Please check back later.",
+                "error": "Something went wrong. We’re working to fix it.",
+            };
 
-                if (currentState && currentState !== "!ONLINE") {
-                    const statusMessageElement = document.getElementById("status-message");
-                    if (statusMessageElement) {
-                        statusMessageElement.innerHTML = `<p>${states[currentState]}</p>`;
+            // Fetch the state.txt file from GitHub
+            fetch('https://raw.githubusercontent.com/kryptivapp/kryptivapp.github.io/refs/heads/main/state.txt')
+                .then(response => response.text())
+                .then(text => {
+                    // Extract the current status (first line, trimmed and lowercase)
+                    const lines = text.trim().split('\n');
+                    const currentStatus = lines[0].trim().toLowerCase();
+
+                    // Log the status for debugging
+                    console.log("Current status:", currentStatus);
+
+                    // Display the message if the status is recognized
+                    if (currentStatus && statusMessages[currentStatus]) {
+                        document.getElementById("status-message").innerHTML = `
+                            <p>${statusMessages[currentStatus]}</p>
+                        `;
                     } else {
-                        console.error("Element with ID 'status-message' not found.");
+                        document.getElementById("status-message").innerHTML = `
+                            <p>Something went wrong. Please try again later.</p>
+                        `;
                     }
-                }
-            })
-            .catch(error => {
-                console.error('There was a problem with the fetch operation:', error);
-                const statusMessageElement = document.getElementById("status-message");
-                if (statusMessageElement) {
-                    statusMessageElement.innerHTML = `<p>Something went wrong. We’re working to fix it.</p>`;
-                }
-            });
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    document.getElementById("status-message").innerHTML = `
+                        <p>Something went wrong. Please try again later.</p>
+                    `;
+                });
+        });
     </script>
 </body>
 </html>
