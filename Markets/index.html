@@ -677,7 +677,6 @@ const COIN_LIST = [
   { id:'polkadot',       sym:'DOT',  name:'Polkadot'   },
   { id:'chainlink',      sym:'LINK', name:'Chainlink'  },
   { id:'dogecoin',       sym:'DOGE', name:'Dogecoin'   },
-  { id:'matic-network',  sym:'POL',  name:'Polygon'    },
   { id:'uniswap',        sym:'UNI',  name:'Uniswap'    },
   { id:'near',           sym:'NEAR', name:'NEAR'       },
   { id:'arbitrum',       sym:'ARB',  name:'Arbitrum'   },
@@ -727,20 +726,30 @@ function genId() {
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({length:5}, ()=>c[Math.floor(Math.random()*c.length)]).join('');
 }
+const CURRENCY_KEY = 'kryptiv_currency'; // 'usd' | 'eur'
+const EUR_RATE     = 0.92; // approx USD→EUR — good enough for display
+function getCurrency() { try { return localStorage.getItem(CURRENCY_KEY)||'usd'; } catch { return 'usd'; } }
+function setCurrency(v) { try { localStorage.setItem(CURRENCY_KEY,v); } catch {} }
+function csym() { return getCurrency()==='eur'?'€':'$'; }
+function cval(p) { return getCurrency()==='eur'?p*EUR_RATE:p; }
+
 const fp = p => {
   if (p == null || isNaN(p)) return '—';
-  if (p >= 1000) return '$' + p.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
-  if (p >= 1)    return '$' + p.toFixed(2);
-  if (p >= 0.01) return '$' + p.toFixed(4);
-  return '$' + p.toFixed(6);
+  const v = cval(p), s = csym();
+  if (v >= 1000) return s + v.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
+  if (v >= 1)    return s + v.toFixed(2);
+  if (v >= 0.01) return s + v.toFixed(4);
+  if (v > 0)     return '~'+s+'1';  // show ~$1 / ~€1 for tiny amounts
+  return s + v.toFixed(6);
 };
 const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
 const fv = v => {
   if (v == null || isNaN(v)) return '—';
-  if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
-  if (v >= 1e9)  return '$' + (v/1e9).toFixed(2) + 'B';
-  if (v >= 1e6)  return '$' + (v/1e6).toFixed(2) + 'M';
-  return '$' + v.toLocaleString('en', {maximumFractionDigits:0});
+  const val = cval(v), s = csym();
+  if (val >= 1e12) return s + (val/1e12).toFixed(2) + 'T';
+  if (val >= 1e9)  return s + (val/1e9).toFixed(2) + 'B';
+  if (val >= 1e6)  return s + (val/1e6).toFixed(2) + 'M';
+  return s + val.toLocaleString('en', {maximumFractionDigits:0});
 };
 const fbtc = sats => (sats / 1e8).toFixed(6) + ' BTC';
 
@@ -774,11 +783,11 @@ function cgToCoins(data) {
 
 const BINANCE_SYMS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT',
                       'ADAUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','DOGEUSDT',
-                      'MATICUSDT','UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
+                      'UNIUSDT','NEARUSDT','ARBUSDT','OPUSDT'];
 const BINANCE_MAP  = {
   'BTCUSDT':'BTC','ETHUSDT':'ETH','SOLUSDT':'SOL','BNBUSDT':'BNB','XRPUSDT':'XRP',
   'ADAUSDT':'ADA','AVAXUSDT':'AVAX','DOTUSDT':'DOT','LINKUSDT':'LINK','DOGEUSDT':'DOGE',
-  'MATICUSDT':'POL','UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
+  'UNIUSDT':'UNI','NEARUSDT':'NEAR','ARBUSDT':'ARB','OPUSDT':'OP'
 };
 
 async function fetchBinance() {
@@ -1050,33 +1059,318 @@ function Spark({prices, ch, w=46, h=20}) {
   );
 }
 
-function BigSpark({prices, ch}) {
-  const sw=340, sh=76;
-  let pts;
-  if (prices && prices.length >= 2) {
-    const vals = prices.map(p => typeof p==='number'?p:p[1]);
-    const mn=Math.min(...vals), mx=Math.max(...vals), rng=mx-mn||1;
-    pts = vals.map((v,i) => ({ x:(i/(vals.length-1))*sw, y:sh-((v-mn)/rng)*sh }));
-  } else {
-    pts = Array.from({length:24}, (_,i) => {
-      const t=i/23, base=(ch||0)/100*1.5;
-      return { x:(i/23)*sw, y:sh-(0.5+base*t+Math.sin(i*.8)*.06)*sh };
-    });
+/* ── TRADING CHART ── */
+function TradingChart({coinId, coin, range, onRangeChange, height, showRangeSelector, livePrice}) {
+  const [prices, setPrices]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hover,   setHover]   = useState(null); // {x,y,price,time,idx}
+  const svgRef = useRef(null);
+  const W = 600, H = height||200;
+
+  const RANGES = [
+    {id:'1h',  label:'1H',  days:1,    interval:'minutely'},
+    {id:'1d',  label:'24H', days:1,    interval:'hourly'},
+    {id:'1w',  label:'7D',  days:7,    interval:'hourly'},
+    {id:'1m',  label:'30D', days:30,   interval:'daily'},
+    {id:'1y',  label:'1Y',  days:365,  interval:'daily'},
+  ];
+
+  const activeRange = range || '1d';
+
+  useEffect(()=>{
+    if (!coinId) return;
+    let cancelled = false;
+    setLoading(true);
+    setPrices(null);
+    setHover(null);
+    const r = RANGES.find(x=>x.id===activeRange)||RANGES[1];
+    fetch('https://api.coingecko.com/api/v3/coins/'+coinId+'/market_chart?vs_currency=usd&days='+r.days+(r.interval?'&interval='+r.interval:''))
+      .then(res=>res.ok?res.json():null)
+      .then(d=>{
+        if (cancelled||!d||!d.prices) return;
+        let pts = d.prices.map(p=>({t:p[0],v:p[1]}));
+        // For 1h use last 60 points of the 1d data
+        if (activeRange==='1h') pts = pts.slice(-60);
+        if (!cancelled) { setPrices(pts); setLoading(false); }
+      })
+      .catch(()=>{ if(!cancelled) setLoading(false); });
+    return ()=>{cancelled=true;};
+  },[coinId, activeRange]);
+
+  // Inject live price as last point
+  const allPts = useMemo(()=>{
+    if (!prices||!prices.length) return prices;
+    if (livePrice && livePrice !== prices[prices.length-1].v) {
+      return [...prices, {t:Date.now(), v:livePrice}];
+    }
+    return prices;
+  }, [prices, livePrice]);
+
+  function handleMouseMove(e) {
+    if (!allPts||!allPts.length||!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const xRatio = (e.clientX - rect.left) / rect.width;
+    const idx = Math.min(Math.max(0, Math.round(xRatio*(allPts.length-1))), allPts.length-1);
+    const p = allPts[idx];
+    const mn=Math.min(...allPts.map(x=>x.v)), mx=Math.max(...allPts.map(x=>x.v)), rng=mx-mn||1;
+    const y = H - ((p.v-mn)/rng)*(H-20) - 10;
+    const x = (idx/(allPts.length-1))*W;
+    setHover({x,y,price:p.v,time:p.t,idx});
   }
-  const d = pts.map((p,i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const color = (ch||0)>=0 ? 'rgba(130,255,150,.65)' : 'rgba(255,100,80,.5)';
-  const fill  = (ch||0)>=0 ? 'rgba(130,255,150,.06)' : 'rgba(255,100,80,.04)';
+
+  if (loading) return (
+    <div style={{height:H,display:'flex',alignItems:'center',justifyContent:'center',
+      fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:3}}>
+      LOADING…
+    </div>
+  );
+  if (!allPts||allPts.length<2) return (
+    <div style={{height:H,display:'flex',alignItems:'center',justifyContent:'center',
+      fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:3}}>
+      CHART UNAVAILABLE
+    </div>
+  );
+
+  const vals   = allPts.map(p=>p.v);
+  const mn     = Math.min(...vals), mx = Math.max(...vals), rng = mx-mn||1;
+  const toY    = v => H - ((v-mn)/rng)*(H-20) - 10;
+  const toX    = i => (i/(allPts.length-1))*W;
+  const isUp   = (allPts[allPts.length-1].v >= allPts[0].v);
+  const color  = isUp ? 'rgba(130,255,150,.85)' : 'rgba(255,100,80,.75)';
+  const fillC  = isUp ? 'rgba(130,255,150,.08)' : 'rgba(255,100,80,.06)';
+
+  // Build smooth cubic bezier path
+  function smoothPath(pts) {
+    if (pts.length < 2) return '';
+    let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    for (let i=1;i<pts.length;i++) {
+      const prev = pts[i-1], curr = pts[i];
+      const cp1x = prev.x + (curr.x-prev.x)*0.4;
+      const cp2x = curr.x - (curr.x-prev.x)*0.4;
+      d += ` C ${cp1x.toFixed(1)},${prev.y.toFixed(1)} ${cp2x.toFixed(1)},${curr.y.toFixed(1)} ${curr.x.toFixed(1)},${curr.y.toFixed(1)}`;
+    }
+    return d;
+  }
+
+  // Downsample for smooth rendering
+  const step = Math.max(1, Math.floor(allPts.length/200));
+  const sampled = allPts.filter((_,i)=>i%step===0||i===allPts.length-1);
+  const mapped  = sampled.map((p,i)=>({x:toX(allPts.indexOf(p)),y:toY(p.v)}));
+  const pathD   = smoothPath(mapped);
+  const fillD   = pathD + ` L${W},${H} L0,${H} Z`;
+
+  // Grid lines
+  const gridY = [0,.25,.5,.75,1].map(t=>({y:toY(mn+t*rng), val:mn+t*rng}));
+  const n = allPts.length;
+  const gridX = [0,.25,.5,.75,1].map(t=>({x:t*W, t:allPts[Math.floor(t*(n-1))].t}));
+
+  function formatTime(ts) {
+    const d=new Date(ts);
+    if (activeRange==='1y'||activeRange==='1m') return d.toLocaleDateString('en',{month:'short',day:'numeric'});
+    return d.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  const hoverPt = hover ? {x:toX(hover.idx), y:toY(hover.price)} : null;
+
   return (
-    <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none" style={{width:'100%',height:sh,display:'block'}}>
-      <defs>
-        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fff" stopOpacity={(ch||0)>=0?.09:.03}/>
-          <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d={`${d} L${sw},${sh} L0,${sh} Z`} fill="url(#sg)"/>
-      <path d={d} fill="none" stroke={color} strokeWidth="1.5"/>
-    </svg>
+    <div style={{position:'relative',userSelect:'none'}}>
+      {/* Range selector */}
+      {showRangeSelector && (
+        <div style={{display:'flex',gap:4,marginBottom:10}}>
+          {RANGES.map(r=>(
+            <button key={r.id}
+              onClick={()=>onRangeChange&&onRangeChange(r.id)}
+              style={{padding:'4px 10px',background:activeRange===r.id?'rgba(255,255,255,.12)':'none',
+                border:'1px solid '+(activeRange===r.id?'rgba(255,255,255,.25)':'rgba(255,255,255,.08)'),
+                color:activeRange===r.id?'var(--w)':'var(--w4)',
+                fontFamily:'var(--mono)',fontSize:7,letterSpacing:2,cursor:'pointer',transition:'all .12s'}}>
+              {r.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Hover tooltip */}
+      {hover && (
+        <div style={{position:'absolute',top:0,left:0,right:0,
+          display:'flex',justifyContent:'space-between',
+          fontFamily:'var(--mono)',fontSize:8,color:'var(--w3)',letterSpacing:1,
+          pointerEvents:'none',zIndex:10,padding:'0 2px'}}>
+          <span>{formatTime(hover.time)}</span>
+          <span style={{color:isUp?'rgba(130,255,150,.9)':'rgba(255,100,80,.9)',fontWeight:600}}>
+            {fp(hover.price)}
+          </span>
+        </div>
+      )}
+
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+        style={{width:'100%',height:H,display:'block',cursor:'crosshair'}}
+        onMouseMove={handleMouseMove} onMouseLeave={()=>setHover(null)}>
+        <defs>
+          <linearGradient id={'grad-'+coinId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={isUp?'rgba(130,255,150,1)':'rgba(255,100,80,1)'} stopOpacity="0.15"/>
+            <stop offset="100%" stopColor={isUp?'rgba(130,255,150,1)':'rgba(255,100,80,1)'} stopOpacity="0"/>
+          </linearGradient>
+          <clipPath id={'clip-'+coinId}><rect x="0" y="0" width={W} height={H}/></clipPath>
+        </defs>
+
+        {/* Grid lines */}
+        {gridY.map((g,i)=>(
+          <line key={i} x1="0" y1={g.y.toFixed(1)} x2={W} y2={g.y.toFixed(1)}
+            stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
+        ))}
+        {gridX.map((g,i)=>(
+          <line key={i} x1={g.x.toFixed(1)} y1="0" x2={g.x.toFixed(1)} y2={H}
+            stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
+        ))}
+
+        {/* Price labels on right */}
+        {gridY.filter((_,i)=>i>0&&i<4).map((g,i)=>(
+          <text key={i} x={W-2} y={g.y} textAnchor="end" dominantBaseline="middle"
+            fill="rgba(255,255,255,.2)" fontSize="7" fontFamily="monospace">
+            {fp(g.val)}
+          </text>
+        ))}
+
+        {/* Fill */}
+        <path d={fillD} fill={`url(#grad-${coinId})`} clipPath={`url(#clip-${coinId})`}/>
+
+        {/* Main price line */}
+        <path d={pathD} fill="none" stroke={color} strokeWidth="1.5"
+          clipPath={`url(#clip-${coinId})`}/>
+
+        {/* Hover crosshair */}
+        {hoverPt && (<>
+          <line x1={hoverPt.x.toFixed(1)} y1="0" x2={hoverPt.x.toFixed(1)} y2={H}
+            stroke="rgba(255,255,255,.2)" strokeWidth="1" strokeDasharray="3,3"/>
+          <line x1="0" y1={hoverPt.y.toFixed(1)} x2={W} y2={hoverPt.y.toFixed(1)}
+            stroke="rgba(255,255,255,.12)" strokeWidth="1" strokeDasharray="3,3"/>
+          <circle cx={hoverPt.x.toFixed(1)} cy={hoverPt.y.toFixed(1)} r="4"
+            fill={color} opacity="0.9"/>
+          <circle cx={hoverPt.x.toFixed(1)} cy={hoverPt.y.toFixed(1)} r="8"
+            fill="none" stroke={color} strokeWidth="1" opacity="0.3"/>
+        </>)}
+
+        {/* Current price dot */}
+        {!hover && (
+          <circle cx={W} cy={toY(vals[vals.length-1]).toFixed(1)} r="3"
+            fill={color}/>
+        )}
+      </svg>
+
+      {/* Time axis */}
+      <div style={{display:'flex',justifyContent:'space-between',
+        fontFamily:'var(--mono)',fontSize:6,color:'rgba(255,255,255,.2)',
+        letterSpacing:1,marginTop:4,padding:'0 2px'}}>
+        {gridX.map((g,i)=>(
+          <span key={i}>{formatTime(g.t)}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── PROBABILITY CALCULATOR ── */
+function ProbCalc({coin}) {
+  const [target, setTarget]   = useState('');
+  const [period, setPeriod]   = useState('7');
+  const [result, setResult]   = useState(null);
+
+  function calc() {
+    const tgt = parseFloat(target);
+    if (!tgt||!coin||!coin.price) return;
+    const pct = ((tgt - coin.price) / coin.price) * 100;
+    const vol = Math.abs(coin.ch||2) * 1.5; // daily volatility proxy
+    const days = parseInt(period);
+    // Log-normal probability approximation
+    const sigma = vol/100 * Math.sqrt(days);
+    const logRet = Math.log(tgt/coin.price);
+    const drift  = (coin.ch7d||0)/700 * days; // weekly drift annualized
+    const z      = (logRet - drift) / Math.max(sigma, 0.001);
+    // Simple normal CDF approximation
+    const prob   = Math.min(95, Math.max(1, Math.round((0.5 * (1 + Math.sign(-z) * (1 - Math.exp(-0.7 * z * z)))) * 100)));
+    const probUp = pct > 0 ? (100-prob) : prob;
+    setResult({pct, probUp: Math.min(95,Math.max(5,probUp)), days, tgt, dir: pct>0?'up':'down'});
+  }
+
+  return (
+    <div style={{padding:'16px',background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.06)',marginTop:16}}>
+      <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:4,color:'var(--w4)',textTransform:'uppercase',marginBottom:12}}>
+        PROBABILITY CALCULATOR
+      </div>
+      <div style={{display:'flex',gap:10,marginBottom:10,flexWrap:'wrap'}}>
+        <div style={{flex:1,minWidth:100}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:4}}>TARGET PRICE ({csym()})</div>
+          <input value={target} onChange={e=>setTarget(e.target.value)}
+            placeholder={coin?fp(coin.price*1.1):'target'}
+            style={{width:'100%',background:'none',border:'none',borderBottom:'1px solid rgba(255,255,255,.15)',
+              color:'var(--w)',fontSize:14,fontWeight:300,padding:'4px 0',outline:'none',caretColor:'#fff'}}/>
+        </div>
+        <div style={{flex:1,minWidth:100}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:4}}>TIME (DAYS)</div>
+          <select value={period} onChange={e=>setPeriod(e.target.value)}
+            style={{width:'100%',background:'rgba(0,0,0,.5)',border:'none',borderBottom:'1px solid rgba(255,255,255,.15)',
+              color:'var(--w)',fontSize:12,padding:'4px 0',outline:'none',appearance:'none',cursor:'pointer'}}>
+            <option value="1">1 day</option>
+            <option value="7">7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+            <option value="90">90 days</option>
+          </select>
+        </div>
+        <button onClick={calc}
+          style={{alignSelf:'flex-end',padding:'6px 16px',background:'var(--w)',border:'none',color:'#000',
+            fontFamily:'var(--sans)',fontWeight:700,fontSize:8,letterSpacing:2,cursor:'pointer'}}>
+          CALCULATE
+        </button>
+      </div>
+      {result && (
+        <div style={{padding:'12px',background:result.dir==='up'?'rgba(130,255,150,.04)':'rgba(255,100,80,.04)',
+          border:'1px solid '+(result.dir==='up'?'rgba(130,255,150,.15)':'rgba(255,100,80,.12)')}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+            <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--w)',letterSpacing:1}}>
+              {fp(result.tgt)} in {result.days}d
+            </span>
+            <span style={{fontFamily:'var(--disp)',fontSize:28,
+              color:result.dir==='up'?'rgba(130,255,150,.9)':'rgba(255,100,80,.8)'}}>
+              {result.probUp}%
+            </span>
+          </div>
+          <div style={{height:4,background:'rgba(255,255,255,.06)',marginBottom:6,overflow:'hidden'}}>
+            <div style={{height:'100%',width:result.probUp+'%',
+              background:result.dir==='up'?'rgba(130,255,150,.7)':'rgba(255,100,80,.6)',
+              transition:'width .5s ease'}}/>
+          </div>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1,lineHeight:1.8}}>
+            Estimated probability of reaching {fp(result.tgt)} within {result.days} day{result.days>1?'s':''}.<br/>
+            Based on volatility model — never 100% certain. Not financial advice.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SparklineChart({coinId, ch}) {
+  const [prices, setPrices] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{
+    let cancelled = false;
+    setLoading(true);
+    fetchSparkline(coinId).then(p=>{
+      if (!cancelled) { setPrices(p); setLoading(false); }
+    });
+    return ()=>{cancelled=true;};
+  }, [coinId]);
+  if (loading) return <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,padding:'16px 0'}}>LOADING 7D CHART…</div>;
+  if (!prices)  return <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,padding:'16px 0'}}>7D CHART UNAVAILABLE</div>;
+  return (
+    <div>
+      <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:8}}>
+        7-DAY PRICE CHART · {prices.length} HOURLY POINTS
+      </div>
+      <BigSpark prices={prices} ch={ch}/>
+    </div>
   );
 }
 
@@ -1154,6 +1448,24 @@ function SettingsModal({onClose, flash, onToggleFlash}) {
           <div className="settings-title" style={{marginBottom:0}}>SETTINGS</div>
           <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w4)',display:'flex',alignItems:'center'}}>
             <MI n="close" style={{fontSize:22}}/>
+          </button>
+        </div>
+
+        {/* Currency toggle */}
+        <div className="settings-row" style={{marginBottom:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
+            <MI n="swap_horiz" style={{fontSize:20,color:'var(--w4)',flexShrink:0}}/>
+            <div>
+              <div className="settings-lbl">CURRENCY</div>
+              <div className="settings-sub">Display prices in USD or EUR</div>
+            </div>
+          </div>
+          <button
+            onClick={()=>{setCurrency(getCurrency()==='eur'?'usd':'eur');window.location.reload();}}
+            style={{padding:'5px 14px',background:'rgba(255,255,255,.06)',
+              border:'1px solid var(--border2)',
+              color:'var(--w3)',fontFamily:'var(--mono)',fontSize:8,letterSpacing:2,cursor:'pointer'}}>
+            {getCurrency()==='eur'?'€ EUR':'$ USD'}
           </button>
         </div>
 
@@ -1323,7 +1635,11 @@ function AppShell({user, setUser, view, children}) {
           <div className="tb-title">{NAV_ITEMS.find(n=>n.id===view)?.lbl}</div>
           <Ticker coins={coins}/>
           <div className="tb-right">
-<div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
+            {rateLim && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,140,0,.8)',letterSpacing:1,padding:'0 8px',border:'1px solid rgba(255,140,0,.3)'}}>RATE LIMITED · CACHED</div>}
+            {!rateLim && cacheAge<=10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.7)',letterSpacing:2,display:'flex',alignItems:'center',gap:4}}><span style={{width:5,height:5,background:'rgba(130,255,150,.8)',borderRadius:'50%',display:'inline-block',animation:'pulse 2s infinite'}}/> LIVE</div>}
+            {!rateLim && cacheAge>10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1}}>NEXT UPDATE {Math.max(0,Math.round((60000-cacheAge)/1000))}s</div>}
+            {flash && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,200,0,.8)',letterSpacing:2,padding:'0 8px',border:'1px solid rgba(255,200,0,.25)'}}>⚡ FLASH</div>}
+            <div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
               <MI n="settings"/>
             </div>
             <div className="tier-chip" onClick={()=>go('plans')}>{(user.tier||'free').toUpperCase()}</div>
@@ -1384,22 +1700,30 @@ function SparklineChart({coinId, ch}) {
 
 function getVerdict(c) {
   const ch=c.ch||0, ch7=c.ch7d||0;
-  const pos = (ch>2?1:0)+(ch7>5?1:0)+(c.ch1h||0)>0.5?1:0;
-  if (pos>=2) return {rating:'BULLISH',   txt:`${c.sym} shows strong positive momentum across timeframes. 24h: ${fc(ch)}${ch7?', 7d: '+fc(ch7):''}. Volume and trend suggest continued buying pressure in the near term.`};
-  if (pos===0) return {rating:'BEARISH',  txt:`${c.sym} is showing weakness across multiple timeframes. 24h: ${fc(ch)}${ch7?', 7d: '+fc(ch7):''}. Caution is warranted — wait for a confirmed reversal before entering.`};
-  return {rating:'NEUTRAL', txt:`Mixed signals on ${c.sym}. 24h: ${fc(ch)}${ch7?', 7d: '+fc(ch7):''}. No clear directional bias. Wait for a confirmed breakout before positioning.`};
+  const pos = (ch>2?1:0)+(ch7>5?1:0)+((c.ch1h||0)>0.5?1:0);
+  if (pos>=2) return {rating:'BULLISH',   color:'rgba(130,255,150,.9)'};
+  if (pos===0) return {rating:'BEARISH',  color:'rgba(255,100,80,.85)'};
+  return {rating:'NEUTRAL', color:'rgba(255,200,80,.7)'};
 }
 
 function CoinDetail({coin, onClose}) {
   const v = getVerdict(coin);
+  const [range, setRange] = useState('1d');
   return (
     <div className="coin-detail">
       <div className="cd-backdrop" onClick={onClose}/>
-      <div className="cd-panel">
-        <div className="cd-head">
+      <div className="cd-panel" style={{maxHeight:'92vh',paddingBottom:28}}>
+        {/* Header */}
+        <div className="cd-head" style={{marginBottom:14}}>
           <div>
             <div className="cd-sym">{coin.sym}</div>
-            <div className="cd-nm">{coin.name} {coin.rank?`· #${coin.rank}`:''}</div>
+            <div className="cd-nm" style={{display:'flex',alignItems:'center',gap:8}}>
+              {coin.name}{coin.rank?` · #${coin.rank}`:''}
+              <span style={{fontFamily:'var(--mono)',fontSize:7,padding:'2px 7px',
+                border:'1px solid '+v.color,color:v.color,letterSpacing:2}}>
+                {v.rating}
+              </span>
+            </div>
           </div>
           <div style={{display:'flex',alignItems:'flex-start',gap:16}}>
             <div>
@@ -1410,36 +1734,36 @@ function CoinDetail({coin, onClose}) {
           </div>
         </div>
 
-        {/* 7D Real Chart */}
-        <div style={{marginBottom:20}}>
-          <SparklineChart coinId={coin.id} ch={coin.ch}/>
-        </div>
-
-        <div className="cd-grid">
+        {/* Stats row */}
+        <div style={{display:'flex',gap:0,borderTop:'1px solid rgba(255,255,255,.05)',
+          borderBottom:'1px solid rgba(255,255,255,.05)',marginBottom:16}}>
           {[
-            ['24H', fc(coin.ch)],
-            ['7D',  coin.ch7d!=null?fc(coin.ch7d):'—'],
-            ['1H',  coin.ch1h!=null?fc(coin.ch1h):'—'],
-            ['MCap', coin.mc?fv(coin.mc*1e9):'—'],
-            ['Vol', coin.vol?fv(coin.vol*1e9):'—'],
-            ['ATH', coin.ath?fp(coin.ath):'—'],
-          ].map(([l,v])=>(
-            <div key={l} className="cd-gs">
-              <div className="cd-gs-lbl">{l}</div>
-              <div className="cd-gs-val">{v}</div>
+            ['1H', coin.ch1h!=null?fc(coin.ch1h):'—', coin.ch1h],
+            ['24H', fc(coin.ch), coin.ch],
+            ['7D', coin.ch7d!=null?fc(coin.ch7d):'—', coin.ch7d],
+            ['MCap', coin.mc?fv(coin.mc*1e9):'—', null],
+            ['Vol', coin.vol?fv(coin.vol*1e9):'—', null],
+          ].map(([l,val,chg])=>(
+            <div key={l} style={{flex:1,padding:'10px 8px 10px 0',borderRight:'1px solid rgba(255,255,255,.05)'}}>
+              <div style={{fontFamily:'var(--mono)',fontSize:6,color:'var(--w4)',letterSpacing:2,textTransform:'uppercase',marginBottom:3}}>{l}</div>
+              <div style={{fontFamily:'var(--mono)',fontSize:11,
+                color:chg!=null?(chg>=0?'rgba(130,255,150,.9)':'rgba(255,100,80,.8)'):'var(--w)'}}>
+                {val}
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="cd-verdict">
-          <div className="cd-vt">SIGNAL · {v.rating}</div>
-          <div className="cd-vtxt">{v.txt}</div>
-          <div className="cd-vdis">AI-generated signal based on price data. Not financial advice. Always do your own research.</div>
-        </div>
+        {/* Full trading chart */}
+        <TradingChart coinId={coin.id} coin={coin} range={range} onRangeChange={setRange}
+          height={180} showRangeSelector={true} livePrice={coin.price}/>
 
-        <button onClick={()=>navigate('/AI/')} style={{width:'100%',padding:12,background:'var(--w)',
+        {/* Probability Calculator */}
+        <ProbCalc coin={coin}/>
+
+        <button onClick={()=>navigate('/AI/')} style={{width:'100%',padding:11,background:'var(--w)',
           border:'none',color:'#000',fontFamily:'var(--sans)',fontWeight:700,fontSize:9,
-          letterSpacing:3,textTransform:'uppercase',cursor:'pointer'}}>
+          letterSpacing:3,textTransform:'uppercase',cursor:'pointer',marginTop:14}}>
           ASK AI ABOUT {coin.sym} ▸
         </button>
       </div>
