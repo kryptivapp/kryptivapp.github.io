@@ -1,0 +1,8 @@
+!UPDATE
+
+# Possible states (uncomment to use):
+# !ONLINE
+# !MAINTENANCE
+# !UPDATE
+# !OFFLINE
+# !ERROR
