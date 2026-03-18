@@ -1,0 +1,30 @@
+[
+  {
+    "id": "1",
+    "title": "We are excited to officially launch KRYPTIV, our new platform for real-time crypto news, market insights, and updates all in one place",
+    "source": "KRYPTIV",
+    "published": "2026-03-17T09:00:00.000Z",
+    "coins": []
+  },
+  {
+    "id": "2",
+    "title": "Citigroup lowers Bitcoin and Ethereum forecasts as US crypto regulation delays reduce institutional optimism",
+    "source": "Reuters",
+    "published": "2026-03-15T10:00:00.000Z",
+    "coins": ["BTC", "ETH"]
+  },
+  {
+    "id": "3",
+    "title": "Bitcoin climbs toward $75K as investors react to Federal Reserve policy outlook and global tensions",
+    "source": "Barron's",
+    "published": "2026-03-13T10:00:00.000Z",
+    "coins": ["BTC", "ETH", "XRP"]
+  },
+  {
+    "id": "4",
+    "title": "Crypto ETFs and stocks surge as institutional money flows into Bitcoin during market uncertainty",
+    "source": "MarketWatch",
+    "published": "2026-03-11T09:00:00.000Z",
+    "coins": ["BTC", "ETH"]
+  }
+]
