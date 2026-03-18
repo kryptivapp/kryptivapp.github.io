@@ -49,8 +49,8 @@
             "!ERROR": "Something went wrong. We’re working to fix it.",
         };
 
-        // Fetch the state.txt file
-        fetch('state.txt')
+        // Fetch the state.txt file from GitHub
+        fetch('https://raw.githubusercontent.com/kryptivapp/kryptivapp.github.io/refs/heads/main/state.txt')
             .then(response => response.text())
             .then(text => {
                 // Extract the current state (first line)
