@@ -1207,6 +1207,7 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
   const [prices, setPrices]   = useState(null);
   const [loading, setLoading] = useState(true);
   const [hover,   setHover]   = useState(null);
+  const [isSynth, setIsSynth] = useState(false);
   const svgRef = useRef(null);
   const uid = useRef('hc'+Math.random().toString(36).slice(2,7)).current;
   const W = 600, H = 150;
@@ -1217,20 +1218,50 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
     {id:'7d',label:'7D',days:7,last:9999},
   ];
 
+  // Synthetic fallback when API rate-limits
+  function makeSynth(n) {
+    if (!coin || !coin.price) return null;
+    const now = Date.now(), base = coin.price;
+    const dailyVol = Math.max(0.008, Math.abs(coin.ch||2)/100 * 0.6);
+    let seed = 0; for(let c of coinId) seed=(seed*31+c.charCodeAt(0))&0xffff;
+    const pseudoR = i => { let x=Math.sin(seed+i*9301+49297)*233280; return x-Math.floor(x); };
+    const startP = base/(1+(coin.ch||0)/100);
+    const drift  = (base-startP)/n;
+    const pts=[];
+    for(let i=0;i<n;i++){
+      const z=(pseudoR(i)-0.5)*2;
+      const trend=startP+drift*i;
+      const wave=Math.sin(i/n*Math.PI*4+seed*0.1)*base*dailyVol*0.5
+                +Math.sin(i/n*Math.PI*9+seed*0.3)*base*dailyVol*0.18;
+      pts.push({t:now-(n-i)*60000, v:Math.max(base*0.3, trend+z*base*dailyVol*0.25+wave)});
+    }
+    pts[pts.length-1]={t:now,v:base};
+    return pts;
+  }
+
   useEffect(()=>{
     if (!coinId) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     setPrices(null);
     const rm = RMINI.find(x=>x.id===(range||'1d'))||RMINI[2];
-    fetch('https://api.coingecko.com/api/v3/coins/'+coinId+'/market_chart?vs_currency=usd&days='+rm.days+'&interval='+(rm.days>1?'hourly':'minutely'))
-      .then(r=>r.ok?r.json():null)
+    const interval = rm.days > 1 ? 'hourly' : 'minutely';
+    fetch('https://api.coingecko.com/api/v3/coins/'+coinId+'/market_chart?vs_currency=usd&days='+rm.days+'&interval='+interval)
+      .then(r=>{ if(r.status===429||!r.ok) throw new Error('fail'); return r.json(); })
       .then(d=>{
-        if (cancelled||!d||!d.prices) { if(!cancelled) setLoading(false); return; }
+        if (cancelled) return;
+        if (!d||!d.prices||d.prices.length<2) throw new Error('empty');
         let pts = d.prices.map(p=>({t:p[0],v:p[1]}));
         if (rm.last<pts.length) pts=pts.slice(-rm.last);
-        if (!cancelled){ setPrices(pts); setLoading(false); }
-      }).catch(()=>{ if(!cancelled) setLoading(false); });
+        setPrices(pts); setIsSynth(false); setLoading(false);
+      })
+      .catch(()=>{
+        if (cancelled) return;
+        const n = rm.last<9999 ? rm.last : (rm.days>1?168:240);
+        const synth = makeSynth(n);
+        if (synth) { setPrices(synth); setIsSynth(true); } else { setIsSynth(false); }
+        setLoading(false);
+      });
     return ()=>{cancelled=true;};
   },[coinId, range]);
 
@@ -1320,6 +1351,7 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
             {r.label}
           </button>
         ))}
+        {isSynth&&!hover&&<span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:6,color:'rgba(255,200,80,.5)',letterSpacing:2}}>ESTIMATED · NO API</span>}
         {hover&&(
           <span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:9,color:col,
             letterSpacing:1,fontWeight:500}}>
