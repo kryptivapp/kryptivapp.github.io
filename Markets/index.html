@@ -1300,6 +1300,7 @@ function TradingChart({coinId, coin, range, onRangeChange, height, showRangeSele
   const [volumes, setVolumes] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hover,   setHover]   = useState(null);
+  const [isSynth, setIsSynth] = useState(false);
   const svgRef = useRef(null);
   const uid = useRef('tc'+coinId+Math.random().toString(36).slice(2,6)).current;
   const W = 600, H = height||220;
@@ -1315,6 +1316,27 @@ function TradingChart({coinId, coin, range, onRangeChange, height, showRangeSele
   ];
   const activeRange = range || '1d';
 
+  // Synthetic fallback: realistic chart from coin stats when API unavailable
+  function makeSynth(n) {
+    if (!coin || !coin.price) return null;
+    const now = Date.now(), base = coin.price;
+    const dailyVol = Math.max(0.01, Math.abs(coin.ch||2)/100 * 0.6);
+    let seed = 0; for(let c of coinId) seed=(seed*31+c.charCodeAt(0))&0xffff;
+    const pseudoR = i => { let x=Math.sin(seed+i*9301+49297)*233280; return x-Math.floor(x); };
+    const startP = base/(1+(coin.ch||0)/100);
+    const drift  = (base-startP)/n;
+    const pts=[];
+    for(let i=0;i<n;i++){
+      const z=(pseudoR(i)-0.5)*2;
+      const trend=startP+drift*i;
+      const wave=Math.sin(i/n*Math.PI*4+seed*0.1)*base*dailyVol*0.5
+                +Math.sin(i/n*Math.PI*9+seed*0.3)*base*dailyVol*0.18;
+      pts.push({t:now-(n-i)*60000, v:Math.max(base*0.3, trend+z*base*dailyVol*0.25+wave)});
+    }
+    pts[pts.length-1]={t:now,v:base};
+    return pts;
+  }
+
   useEffect(()=>{
     if (!coinId) return;
     let cancelled = false;
@@ -1323,15 +1345,22 @@ function TradingChart({coinId, coin, range, onRangeChange, height, showRangeSele
     setVolumes(null);
     const r = RANGES.find(x=>x.id===activeRange)||RANGES[1];
     fetch('https://api.coingecko.com/api/v3/coins/'+coinId+'/market_chart?vs_currency=usd&days='+r.days+(r.interval?'&interval='+r.interval:''))
-      .then(res=>res.ok?res.json():null)
+      .then(res=>{ if(res.status===429||!res.ok) throw new Error('fail'); return res.json(); })
       .then(d=>{
-        if (cancelled||!d||!d.prices) { if(!cancelled) setLoading(false); return; }
+        if (cancelled) return;
+        if (!d||!d.prices||d.prices.length<2) throw new Error('empty');
         let pts = d.prices.map(p=>({t:p[0],v:p[1]}));
         let vols = d.total_volumes ? d.total_volumes.map(p=>({t:p[0],v:p[1]})) : null;
         if (r.last<pts.length){ pts=pts.slice(-r.last); if(vols) vols=vols.slice(-r.last); }
-        if (!cancelled){ setPrices(pts); setVolumes(vols); setLoading(false); }
+        setPrices(pts); setVolumes(vols); setIsSynth(false); setLoading(false);
       })
-      .catch(()=>{ if(!cancelled) setLoading(false); });
+      .catch(()=>{
+        if (cancelled) return;
+        const n = r.last<9999 ? r.last : (r.days>7?90:r.days>1?168:240);
+        const synth = makeSynth(n);
+        if (synth) { setPrices(synth); setVolumes(null); setIsSynth(true); } else setIsSynth(false);
+        setLoading(false);
+      });
     return ()=>{cancelled=true;};
   },[coinId, activeRange]);
 
@@ -1452,6 +1481,7 @@ function TradingChart({coinId, coin, range, onRangeChange, height, showRangeSele
               {r.label}
             </button>
           ))}
+          {isSynth&&!hover&&<span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:6,color:'rgba(255,200,80,.5)',letterSpacing:2}}>ESTIMATED · RATE LIMITED</span>}
           {hover&&(
             <span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:9,color:isUp?'rgba(130,255,150,.9)':'rgba(255,100,80,.9)',letterSpacing:1}}>
               {fp(hover.price)}
@@ -1774,7 +1804,7 @@ function ProbCalc({coin}) {
           <div style={{...mono7,marginBottom:5,textTransform:'uppercase'}}>Target Price ({csym()})</div>
           <input value={target} onChange={e=>setTarget(e.target.value)}
             onKeyDown={e=>e.key==='Enter'&&runCalc()}
-            placeholder={coin?fp(coin.price*(dir_hint||1.15)):'e.g. 100000'}
+            placeholder={coin?fp(coin.price*1.15):'e.g. 100000'}
             style={{width:'100%',background:'none',border:'none',
               borderBottom:'1px solid rgba(255,255,255,.18)',color:'var(--w)',
               fontSize:14,fontWeight:300,padding:'5px 0',outline:'none',caretColor:'#fff'}}/>
@@ -2202,13 +2232,6 @@ function CoinDetailPage({coin, onBack}) {
   const v = getVerdict(coin);
   const [range, setRange] = useState('1d');
 
-  // Back on browser back button
-  useEffect(()=>{
-    const handlePop = ()=>onBack();
-    window.addEventListener('popstate',handlePop);
-    return ()=>window.removeEventListener('popstate',handlePop);
-  },[]);
-
   return (
     <div className="scr" style={{animation:'fadeUp .25s ease both'}}>
       {/* Back bar */}
@@ -2324,11 +2347,12 @@ function Markets({user, coins, availCoins, priceSrc}) {
 
   // PWA back handling
   const openDetail = (c) => {
-    history.pushState({coin:c.sym},'','#'+c.sym.toLowerCase());
+    try { history.pushState({coin:c.sym},'',location.pathname+'#'+c.sym.toLowerCase()); } catch(e){}
     setDetail(c);
   };
   const closeDetail = () => {
-    history.back();
+    // Clear hash cleanly without full navigation
+    try { history.replaceState(null,'',location.pathname+location.search); } catch(e){}
     setDetail(null);
   };
   useEffect(()=>{
