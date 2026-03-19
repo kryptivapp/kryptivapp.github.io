@@ -617,6 +617,62 @@ input,textarea,select{font-family:var(--sans)}
 @media(max-width:520px){
   .mkt-strip .strip-cell:nth-child(3),.mkt-strip .strip-cell:nth-child(4){display:none}
 }
+
+/* STEAM CARD — pinned coin cards */
+.coin-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:4px}
+@media(max-width:480px){.coin-cards{grid-template-columns:1fr 1fr;gap:8px}}
+.coin-card{
+  position:relative;overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(10,10,12,.75);
+  backdrop-filter:blur(20px);
+  padding:16px 14px 14px;
+  cursor:pointer;
+  transition:transform .22s cubic-bezier(.2,0,.2,1),
+             border-color .22s,
+             box-shadow .22s;
+  will-change:transform;
+  min-height:130px;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.coin-card:hover{
+  transform:translateY(-4px) scale(1.015);
+  border-color:rgba(255,255,255,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.08);
+}
+/* shimmer on hover */
+.coin-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.06) 50%,transparent 60%);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.coin-card:hover::before{opacity:1;animation:cardShimmer .65s ease forwards}
+@keyframes cardShimmer{
+  0%{background-position:-200% 0}
+  100%{background-position:200% 0}
+}
+/* colored top border matching direction */
+.coin-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+}
+.coin-card.up::after{background:linear-gradient(90deg,transparent,rgba(130,255,150,.7),transparent)}
+.coin-card.dn::after{background:linear-gradient(90deg,transparent,rgba(255,100,80,.65),transparent)}
+.cc-sym{font-family:var(--disp);font-size:28px;letter-spacing:2px;line-height:1;margin-bottom:2px}
+.cc-name{font-family:var(--mono);font-size:7px;color:var(--w4);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+.cc-price{font-family:var(--mono);font-size:16px;color:var(--w);font-weight:500;letter-spacing:.5px}
+.cc-ch{font-family:var(--mono);font-size:10px;margin-top:3px}
+.cc-ch.up{color:var(--up)}
+.cc-ch.dn{color:var(--dn)}
+.cc-meta{display:flex;gap:14px;margin-top:8px}
+.cc-meta-item{font-family:var(--mono);font-size:7px;color:var(--w4);letter-spacing:1px}
+.cc-meta-item span{color:var(--w3);display:block;font-size:8px;margin-top:1px}
+.cc-spark-wrap{margin-top:8px;height:32px;opacity:.7}
+.cc-unpin{position:absolute;top:8px;right:8px;background:none;border:none;color:rgba(255,255,255,.2);
+  font-size:13px;cursor:pointer;padding:2px;transition:color .15s;line-height:1}
+.cc-unpin:hover{color:rgba(255,100,80,.7)}
+.cc-rank{position:absolute;top:10px;left:14px;font-family:var(--mono);font-size:7px;
+  color:rgba(255,255,255,.2);letter-spacing:2px}
+
 </style>
 </head>
 <body>
@@ -1936,8 +1992,8 @@ function Dashboard({user, coins, availCoins, priceSrc}) {
 
   // Always use full coins list for market stats
   const allCoins = coins || availCoins || [];
-  const gainers = useMemo(()=>[...allCoins].sort((a,b)=>(b.ch||0)-(a.ch||0)).slice(0,3), [allCoins]);
-  const losers  = useMemo(()=>[...allCoins].sort((a,b)=>(a.ch||0)-(b.ch||0)).slice(0,3), [allCoins]);
+  const gainers = useMemo(()=>[...allCoins].sort((a,b)=>((b.ch7d||b.ch||0))-(a.ch7d||a.ch||0)).slice(0,3), [allCoins]);
+  const losers  = useMemo(()=>[...allCoins].sort((a,b)=>((a.ch7d||a.ch||0))-(b.ch7d||b.ch||0)).slice(0,3), [allCoins]);
   const avgCh   = allCoins.reduce((a,c)=>a+(c.ch||0),0)/Math.max(allCoins.length,1);
   const totalMc = allCoins.reduce((a,c)=>a+(c.mc||0),0);
   const btc     = allCoins.find(c=>c.sym==='BTC');
@@ -2001,14 +2057,14 @@ function Dashboard({user, coins, availCoins, priceSrc}) {
 
       {/* TOP MOVERS — all 5, always from full list */}
       <div className="s-mb">
-        <div className="s-lbl"><MI n="arrow_upward"/>TOP MOVERS 24H</div>
+        <div className="s-lbl"><MI n="arrow_upward"/>TOP MOVERS 7D</div>
         {gainers.map((c,i)=>(
           <div key={c.id} className="mover-row" onClick={()=>navigate('/Markets/')}>
             <div className="mover-rank">{i+1}</div>
             <div className="mover-sym">{c.sym}</div>
             <div className="mover-nm">{c.name}</div>
             <div className="mover-price">{fp(c.price)}</div>
-            <div className="mover-ch up"> {(c.ch||0).toFixed(2)}%</div>
+            <div className="mover-ch up">{((c.ch7d||c.ch)||0)>=0?'+':''}{((c.ch7d||c.ch)||0).toFixed(2)}% 7D</div>
           </div>
         ))}
       </div>
@@ -2027,42 +2083,85 @@ function Dashboard({user, coins, availCoins, priceSrc}) {
         </div>
       </div>
 
-      {/* WATCHLIST */}
+      {/* WATCHLIST — pinned cards (Steam style) + full list */}
       <div className="s-mb">
         <div className="s-lbl">
           <MI n="grade"/>WATCHLIST
-          {isFree&&<span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)'}}>
-            {availCoins.filter(c=>pinned.includes(c.sym)).length}/{isFree?2:'∞'} pinned
-          </span>}
+          <span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)'}}>
+            {pinned.length} PINNED
+          </span>
         </div>
-        {availCoins.map((c,i)=>{
-          const isPinned = pinned.includes(c.sym);
-          const locked   = isFree && !isPinned;
-          const row = (
-            <div key={c.sym} className="coin-line" style={{opacity:locked?1:1}}>
-              <span className={`hl-star${isPinned?' on':''}`} onClick={e=>{e.stopPropagation();if(!locked)togglePin(c.sym);}}></span>
-              <div className="c-rank">{c.rank||i+1}</div>
-              <div className="c-sym">{c.sym}</div>
-              <div className="c-nm">{c.name}</div>
-              <div className="c-spark"><Spark ch={c.ch}/></div>
-              <div className="c-pr">{fp(c.price)}</div>
-              <div className={`c-ch ${(c.ch||0)>=0?'up':'dn'}`}>{(c.ch||0)>=0?'':''}{Math.abs(c.ch||0).toFixed(2)}%</div>
-            </div>
-          );
-          if (!locked) return row;
-          return (
-            <div key={c.sym} className="pro-blur-wrap">
-              <div className="pro-blur-content">{row}</div>
-              <div className="pro-lock-ov">
-                <div className="pro-lock-left">
-                  <MI n="lock" className="pro-lock-icon"/>
-                  <div className="pro-lock-lbl">BUDGET & PRO</div>
+
+        {/* Pinned coins — Steam card style */}
+        {pinned.length > 0 && (
+          <div className="coin-cards" style={{marginBottom:16}}>
+            {availCoins.filter(c=>pinned.includes(c.sym)).map(c=>{
+              const isUp=(c.ch||0)>=0;
+              const ch7=c.ch7d!=null?c.ch7d:(c.ch||0);
+              return (
+                <div key={c.sym} className={`coin-card ${isUp?'up':'dn'}`}
+                  onClick={()=>navigate('/Markets/')}>
+                  <div className="cc-rank">#{c.rank||'—'}</div>
+                  <button className="cc-unpin"
+                    onClick={e=>{e.stopPropagation();togglePin(c.sym);}}>✕</button>
+                  <div>
+                    <div className="cc-sym">{c.sym}</div>
+                    <div className="cc-name">{c.name}</div>
+                  </div>
+                  <div>
+                    <div className="cc-price">{fp(c.price)}</div>
+                    <div className={`cc-ch ${isUp?'up':'dn'}`}>
+                      {isUp?'+':''}{fc(c.ch)} 24h
+                    </div>
+                    <div className="cc-meta">
+                      <div className="cc-meta-item">7D<span style={{color:ch7>=0?'rgba(130,255,150,.8)':'rgba(255,100,80,.8)'}}>{ch7>=0?'+':''}{ch7.toFixed(2)}%</span></div>
+                      {c.mc&&<div className="cc-meta-item">MCAP<span>{fv(c.mc*1e9)}</span></div>}
+                      {c.vol&&<div className="cc-meta-item">VOL<span>{fv(c.vol*1e9)}</span></div>}
+                    </div>
+                    <div className="cc-spark-wrap"><Spark ch={c.ch} w={160} h={30}/></div>
+                  </div>
                 </div>
-                <button className="pro-lock-btn" onClick={()=>navigate('/Plans/')}>UPGRADE</button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Full scrollable list */}
+        <div style={{maxHeight:320,overflowY:'auto',overflowX:'hidden'}}>
+          {availCoins.map((c,i)=>{
+            const isPinned = pinned.includes(c.sym);
+            const locked   = isFree && !FREE_COINS.includes(c.sym);
+            const ch7=c.ch7d!=null?c.ch7d:(c.ch||0);
+            const row = (
+              <div key={c.sym} className="coin-line">
+                <span className={`hl-star${isPinned?' on':''}`}
+                  onClick={e=>{e.stopPropagation();if(!locked||isPinned)togglePin(c.sym);}}>★</span>
+                <div className="c-rank">{c.rank||i+1}</div>
+                <div className="c-sym">{c.sym}</div>
+                <div className="c-nm">{c.name}</div>
+                <div className="c-spark"><Spark ch={c.ch}/></div>
+                <div className="c-pr">{fp(c.price)}</div>
+                <div className={`c-ch ${ch7>=0?'up':'dn'}`}>
+                  {Math.abs(ch7).toFixed(2)}%
+                  <span style={{fontSize:'7px',opacity:.55,marginLeft:2}}>7D</span>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+            if (!locked) return row;
+            return (
+              <div key={c.sym} className="pro-blur-wrap">
+                <div className="pro-blur-content">{row}</div>
+                <div className="pro-lock-ov">
+                  <div className="pro-lock-left">
+                    <MI n="lock" className="pro-lock-icon"/>
+                    <div className="pro-lock-lbl">BUDGET & PRO</div>
+                  </div>
+                  <button className="pro-lock-btn" onClick={()=>navigate('/Plans/')}>UPGRADE</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* AI CTA */}
