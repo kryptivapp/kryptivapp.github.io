@@ -261,11 +261,11 @@ input,textarea,select{font-family:var(--sans)}
 .coin-line:hover{padding-left:8px}
 .coin-line:hover::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:rgba(255,255,255,.4)}
 .c-rank{font-family:var(--mono);font-size:8px;color:var(--w4);width:24px;flex-shrink:0}
-.c-sym{font-family:var(--mono);font-size:12px;color:var(--w);width:46px;flex-shrink:0;font-weight:500}
-.c-nm{font-size:12px;color:var(--w3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.c-spark{width:50px;flex-shrink:0;padding:0 4px}
-.c-pr{font-family:var(--mono);font-size:12px;color:var(--w);width:90px;text-align:right;flex-shrink:0}
-.c-ch{font-family:var(--mono);font-size:10px;width:60px;text-align:right;flex-shrink:0}
+.c-sym{font-family:var(--mono);font-size:12px;color:var(--w);min-width:40px;flex-shrink:0;font-weight:500}
+.c-nm{font-size:12px;color:var(--w3);flex:1;min-width:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-spark{width:44px;flex-shrink:0;padding:0 3px}
+.c-pr{font-family:var(--mono);font-size:12px;color:var(--w);min-width:72px;text-align:right;flex-shrink:0}
+.c-ch{font-family:var(--mono);font-size:10px;min-width:54px;text-align:right;flex-shrink:0}
 .c-ch.up{color:var(--up)}
 .c-ch.dn{color:var(--dn)}
 .hl-star{width:20px;flex-shrink:0;font-size:13px;color:var(--w4);text-align:center;cursor:pointer}
@@ -656,6 +656,19 @@ input,textarea,select{font-family:var(--sans)}
 @media(min-width:1400px){.scr{padding:32px 44px}}
 @media(min-width:1800px){.scr{max-width:1440px;margin:0 auto}}
 
+
+/* RESPONSIVE COIN ROWS — never squish */
+@media(max-width:400px){
+  .c-nm{display:none}
+  .c-rank{width:18px}
+  .c-pr{min-width:64px;font-size:11px}
+  .c-ch{min-width:46px;font-size:9px}
+  .c-spark{width:36px}
+}
+@media(max-width:520px){
+  .mth-spark{display:none}
+  .c-spark{display:none}
+}
 </style>
 </head>
 <body>
@@ -1411,7 +1424,7 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
   function mkPath(){
     let d=`M${spX[0].toFixed(1)},${spY[0].toFixed(1)}`;
     for(let i=1;i<sp.length;i++){
-      const cp=(spX[i]-spX[i-1])*0.4;
+      const cp=(spX[i]-spX[i-1])*0.18;
       d+=` C${(spX[i-1]+cp).toFixed(1)},${spY[i-1].toFixed(1)} ${(spX[i]-cp).toFixed(1)},${spY[i].toFixed(1)} ${spX[i].toFixed(1)},${spY[i].toFixed(1)}`;
     }
     return d;
@@ -1459,7 +1472,7 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
   function fmtTime(ts){
     const d=new Date(ts);
     if(activeRange==='1y'||activeRange==='1m') return d.toLocaleDateString('en',{month:'short',day:'numeric'});
-    return d.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+    return d.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',hour12:false});
   }
 
   return (
@@ -1559,15 +1572,31 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
           </g>;
         })}
 
-        {/* Crosshair */}
-        {hx!=null&&<>
-          <line x1={hx.toFixed(1)} y1="0" x2={hx.toFixed(1)} y2={H}
-            stroke="rgba(255,255,255,.15)" strokeWidth="1" strokeDasharray="3,3"/>
-          <line x1="0" y1={hy.toFixed(1)} x2={W} y2={hy.toFixed(1)}
-            stroke="rgba(255,255,255,.08)" strokeWidth="1" strokeDasharray="3,3"/>
-          <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="4" fill={color} opacity="0.9"/>
-          <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="7" fill="none" stroke={color} strokeWidth="0.8" opacity="0.3"/>
-        </>}
+        {/* Crosshair + inline price tooltip */}
+        {hx!=null&&(()=>{
+          const priceStr=fp(hover.price);
+          const tW=priceStr.length*5.5+14;
+          const tH=15;
+          const tX=Math.min(Math.max(hx-tW/2, PAD.l), W-PAD.r-tW);
+          const tY=Math.max(PAD.t+2, hy-tH-9);
+          return <>
+            <line x1={hx.toFixed(1)} y1="0" x2={hx.toFixed(1)} y2={H}
+              stroke="rgba(255,255,255,.15)" strokeWidth="1" strokeDasharray="3,3"/>
+            <line x1="0" y1={hy.toFixed(1)} x2={W} y2={hy.toFixed(1)}
+              stroke="rgba(255,255,255,.08)" strokeWidth="1" strokeDasharray="3,3"/>
+            <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="4" fill={color} opacity="0.9"/>
+            <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="7" fill="none" stroke={color} strokeWidth="0.8" opacity="0.3"/>
+            <rect x={tX.toFixed(1)} y={tY.toFixed(1)} width={tW.toFixed(1)} height={tH}
+              fill="rgba(0,0,0,.8)" rx="0"/>
+            <rect x={tX.toFixed(1)} y={tY.toFixed(1)} width={tW.toFixed(1)} height={tH}
+              fill="none" stroke={color} strokeWidth="0.5" opacity="0.6" rx="0"/>
+            <text x={(tX+tW/2).toFixed(1)} y={(tY+tH/2).toFixed(1)}
+              textAnchor="middle" dominantBaseline="middle"
+              fill={color} fontSize="7.5" fontFamily="monospace" fontWeight="500">
+              {priceStr}
+            </text>
+          </>;
+        })()}
 
         {!hover&&<>
           <circle cx={(W-PAD.r).toFixed(1)} cy={toY(vals[vals.length-1]).toFixed(1)} r="3" fill={color}/>
