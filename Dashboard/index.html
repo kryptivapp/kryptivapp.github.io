@@ -1140,7 +1140,7 @@ function Spark({prices, ch, w=46, h=20}) {
   return (
     <svg width={w} height={h} style={{display:'block',overflow:'visible'}}>
       <defs>
-        <linearGradient id={`spfg-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`spfg-${uid}`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={h}>
           <stop offset="0%" stopColor={colLine} stopOpacity="0.35"/>
           <stop offset="100%" stopColor={colLine} stopOpacity="0"/>
         </linearGradient>
@@ -1229,12 +1229,12 @@ function BigSpark({prices, ch}) {
     <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none"
       style={{width:'100%',display:'block'}}>
       <defs>
-        <linearGradient id={`bsfg-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`bsfg-${uid}`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={sh}>
           <stop offset="0%" stopColor={colLine} stopOpacity="0.18"/>
           <stop offset="75%" stopColor={colLine} stopOpacity="0.03"/>
           <stop offset="100%" stopColor={colLine} stopOpacity="0"/>
         </linearGradient>
-        <linearGradient id={`bsband-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`bsband-${uid}`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={sh}>
           <stop offset="0%" stopColor={colLine} stopOpacity="0.07"/>
           <stop offset="100%" stopColor={colLine} stopOpacity="0.02"/>
         </linearGradient>
@@ -1373,36 +1373,32 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
   const toY=v=>PAD.t+(1-((v-mn)/rng))*(H-PAD.t-PAD.b);
   const toX=i=>PAD.l+(i/(prices.length-1))*(W-PAD.l-PAD.r);
 
-  // Build segment-colored path — each segment green if up, red if down
-  // Downsample first
-  const step=Math.max(1,Math.floor(prices.length/160));
+  // Per-range tension: 1H smoothest, 24H has more detail, 1M/1Y medium
+  const tensions={'1h':0.32,'1d':0.22,'1m':0.28,'1y':0.25};
+  const tension=tensions[range||'1d']||0.25;
+  const maxPts={'1h':120,'1d':120,'1m':100,'1y':100};
+  const targetPts=maxPts[range||'1d']||100;
+  const step=Math.max(1,Math.floor(prices.length/targetPts));
   const sp=[];
   for(let i=0;i<prices.length;i+=step) sp.push({idx:i,v:prices[i].v,t:prices[i].t});
   if(sp[sp.length-1].idx!==prices.length-1)
     sp.push({idx:prices.length-1,v:prices[prices.length-1].v,t:prices[prices.length-1].t});
 
-  // Build colored segments as individual paths
-  const segments=[];
-  for(let i=1;i<sp.length;i++){
-    const prev=sp[i-1],curr=sp[i];
-    const x0=toX(prev.idx),y0=toY(prev.v);
-    const x1=toX(curr.idx),y1=toY(curr.v);
-    const cp=(x1-x0)*0.18;
-    const col=curr.v>=prev.v?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
-    segments.push({d:`M${x0.toFixed(1)},${y0.toFixed(1)} C${(x0+cp).toFixed(1)},${y0.toFixed(1)} ${(x1-cp).toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`,col});
-  }
-
-  // Full path for area fill (single color based on overall direction)
   const overallUp=vals[vals.length-1]>=vals[0];
   const mainCol=overallUp?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
+
+  const segments=[];
   let fullPath=`M${toX(sp[0].idx).toFixed(1)},${toY(sp[0].v).toFixed(1)}`;
   for(let i=1;i<sp.length;i++){
     const x0=toX(sp[i-1].idx),y0=toY(sp[i-1].v);
     const x1=toX(sp[i].idx),y1=toY(sp[i].v);
-    const cp=(x1-x0)*0.18;
+    const cp=(x1-x0)*tension;
+    const col=sp[i].v>=sp[i-1].v?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
+    segments.push({d:`M${x0.toFixed(1)},${y0.toFixed(1)} C${(x0+cp).toFixed(1)},${y0.toFixed(1)} ${(x1-cp).toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`,col});
     fullPath+=` C${(x0+cp).toFixed(1)},${y0.toFixed(1)} ${(x1-cp).toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
   }
-  const areaPath=fullPath+` L${toX(sp[sp.length-1].idx).toFixed(1)},${H} L${toX(sp[0].idx).toFixed(1)},${H} Z`;
+  const areaClose=H-PAD.b;
+  const areaPath=fullPath+` L${toX(sp[sp.length-1].idx).toFixed(1)},${areaClose.toFixed(1)} L${toX(sp[0].idx).toFixed(1)},${areaClose.toFixed(1)} Z`;
 
   // Peak/trough global
   let pkIdx=0,trIdx=0;
@@ -1481,13 +1477,15 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
         onMouseMove={handleMove}
         onMouseLeave={()=>setHover(null)}>
         <defs>
-          <linearGradient id={`hcg-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={mainCol} stopOpacity="0.12"/>
+          <linearGradient id={`hcg-${uid}`} gradientUnits="userSpaceOnUse"
+            x1="0" y1={PAD.t} x2="0" y2={H-PAD.b}>
+            <stop offset="0%"   stopColor={mainCol} stopOpacity="0.18"/>
+            <stop offset="60%"  stopColor={mainCol} stopOpacity="0.06"/>
             <stop offset="100%" stopColor={mainCol} stopOpacity="0"/>
           </linearGradient>
           <linearGradient id={`hcb-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={mainCol} stopOpacity="0.05"/>
-            <stop offset="100%" stopColor={mainCol} stopOpacity="0.01"/>
+            <stop offset="0%" stopColor={mainCol} stopOpacity="0.04"/>
+            <stop offset="100%" stopColor={mainCol} stopOpacity="0"/>
           </linearGradient>
           <clipPath id={`hcc-${uid}`}><rect x="0" y="0" width={W} height={H}/></clipPath>
         </defs>
