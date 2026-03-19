@@ -1202,25 +1202,31 @@ function BigSpark({prices, ch}) {
   );
 }
 
-/* ── HERO CHART for Dashboard selected coin ── */
+/* ── HERO CHART for Dashboard — Candlestick-style with peak/trough markers ── */
 function HeroChart({coinId, coin, range, onRangeChange}) {
   const [prices, setPrices]   = useState(null);
   const [loading, setLoading] = useState(true);
   const [hover,   setHover]   = useState(null);
   const svgRef = useRef(null);
-  const W = 600, H = 140;
-  const RMINI = [{id:'1h',label:'1H',last:60},{id:'12h',label:'12H',last:720},{id:'1d',label:'24H',last:9999}];
+  const uid = useRef('hc'+Math.random().toString(36).slice(2,7)).current;
+  const W = 600, H = 150;
+  const RMINI = [
+    {id:'1h',label:'1H',days:1,last:60},
+    {id:'12h',label:'12H',days:1,last:720},
+    {id:'1d',label:'24H',days:1,last:9999},
+    {id:'7d',label:'7D',days:7,last:9999},
+  ];
 
   useEffect(()=>{
     if (!coinId) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     setPrices(null);
-    fetch('https://api.coingecko.com/api/v3/coins/'+coinId+'/market_chart?vs_currency=usd&days=1&interval=minutely')
+    const rm = RMINI.find(x=>x.id===(range||'1d'))||RMINI[2];
+    fetch('https://api.coingecko.com/api/v3/coins/'+coinId+'/market_chart?vs_currency=usd&days='+rm.days+'&interval='+(rm.days>1?'hourly':'minutely'))
       .then(r=>r.ok?r.json():null)
       .then(d=>{
         if (cancelled||!d||!d.prices) { if(!cancelled) setLoading(false); return; }
-        const rm = RMINI.find(x=>x.id===(range||'1d'))||RMINI[2];
         let pts = d.prices.map(p=>({t:p[0],v:p[1]}));
         if (rm.last<pts.length) pts=pts.slice(-rm.last);
         if (!cancelled){ setPrices(pts); setLoading(false); }
@@ -1244,52 +1250,166 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
 
   const vals=prices.map(p=>p.v);
   const mn=Math.min(...vals),mx=Math.max(...vals),rng=mx-mn||1;
-  const toY=v=>H-((v-mn)/rng)*(H-16)-8;
-  const toX=i=>(i/(prices.length-1))*W;
-  const isUp=prices[prices.length-1].v>=prices[0].v;
+  const padL=2, padR=2, padT=18, padB=8;
+  const toY=v=>padT+(1-((v-mn)/rng))*(H-padT-padB);
+  const toX=i=>padL+(i/(prices.length-1))*(W-padL-padR);
+  const isUp=vals[vals.length-1]>=vals[0];
   const col=isUp?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
-  const step=Math.max(1,Math.floor(prices.length/180));
+  const colFaint=isUp?'rgba(130,255,150,.25)':'rgba(255,100,80,.2)';
+
+  // Downsample for smooth bezier
+  const step=Math.max(1,Math.floor(prices.length/200));
   const sp=prices.filter((_,i)=>i%step===0||i===prices.length-1);
-  function mkPath(pts){
-    let d=`M ${toX(prices.indexOf(pts[0])).toFixed(1)},${toY(pts[0].v).toFixed(1)}`;
-    for(let i=1;i<pts.length;i++){
-      const pi=prices.indexOf(pts[i-1]),ci=prices.indexOf(pts[i]);
-      d+=` C ${(toX(pi)+(toX(ci)-toX(pi))*.4).toFixed(1)},${toY(pts[i-1].v).toFixed(1)} ${(toX(ci)-(toX(ci)-toX(pi))*.4).toFixed(1)},${toY(pts[i].v).toFixed(1)} ${toX(ci).toFixed(1)},${toY(pts[i].v).toFixed(1)}`;
+  const spIdxs=sp.map(p=>prices.indexOf(p));
+
+  function mkPath(){
+    let d=`M ${toX(spIdxs[0]).toFixed(1)},${toY(sp[0].v).toFixed(1)}`;
+    for(let i=1;i<sp.length;i++){
+      const xi=toX(spIdxs[i-1]),xn=toX(spIdxs[i]);
+      const yi=toY(sp[i-1].v),yn=toY(sp[i].v);
+      const cpx=(xn-xi)*0.4;
+      d+=` C ${(xi+cpx).toFixed(1)},${yi.toFixed(1)} ${(xn-cpx).toFixed(1)},${yn.toFixed(1)} ${xn.toFixed(1)},${yn.toFixed(1)}`;
     }
     return d;
   }
-  const pd=mkPath(sp);
+  const pd=mkPath();
+  const lastX=toX(prices.length-1), lastY=toY(vals[vals.length-1]);
+
+  // Find local peak and trough
+  const window=Math.max(5,Math.floor(prices.length/10));
+  let peakIdx=0,troughIdx=0;
+  for(let i=0;i<vals.length;i++){
+    if(vals[i]>vals[peakIdx]) peakIdx=i;
+    if(vals[i]<vals[troughIdx]) troughIdx=i;
+  }
+
+  // Bollinger bands for the hero
+  const BW=Math.min(20,Math.floor(prices.length/4));
+  const bands=vals.map((_,i)=>{
+    if(i<BW-1) return null;
+    const sl=vals.slice(i-BW+1,i+1);
+    const avg=sl.reduce((a,b)=>a+b,0)/BW;
+    const σ=Math.sqrt(sl.reduce((a,b)=>a+(b-avg)**2,0)/BW);
+    return {hi:avg+σ,lo:avg-σ};
+  }).filter(Boolean);
+  const bOff=vals.length-bands.length;
+  const bStep=Math.max(1,Math.floor(bands.length/100));
+  const bSampled=bands.filter((_,i)=>i%bStep===0||i===bands.length-1);
+  const bIdxs=bSampled.map((_,i)=>i*bStep+bOff);
+  const bandHi=bSampled.map((b,i)=>`${i===0?'M':'L'}${toX(bIdxs[i]).toFixed(1)},${toY(b.hi).toFixed(1)}`).join(' ');
+  const bandLo=bSampled.map((b,i)=>`${i===0?'M':'L'}${toX(bIdxs[i]).toFixed(1)},${toY(b.lo).toFixed(1)}`).join(' ');
+  const bandFill=bandHi+' '+bSampled.map((_,i)=>{
+    const ri=bSampled.length-1-i;
+    return `L${toX(bIdxs[ri]).toFixed(1)},${toY(bSampled[ri].lo).toFixed(1)}`;
+  }).join(' ')+'Z';
+
+  // Grid
+  const gridLevels=[0,.25,.5,.75,1].map(t=>({y:toY(mn+t*rng),v:mn+t*rng}));
   const hx=hover?toX(hover.idx):null, hy=hover?toY(hover.price):null;
+
   return (
-    <div style={{position:'relative',marginTop:10}}>
-      <div style={{display:'flex',gap:4,marginBottom:6,alignItems:'center'}}>
+    <div style={{position:'relative',marginTop:8}}>
+      <div style={{display:'flex',gap:4,marginBottom:8,alignItems:'center'}}>
         {RMINI.map(r=>(
           <button key={r.id} onClick={()=>onRangeChange&&onRangeChange(r.id)}
-            style={{padding:'3px 9px',background:(range||'1d')===r.id?'rgba(255,255,255,.1)':'none',
+            style={{padding:'3px 9px',
+              background:(range||'1d')===r.id?'rgba(255,255,255,.1)':'none',
               border:'1px solid '+((range||'1d')===r.id?'rgba(255,255,255,.2)':'rgba(255,255,255,.07)'),
               color:(range||'1d')===r.id?'var(--w)':'var(--w4)',
               fontFamily:'var(--mono)',fontSize:7,letterSpacing:2,cursor:'pointer'}}>
             {r.label}
           </button>
         ))}
-        {hover&&<span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:8,color:col}}>{fp(hover.price)}</span>}
+        {hover&&(
+          <span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:9,color:col,
+            letterSpacing:1,fontWeight:500}}>
+            {fp(hover.price)}
+            <span style={{fontSize:7,color:'var(--w4)',marginLeft:6}}>
+              {new Date(hover.time).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}
+            </span>
+          </span>
+        )}
       </div>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
         style={{width:'100%',height:H,display:'block',cursor:'crosshair'}}
         onMouseMove={handleMouseMove} onMouseLeave={()=>setHover(null)}>
         <defs>
-          <linearGradient id="hcg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={isUp?'rgba(130,255,150,1)':'rgba(255,100,80,1)'} stopOpacity="0.12"/>
+          <linearGradient id={`hcg-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={isUp?'rgba(130,255,150,1)':'rgba(255,100,80,1)'} stopOpacity="0.14"/>
+            <stop offset="85%" stopColor={isUp?'rgba(130,255,150,1)':'rgba(255,100,80,1)'} stopOpacity="0.02"/>
             <stop offset="100%" stopColor="transparent" stopOpacity="0"/>
           </linearGradient>
+          <linearGradient id={`hcband-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={col} stopOpacity="0.06"/>
+            <stop offset="100%" stopColor={col} stopOpacity="0.01"/>
+          </linearGradient>
+          <clipPath id={`hcclip-${uid}`}><rect x="0" y="0" width={W} height={H}/></clipPath>
         </defs>
-        <path d={pd+` L${W},${H} L0,${H} Z`} fill="url(#hcg)"/>
-        <path d={pd} fill="none" stroke={col} strokeWidth="1.5"/>
-        {hx!==null&&<>
-          <line x1={hx.toFixed(1)} y1="0" x2={hx.toFixed(1)} y2={H} stroke="rgba(255,255,255,.18)" strokeWidth="1" strokeDasharray="3,3"/>
-          <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="3.5" fill={col}/>
+
+        {/* Grid */}
+        {gridLevels.map((g,i)=>(
+          <line key={i} x1={padL} y1={g.y.toFixed(1)} x2={W-padR} y2={g.y.toFixed(1)}
+            stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
+        ))}
+        {/* Price labels */}
+        {gridLevels.filter((_,i)=>i>0&&i<4).map((g,i)=>(
+          <text key={i} x={W-padR-2} y={g.y} textAnchor="end" dominantBaseline="middle"
+            fill="rgba(255,255,255,.18)" fontSize="7" fontFamily="monospace">{fp(g.v)}</text>
+        ))}
+
+        {/* Bollinger band */}
+        {bands.length>1&&<path d={bandFill} fill={`url(#hcband-${uid})`} clipPath={`url(#hcclip-${uid})`}/>}
+        {bands.length>1&&<>
+          <path d={bandHi} fill="none" stroke={col} strokeWidth="0.5" opacity="0.18" strokeDasharray="2,3" clipPath={`url(#hcclip-${uid})`}/>
+          <path d={bandLo} fill="none" stroke={col} strokeWidth="0.5" opacity="0.18" strokeDasharray="2,3" clipPath={`url(#hcclip-${uid})`}/>
         </>}
-        {!hover&&<circle cx={W} cy={toY(vals[vals.length-1]).toFixed(1)} r="3" fill={col}/>}
+
+        {/* Open reference line */}
+        <line x1={padL} y1={toY(vals[0]).toFixed(1)} x2={W-padR} y2={toY(vals[0]).toFixed(1)}
+          stroke="rgba(255,255,255,.1)" strokeWidth="0.6" strokeDasharray="3,4"/>
+
+        {/* Area fill */}
+        <path d={pd+` L${(W-padR).toFixed(1)},${H} L${padL},${H} Z`}
+          fill={`url(#hcg-${uid})`} clipPath={`url(#hcclip-${uid})`}/>
+
+        {/* Main line */}
+        <path d={pd} fill="none" stroke={col} strokeWidth="1.8" clipPath={`url(#hcclip-${uid})`}/>
+
+        {/* Peak marker (high) */}
+        <circle cx={toX(peakIdx).toFixed(1)} cy={toY(vals[peakIdx]).toFixed(1)} r="3" fill="rgba(130,255,150,.9)" opacity="0.85"/>
+        <line x1={toX(peakIdx).toFixed(1)} y1={toY(vals[peakIdx]).toFixed(1)}
+          x2={toX(peakIdx).toFixed(1)} y2={(toY(vals[peakIdx])-10).toFixed(1)}
+          stroke="rgba(130,255,150,.5)" strokeWidth="1"/>
+        <text x={toX(peakIdx).toFixed(1)} y={(toY(vals[peakIdx])-13).toFixed(1)}
+          textAnchor="middle" fill="rgba(130,255,150,.7)" fontSize="6.5" fontFamily="monospace">
+          ▲ {fp(vals[peakIdx])}
+        </text>
+
+        {/* Trough marker (low) */}
+        <circle cx={toX(troughIdx).toFixed(1)} cy={toY(vals[troughIdx]).toFixed(1)} r="3" fill="rgba(255,100,80,.9)" opacity="0.85"/>
+        <line x1={toX(troughIdx).toFixed(1)} y1={toY(vals[troughIdx]).toFixed(1)}
+          x2={toX(troughIdx).toFixed(1)} y2={(toY(vals[troughIdx])+10).toFixed(1)}
+          stroke="rgba(255,100,80,.5)" strokeWidth="1"/>
+        <text x={toX(troughIdx).toFixed(1)} y={(toY(vals[troughIdx])+20).toFixed(1)}
+          textAnchor="middle" fill="rgba(255,100,80,.7)" fontSize="6.5" fontFamily="monospace">
+          ▼ {fp(vals[troughIdx])}
+        </text>
+
+        {/* Crosshair */}
+        {hx!==null&&<>
+          <line x1={hx.toFixed(1)} y1="0" x2={hx.toFixed(1)} y2={H}
+            stroke="rgba(255,255,255,.15)" strokeWidth="1" strokeDasharray="3,3"/>
+          <line x1="0" y1={hy.toFixed(1)} x2={W} y2={hy.toFixed(1)}
+            stroke="rgba(255,255,255,.08)" strokeWidth="1" strokeDasharray="3,3"/>
+          <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="4" fill={col}/>
+          <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="7" fill="none" stroke={col} strokeWidth="1" opacity="0.3"/>
+        </>}
+
+        {/* Live dot */}
+        {!hover&&<>
+          <circle cx={lastX.toFixed(1)} cy={lastY.toFixed(1)} r="3.5" fill={col}/>
+          <circle cx={lastX.toFixed(1)} cy={lastY.toFixed(1)} r="6" fill="none" stroke={col} strokeWidth="0.8" opacity="0.4"/>
+        </>}
       </svg>
     </div>
   );
