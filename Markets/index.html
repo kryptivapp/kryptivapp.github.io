@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>KRYPTIV · Markets</title>
+<link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22KRYPTIV%22%2C%22short_name%22%3A%22KRYPTIV%22%2C%22display%22%3A%22standalone%22%2C%22theme_color%22%3A%22%23000000%22%7D">
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22KRYPTIV%22%2C%22short_name%22%3A%22KRYPTIV%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23000000%22%2C%22theme_color%22%3A%22%23000000%22%7D">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1623,4 +1625,579 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
   );
 }
 
+function ProbCalc({coin}) {
+  const [target, setTarget]   = useState('');
+  const [period, setPeriod]   = useState('7');
+  const [result, setResult]   = useState(null);
 
+  function calc() {
+    const tgt = parseFloat(target);
+    if (!tgt||!coin||!coin.price) return;
+    const pct = ((tgt - coin.price) / coin.price) * 100;
+    const vol = Math.abs(coin.ch||2) * 1.5; // daily volatility proxy
+    const days = parseInt(period);
+    // Log-normal probability approximation
+    const sigma = vol/100 * Math.sqrt(days);
+    const logRet = Math.log(tgt/coin.price);
+    const drift  = (coin.ch7d||0)/700 * days; // weekly drift annualized
+    const z      = (logRet - drift) / Math.max(sigma, 0.001);
+    // Simple normal CDF approximation
+    const prob   = Math.min(95, Math.max(1, Math.round((0.5 * (1 + Math.sign(-z) * (1 - Math.exp(-0.7 * z * z)))) * 100)));
+    const probUp = pct > 0 ? (100-prob) : prob;
+    setResult({pct, probUp: Math.min(95,Math.max(5,probUp)), days, tgt, dir: pct>0?'up':'down'});
+  }
+
+  return (
+    <div style={{padding:'16px',background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.06)',marginTop:16}}>
+      <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:4,color:'var(--w4)',textTransform:'uppercase',marginBottom:12}}>
+        PROBABILITY CALCULATOR
+      </div>
+      <div style={{display:'flex',gap:10,marginBottom:10,flexWrap:'wrap'}}>
+        <div style={{flex:1,minWidth:100}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:4}}>TARGET PRICE ({csym()})</div>
+          <input value={target} onChange={e=>setTarget(e.target.value)}
+            placeholder={coin?fp(coin.price*1.1):'target'}
+            style={{width:'100%',background:'none',border:'none',borderBottom:'1px solid rgba(255,255,255,.15)',
+              color:'var(--w)',fontSize:14,fontWeight:300,padding:'4px 0',outline:'none',caretColor:'#fff'}}/>
+        </div>
+        <div style={{flex:1,minWidth:100}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:4}}>TIME (DAYS)</div>
+          <select value={period} onChange={e=>setPeriod(e.target.value)}
+            style={{width:'100%',background:'rgba(0,0,0,.5)',border:'none',borderBottom:'1px solid rgba(255,255,255,.15)',
+              color:'var(--w)',fontSize:12,padding:'4px 0',outline:'none',appearance:'none',cursor:'pointer'}}>
+            <option value="1">1 day</option>
+            <option value="7">7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+            <option value="90">90 days</option>
+          </select>
+        </div>
+        <button onClick={calc}
+          style={{alignSelf:'flex-end',padding:'6px 16px',background:'var(--w)',border:'none',color:'#000',
+            fontFamily:'var(--sans)',fontWeight:700,fontSize:8,letterSpacing:2,cursor:'pointer'}}>
+          CALCULATE
+        </button>
+      </div>
+      {result && (
+        <div style={{padding:'12px',background:result.dir==='up'?'rgba(130,255,150,.04)':'rgba(255,100,80,.04)',
+          border:'1px solid '+(result.dir==='up'?'rgba(130,255,150,.15)':'rgba(255,100,80,.12)')}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+            <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--w)',letterSpacing:1}}>
+              {fp(result.tgt)} in {result.days}d
+            </span>
+            <span style={{fontFamily:'var(--disp)',fontSize:28,
+              color:result.dir==='up'?'rgba(130,255,150,.9)':'rgba(255,100,80,.8)'}}>
+              {result.probUp}%
+            </span>
+          </div>
+          <div style={{height:4,background:'rgba(255,255,255,.06)',marginBottom:6,overflow:'hidden'}}>
+            <div style={{height:'100%',width:result.probUp+'%',
+              background:result.dir==='up'?'rgba(130,255,150,.7)':'rgba(255,100,80,.6)',
+              transition:'width .5s ease'}}/>
+          </div>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1,lineHeight:1.8}}>
+            Estimated probability of reaching {fp(result.tgt)} within {result.days} day{result.days>1?'s':''}.<br/>
+            Based on volatility model — never 100% certain. Not financial advice.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Ticker({coins}) {
+  if (!coins || !coins.length) return <div className="tb-ticker"/>;
+  const items = [...coins, ...coins];
+  return (
+    <div className="tb-ticker">
+      <div className="ticker-track">
+        {items.map((c,i) => (
+          <div key={i} className="tick">
+            <span className="tick-sym">{c.sym}</span>
+            <span className="tick-pr">{fp(c.price)}</span>
+            <span className={`tick-ch ${(c.ch||0)>=0?'up':'dn'}`}>
+              {(c.ch||0)>=0?'▴':'▾'}{Math.abs(c.ch||0).toFixed(2)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PriceError({errors, onRetry}) {
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',
+      alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,.94)',
+      backdropFilter:'blur(20px)',padding:32,textAlign:'center'}}>
+      <MI n="wifi_off" style={{fontSize:38,color:'rgba(255,100,80,.8)',marginBottom:18}}/>
+      <div style={{fontFamily:'var(--disp)',fontSize:30,letterSpacing:3,marginBottom:10}}>COULD NOT LOAD PRICES</div>
+      <div style={{fontFamily:'var(--mono)',fontSize:8,color:'var(--w4)',letterSpacing:2,lineHeight:2.4,marginBottom:26,maxWidth:380}}>
+        KRYPTIV REQUIRES A LIVE INTERNET CONNECTION.<br/>
+        TRIED COINGECKO, BINANCE, AND KRAKEN — ALL FAILED.
+      </div>
+      {errors?.length > 0 && (
+        <div style={{fontFamily:'var(--mono)',fontSize:8,color:'rgba(255,100,80,.5)',marginBottom:22,lineHeight:2.2}}>
+          {errors.map((e,i)=><div key={i}>{e}</div>)}
+        </div>
+      )}
+      <button onClick={onRetry} style={{padding:'12px 26px',background:'var(--w)',color:'#000',border:'none',
+        fontFamily:'var(--sans)',fontWeight:700,fontSize:9,letterSpacing:3,textTransform:'uppercase',cursor:'pointer'}}>
+        RETRY
+      </button>
+    </div>
+  );
+}
+
+function PriceLoading() {
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',
+      alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,.92)',backdropFilter:'blur(12px)'}}>
+      <div style={{fontFamily:'var(--disp)',fontSize:46,letterSpacing:2,marginBottom:10,animation:'pulse 1.8s ease-in-out infinite'}}>KRYPTIV</div>
+      <div style={{fontFamily:'var(--mono)',fontSize:8,letterSpacing:5,color:'var(--w4)',textTransform:'uppercase',marginBottom:18}}>Fetching live prices…</div>
+      <div style={{display:'flex',gap:6}}>
+        {[0,1,2].map(i=><div key={i} style={{width:4,height:4,background:'var(--w4)',animation:`pulse 1.2s ease-in-out ${i*.2}s infinite`}}/>)}
+      </div>
+    </div>
+  );
+}
+
+function SettingsModal({onClose, flash, onToggleFlash}) {
+  const [msg, setMsg] = useState('');
+  const act = (fn, txt) => { fn(); setMsg(txt); };
+  const rows = [
+    {icon:'refresh',       lbl:'Refresh Prices',   sub:'Force live price reload',   fn:()=>act(clearAllCache,'Prices will refresh.'),        danger:false},
+    {icon:'delete_sweep',  lbl:'Clear Holdings',    sub:'Remove all saved positions',fn:()=>act(()=>localStorage.removeItem('kryptiv_holdings'),'Holdings cleared.'), danger:true},
+    {icon:'logout',        lbl:'Sign Out',          sub:'Keeps your account data',   fn:()=>{ LS.clear(); navigate('/'); },                   danger:false},
+    {icon:'delete_forever',lbl:'Reset Everything',  sub:'Wipe all data and sign out',fn:()=>{ if(confirm('Delete all data? Cannot be undone.')) nukeEverything(); },  danger:true},
+  ];
+  return (
+    <div className="settings-modal">
+      <div className="settings-bd" onClick={onClose}/>
+      <div className="settings-panel">
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:22}}>
+          <div className="settings-title" style={{marginBottom:0}}>SETTINGS</div>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w4)',display:'flex',alignItems:'center'}}>
+            <MI n="close" style={{fontSize:22}}/>
+          </button>
+        </div>
+
+        {/* Currency toggle */}
+        <div className="settings-row" style={{marginBottom:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
+            <MI n="swap_horiz" style={{fontSize:20,color:'var(--w4)',flexShrink:0}}/>
+            <div>
+              <div className="settings-lbl">CURRENCY</div>
+              <div className="settings-sub">Display prices in USD or EUR</div>
+            </div>
+          </div>
+          <button
+            onClick={()=>{setCurrency(getCurrency()==='eur'?'usd':'eur');window.location.reload();}}
+            style={{padding:'5px 14px',background:'rgba(255,255,255,.06)',
+              border:'1px solid var(--border2)',
+              color:'var(--w3)',fontFamily:'var(--mono)',fontSize:8,letterSpacing:2,cursor:'pointer'}}>
+            {getCurrency()==='eur'?'€ EUR':'$ USD'}
+          </button>
+        </div>
+
+        {/* Flash Mode toggle */}
+        <div className="settings-row" style={{marginBottom:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
+            <MI n="bolt" style={{fontSize:20,color:flash?'rgba(255,200,0,.8)':'var(--w4)',flexShrink:0}}/>
+            <div>
+              <div className="settings-lbl" style={{color:flash?'rgba(255,200,0,.9)':'var(--w3)'}}>⚡ FLASH MODE</div>
+              <div className="settings-sub">{flash?'5s live refresh — may hit API limits':'Normal mode · 60s cache · 5s display'}</div>
+            </div>
+          </div>
+          <button
+            onClick={()=>{if(onToggleFlash)onToggleFlash();setMsg(flash?'Flash mode off — 60s cache.':'Flash mode on — 5s live refresh!');}}
+            style={{padding:'5px 14px',background:flash?'rgba(255,200,0,.15)':'rgba(255,255,255,.06)',
+              border:'1px solid '+(flash?'rgba(255,200,0,.4)':'var(--border2)'),
+              color:flash?'rgba(255,200,0,.9)':'var(--w3)',fontFamily:'var(--mono)',fontSize:8,letterSpacing:2,cursor:'pointer'}}>
+            {flash?'ON':'OFF'}
+          </button>
+        </div>
+
+        {flash&&<div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,140,0,.7)',letterSpacing:1,marginBottom:14,padding:'6px 10px',border:'1px solid rgba(255,140,0,.2)',lineHeight:1.7}}>
+          Flash mode refreshes every 5s. CoinGecko free API limit is ~10-30 req/min. You may get rate-limited — prices will show cached data with a warning.
+        </div>}
+
+        {rows.map(r=>(
+          <div key={r.lbl} className="settings-row">
+            <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
+              <MI n={r.icon} style={{fontSize:20,color:r.danger?'rgba(255,100,80,.55)':'var(--w4)',flexShrink:0}}/>
+              <div>
+                <div className="settings-lbl">{r.lbl}</div>
+                <div className="settings-sub">{r.sub}</div>
+              </div>
+            </div>
+            <button className={`settings-btn${r.danger?' danger':''}`} onClick={r.fn}>
+              <MI n="chevron_right"/>
+            </button>
+          </div>
+        ))}
+        {msg&&(
+          <div style={{fontFamily:'var(--mono)',fontSize:8,color:'rgba(130,255,150,.7)',
+            padding:'10px 0',letterSpacing:2,display:'flex',alignItems:'center',gap:6}}>
+            <MI n="check_circle" style={{fontSize:12}}/>{msg}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NavOverlay({view, go, onClose}) {
+  return (
+    <div className="nav-ov" onClick={onClose}>
+      <div className="nav-ov-header" onClick={e=>e.stopPropagation()}>
+        <div className="nav-ov-logo">KRYPTIV</div>
+        <button className="nav-ov-close-btn" onClick={onClose}>
+          <MI n="close"/>
+        </button>
+      </div>
+      <div className="nav-ov-list" onClick={e=>e.stopPropagation()}>
+        {NAV_ITEMS.map(n => (
+          <div key={n.id} className={`nav-ov-it${view===n.id?' on':''}`} onClick={()=>go(n.id)}>
+            <MI n={n.icon}/>{n.lbl}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AppShell({user, setUser, view, children}) {
+  const [navOpen,  setNavOpen]  = useState(false);
+  const [settOpen, setSettOpen] = useState(false);
+  const [coins,    setCoins]    = useState(null);
+  const [priceErr, setPriceErr] = useState(null);
+  const [priceSrc, setPriceSrc] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
+
+  const [flash,     setFlash]     = useState(()=>isFlashMode());
+  const [cacheAge,  setCacheAge]  = useState(0);
+  const [rateLim,   setRateLim]   = useState(false);
+
+  useEffect(() => {
+    let stopped = false;
+    const stop = startPriceUpdates(
+      (newCoins, src, result) => {
+        if (stopped) return;
+        setCoins(newCoins);
+        setPriceSrc(src);
+        setPriceErr(null);
+        setCacheAge(result ? result.ageMs : 0);
+        setRateLim(result ? result.rateLimited : false);
+      },
+      (rateLimited) => {
+        if (stopped) return;
+        setCoins(prev => { if (!prev) setPriceErr(true); return prev; });
+        setRateLim(rateLimited);
+      }
+    );
+    return () => { stopped=true; stop(); };
+  }, [retryKey, flash]);
+
+  const toggleFlash = () => {
+    const next = !flash;
+    setFlashMode(next);
+    setFlash(next);
+    clearAllCache();
+    setRetryKey(k=>k+1);
+  };
+
+  const go = id => {
+    setNavOpen(false);
+    if (id === view) return;
+    const n = NAV_ITEMS.find(x => x.id===id);
+    if (n) navigate(n.path);
+  };
+
+  const handleSignOut = () => { LS.clear(); navigate('/'); };
+
+  if (priceErr) return <PriceError errors={priceErr} onRetry={()=>{setPriceErr(null);setRetryKey(k=>k+1);}}/>;
+  if (!coins)   return <PriceLoading/>;
+
+  const availCoins = user.tier==='free' ? coins.filter(c=>FREE_COINS.includes(c.sym)) : coins;
+
+  return (
+    <div className="app">
+      {/* SIDEBAR */}
+      <div className="sidebar">
+        <div className="sb-head">
+          <div className="sb-logo">KRYPTIV</div>
+          <div className="sb-uid">ID <span>{user.kryptid}</span></div>
+        </div>
+        <div className="sb-hr"/>
+        <nav className="sb-nav">
+          <div className="nav-grp">Navigation</div>
+          {NAV_ITEMS.map(n => (
+            <div key={n.id} className={`nav-it${view===n.id?' on':''}`} onClick={()=>go(n.id)}>
+              <MI n={n.icon}/>
+              {n.lbl}
+              {n.id==='ai' && <span className="nav-badge">FREE</span>}
+            </div>
+          ))}
+        </nav>
+        <div className="sb-foot">
+          <div className="sb-hr" style={{marginBottom:8}}/>
+          <div className="tier-row" onClick={()=>go('plans')}>
+            <div className="tier-dot"/>
+            <div className="tier-info">
+              <div className="tier-lbl">Plan</div>
+              <div className="tier-nm">{(user.tier||'free').toUpperCase()}</div>
+            </div>
+            <MI n="chevron_right" style={{fontSize:14,color:'var(--w4)'}}/>
+          </div>
+          <div className="sb-settings" onClick={()=>setSettOpen(true)}>
+            <MI n="settings"/>Settings
+          </div>
+          <div className="sb-logout" onClick={handleSignOut}>
+            <MI n="logout"/>{user.name}
+          </div>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT */}
+      <div className="content">
+        <div className="topbar">
+          <div className="tb-logo">KRYPTIV</div>
+          <div className="tb-title">{NAV_ITEMS.find(n=>n.id===view)?.lbl}</div>
+          <Ticker coins={coins}/>
+          <div className="tb-right">
+            {rateLim && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,140,0,.8)',letterSpacing:1,padding:'0 8px',border:'1px solid rgba(255,140,0,.3)'}}>RATE LIMITED · CACHED</div>}
+            {!rateLim && cacheAge<=10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.7)',letterSpacing:2,display:'flex',alignItems:'center',gap:4}}><span style={{width:5,height:5,background:'rgba(130,255,150,.8)',borderRadius:'50%',display:'inline-block',animation:'pulse 2s infinite'}}/> LIVE</div>}
+            {!rateLim && cacheAge>10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1}}>NEXT UPDATE {Math.max(0,Math.round((60000-cacheAge)/1000))}s</div>}
+            {flash && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,200,0,.8)',letterSpacing:2,padding:'0 8px',border:'1px solid rgba(255,200,0,.25)'}}>⚡ FLASH</div>}
+            <div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
+              <MI n="settings"/>
+            </div>
+            <div className="tier-chip" onClick={()=>go('plans')}>{(user.tier||'free').toUpperCase()}</div>
+          </div>
+        </div>
+        <div className="main">
+          {React.cloneElement(children, { coins, availCoins, priceSrc })}
+        </div>
+      </div>
+
+      {/* BOTTOM NAV */}
+      <div className="botnav">
+        {['dashboard','markets','ai','news'].map(id => {
+          const n = NAV_ITEMS.find(x=>x.id===id);
+          return (
+            <button key={id} className={`bn-it${view===id?' on':''}`} onClick={()=>go(id)}>
+              <MI n={n.icon}/>{n.lbl}
+            </button>
+          );
+        })}
+        <button className="bn-more-btn" onClick={()=>setNavOpen(true)}>
+          <div className="bn-sq"><MI n="grid_view"/></div>
+          <div className="bn-sq-lbl">More</div>
+        </button>
+      </div>
+
+      {navOpen && <NavOverlay view={view} go={go} onClose={()=>setNavOpen(false)}/>}
+      {settOpen && <SettingsModal onClose={()=>setSettOpen(false)} flash={flash} onToggleFlash={toggleFlash}/>}
+    </div>
+  );
+}
+
+
+/* ═══════════════ MARKETS PAGE ═══════════════ */
+
+function getVerdict(c) {
+  const ch=c.ch||0, ch7=c.ch7d||0;
+  const pos = (ch>2?1:0)+(ch7>5?1:0)+((c.ch1h||0)>0.5?1:0);
+  if (pos>=2) return {rating:'BULLISH',   color:'rgba(130,255,150,.9)'};
+  if (pos===0) return {rating:'BEARISH',  color:'rgba(255,100,80,.85)'};
+  return {rating:'NEUTRAL', color:'rgba(255,200,80,.7)'};
+}
+
+function CoinDetail({coin, onClose}) {
+  const v = getVerdict(coin);
+  const [range, setRange] = useState('1m');
+  return (
+    <div className="coin-detail">
+      <div className="cd-backdrop" onClick={onClose}/>
+      <div className="cd-panel" style={{maxHeight:'92vh',paddingBottom:28}}>
+        {/* Header */}
+        <div className="cd-head" style={{marginBottom:14}}>
+          <div>
+            <div className="cd-sym">{coin.sym}</div>
+            <div className="cd-nm" style={{display:'flex',alignItems:'center',gap:8}}>
+              {coin.name}{coin.rank?` · #${coin.rank}`:''}
+              <span style={{fontFamily:'var(--mono)',fontSize:7,padding:'2px 7px',
+                border:'1px solid '+v.color,color:v.color,letterSpacing:2}}>
+                {v.rating}
+              </span>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'flex-start',gap:16}}>
+            <div>
+              <div className="cd-price">{fp(coin.price)}</div>
+              <div className={`cd-ch-big ${(coin.ch||0)>=0?'up':'dn'}`}>{fc(coin.ch)} 24h</div>
+            </div>
+            <button className="cd-close" onClick={onClose}><MI n="close"/></button>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div style={{display:'flex',gap:0,borderTop:'1px solid rgba(255,255,255,.05)',
+          borderBottom:'1px solid rgba(255,255,255,.05)',marginBottom:16}}>
+          {[
+            ['1H', coin.ch1h!=null?fc(coin.ch1h):'—', coin.ch1h],
+            ['24H', fc(coin.ch), coin.ch],
+            ['7D', coin.ch7d!=null?fc(coin.ch7d):'—', coin.ch7d],
+            ['MCap', coin.mc?fv(coin.mc*1e9):'—', null],
+            ['Vol', coin.vol?fv(coin.vol*1e9):'—', null],
+          ].map(([l,val,chg])=>(
+            <div key={l} style={{flex:1,padding:'10px 8px 10px 0',borderRight:'1px solid rgba(255,255,255,.05)'}}>
+              <div style={{fontFamily:'var(--mono)',fontSize:6,color:'var(--w4)',letterSpacing:2,textTransform:'uppercase',marginBottom:3}}>{l}</div>
+              <div style={{fontFamily:'var(--mono)',fontSize:11,
+                color:chg!=null?(chg>=0?'rgba(130,255,150,.9)':'rgba(255,100,80,.8)'):'var(--w)'}}>
+                {val}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Full trading chart */}
+        <TradingChart coinId={coin.id} coin={coin} range={range} onRangeChange={setRange}
+          height={180} showRangeSelector={true} livePrice={coin.price}/>
+
+        {/* Probability Calculator */}
+        <ProbCalc coin={coin}/>
+
+        <button onClick={()=>navigate('/AI/')} style={{width:'100%',padding:11,background:'var(--w)',
+          border:'none',color:'#000',fontFamily:'var(--sans)',fontWeight:700,fontSize:9,
+          letterSpacing:3,textTransform:'uppercase',cursor:'pointer',marginTop:14}}>
+          ASK AI ABOUT {coin.sym} ▸
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Markets({user, coins, availCoins, priceSrc}) {
+  const isFree = user.tier==='free';
+  const [pinned, setPinned] = useState(function() {
+    try { return JSON.parse(localStorage.getItem('kryptiv_pinned')||'["BTC","SOL"]'); } catch { return ['BTC','SOL']; }
+  });
+  const togglePin = function(sym) {
+    setPinned(function(prev) {
+      var next = prev.includes(sym) ? prev.filter(function(s){return s!==sym;}) : prev.length < (isFree?2:99) ? prev.concat([sym]) : prev;
+      localStorage.setItem('kryptiv_pinned', JSON.stringify(next));
+      return next;
+    });
+  };
+  const [query,    setQuery]    = useState('');
+  const [detail,   setDetail]   = useState(null);
+  const [tab,      setTab]      = useState('all');
+
+  const filtered = useMemo(()=>{
+    let list = coins || [];
+    if (tab==='top') list = [...list].sort((a,b)=>(b.ch7d||b.ch||0)-(a.ch7d||a.ch||0)).slice(0,5);
+    if (tab==='down') list = [...list].sort((a,b)=>(a.ch7d||a.ch||0)-(b.ch7d||b.ch||0)).slice(0,5);
+    else list = [...list].sort((a,b)=>(b.ch7d||b.ch||0)-(a.ch7d||a.ch||0));
+    if (query) list = list.filter(c=>c.sym.includes(query.toUpperCase())||c.name.toLowerCase().includes(query.toLowerCase()));
+    return list;
+  }, [coins, tab, query]);
+
+  if (!coins) return null;
+
+  return (
+    <div className="scr">
+      <div className="s-lbl">
+        <MI n="candlestick_chart"/>LIVE MARKETS
+        <span className="live-badge" style={{marginLeft:'auto'}}>
+          <span className="live-dot"/>LIVE · {priceSrc}
+        </span>
+      </div>
+
+      {/* Search */}
+      <div className="srch-row" style={{display:'flex',alignItems:'center',gap:8,borderBottom:'1px solid rgba(255,255,255,.05)',marginBottom:14,paddingBottom:10}}>
+        <MI n="search" style={{fontSize:15,color:'var(--w4)'}}/>
+        <input
+          style={{flex:1,background:'none',border:'none',color:'var(--w)',fontSize:13,
+            fontWeight:300,outline:'none',caretColor:'#fff'}}
+          placeholder="Search coins…"
+          value={query}
+          onChange={e=>setQuery(e.target.value)}
+        />
+        {query && <MI n="close" style={{fontSize:15,color:'var(--w4)',cursor:'pointer'}} onClick={function(){setQuery('');}}/>}
+      </div>
+
+      {/* Tabs */}
+      <div className="tabs">
+        {[['all','All'],['top','Top Gainers'],['down','Top Losers']].map(([id,lbl])=>(
+          <div key={id} className={`tab${tab===id?' on':''}`} onClick={()=>setTab(id)}>{lbl}</div>
+        ))}
+      </div>
+
+      {/* Table header */}
+      <div className="mkt-table-header">
+        <div className="mth-rank">#</div>
+        <div className="mth-name">COIN</div>
+        <div className="mth-spark">7D</div>
+        <div className="mth-price">PRICE</div>
+        <div className="mth-ch">7D</div>
+      </div>
+
+      {filtered.map((c,i)=>{
+        const locked = isFree && !FREE_COINS.includes(c.sym);
+        const row = (
+          <div className="coin-line" onClick={()=>!locked&&setDetail(c)} style={{cursor:locked?'default':'pointer'}}>
+            {!locked&&<span className={'hl-star'+(pinned.includes(c.sym)?' on':'')}
+              onClick={e=>{e.stopPropagation();togglePin(c.sym);}}>★</span>}
+            {locked&&<span className="hl-star" style={{opacity:.3}}>★</span>}
+            <div className="c-rank">{c.rank||i+1}</div>
+            <div style={{flex:1,display:'flex',alignItems:'center',gap:8,minWidth:0}}>
+              <div className="c-sym">{c.sym}</div>
+              <div className="c-nm">{c.name}</div>
+            </div>
+            <div className="c-spark"><Spark ch={c.ch}/></div>
+            <div className="c-pr">{fp(c.price)}</div>
+            <div className={`c-ch ${(c.ch7d!=null?c.ch7d:c.ch||0)>=0?'up':'dn'}`}>
+              {Math.abs(c.ch7d!=null?c.ch7d:(c.ch||0)).toFixed(2)}%
+            </div>
+          </div>
+        );
+        if (!locked) return <React.Fragment key={c.id}>{row}</React.Fragment>;
+        return (
+          <div key={c.id} className="pro-blur-wrap">
+            <div className="pro-blur-content">{row}</div>
+            <div className="pro-lock-ov">
+              <div className="pro-lock-left">
+                <MI n="lock" className="pro-lock-icon"/>
+                <div className="pro-lock-lbl">BUDGET & PRO</div>
+              </div>
+              <button className="pro-lock-btn" onClick={()=>navigate('/Plans/')}>UPGRADE</button>
+            </div>
+          </div>
+        );
+      })}
+
+      {detail && <CoinDetail coin={detail} onClose={()=>setDetail(null)}/>}
+    </div>
+  );
+}
+
+function Page() {
+  const [u, setU] = React.useState(() => LS.get());
+  React.useEffect(() => {
+    if (!u?.kryptid) { window.location.href = '/'; }
+  }, []);
+  if (!u?.kryptid) return null;
+  return (<>
+    <div className="wall clear"/>
+    <AppShell user={u} setUser={setU} view="markets">
+      <Markets user={u}/>
+    </AppShell>
+  </>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Page/>);
+
+</script>
+</body>
+</html>
