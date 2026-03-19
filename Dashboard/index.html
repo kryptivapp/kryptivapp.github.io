@@ -1216,7 +1216,7 @@ function BigSpark({prices, ch}) {
   );
 }
 
-/*  HERO CHART — responsive, no stretch, peak/trough markers  */
+/* HERO CHART — responsive, segment-colored, times below SVG */
 function HeroChart({coinId, coin, range, onRangeChange}) {
   const [prices,  setPrices]  = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1228,54 +1228,54 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
   const uid     = useRef('hc'+Math.random().toString(36).slice(2,7)).current;
 
   const RANGES = [
-    {id:'1h',  label:'1H',   days:1,  interval:'minutely', last:60 },
-    {id:'1d',  label:'24H',  days:1,  interval:'hourly',   last:9999},
-    {id:'1m',  label:'1M',   days:30, interval:'daily',    last:9999},
-    {id:'1y',  label:'1Y',   days:365,interval:'daily',    last:9999},
+    {id:'1h', label:'1H',  days:1,   interval:'minutely', last:60  },
+    {id:'1d', label:'24H', days:1,   interval:'hourly',   last:9999},
+    {id:'1m', label:'1M',  days:30,  interval:'daily',    last:9999},
+    {id:'1y', label:'1Y',  days:365, interval:'daily',    last:9999},
   ];
 
-  // Measure container width and update on resize
   useEffect(()=>{
-    if (!wrapRef.current) return;
-    const ro = new ResizeObserver(entries=>{
-      const w = Math.floor(entries[0].contentRect.width)||600;
-      setDims({w, h: Math.round(w * 0.28)});
+    if(!wrapRef.current) return;
+    const ro=new ResizeObserver(es=>{
+      const w=Math.floor(es[0].contentRect.width)||600;
+      setDims({w,h:Math.round(w*0.3)});
     });
     ro.observe(wrapRef.current);
-    const w = Math.floor(wrapRef.current.offsetWidth)||600;
-    setDims({w, h: Math.round(w * 0.28)});
-    return ()=>ro.disconnect();
+    const w=Math.floor(wrapRef.current.offsetWidth)||600;
+    setDims({w,h:Math.round(w*0.3)});
+    return()=>ro.disconnect();
   },[]);
 
-  // Synth fallback
-  function makeSynth(n) {
-    if (!coin || !coin.price) return null;
-    const now = Date.now(), base = coin.price;
-    const vol = Math.max(0.008, Math.abs(coin.ch||2)/100 * 0.6);
-    let seed = 0; for(let c of coinId) seed=(seed*31+c.charCodeAt(0))&0xffff;
-    const rng2 = i=>{ let x=Math.sin(seed+i*9301+49297)*233280; return x-Math.floor(x); };
-    const startP = base/(1+(coin.ch||0)/100);
-    const drift  = (base-startP)/n;
+  function makeSynth(n,rm){
+    if(!coin||!coin.price) return null;
+    const now=Date.now(),base=coin.price;
+    const vol=Math.max(0.008,Math.abs(coin.ch||2)/100*0.6);
+    let seed=0; for(const c of coinId) seed=(seed*31+c.charCodeAt(0))&0xffff;
+    const r2=i=>{let x=Math.sin(seed+i*9301+49297)*233280;return x-Math.floor(x);};
+    const startP=base/(1+(coin.ch||0)/100);
+    const drift=(base-startP)/n;
     const pts=[];
+    const interval=rm.days>1?86400000:3600000;
     for(let i=0;i<n;i++){
-      const z=(rng2(i)-0.5)*2;
+      const z=(r2(i)-0.5)*2;
       const trend=startP+drift*i;
       const wave=Math.sin(i/n*Math.PI*4+seed*0.1)*base*vol*0.5
                 +Math.sin(i/n*Math.PI*9+seed*0.3)*base*vol*0.18;
-      pts.push({t:now-(n-i)*60000, v:Math.max(base*0.3, trend+z*base*vol*0.25+wave)});
+      pts.push({t:now-(n-i)*interval,v:Math.max(base*0.3,trend+z*base*vol*0.25+wave)});
     }
     pts[pts.length-1]={t:now,v:base};
     return pts;
   }
 
   useEffect(()=>{
-    if (!coinId) { setLoading(false); return; }
-    let cancelled = false;
+    if(!coinId){setLoading(false);return;}
+    let cancelled=false;
     setLoading(true); setPrices(null);
-    const rm = RANGES.find(x=>x.id===(range||'1d'))||RANGES[1];
-    const url = 'https://api.coingecko.com/api/v3/coins/'+coinId+'/market_chart?vs_currency=usd&days='+rm.days+'&interval='+rm.interval;
-    fetch(url)
-      .then(r=>{ if(r.status===429||!r.ok) throw new Error('fail'); return r.json(); })
+    const rm=RANGES.find(x=>x.id===(range||'1d'))||RANGES[1];
+    // Never use minutely for long ranges - CoinGecko ignores it and returns wrong data
+    const iv=rm.days===1?rm.interval:'daily';
+    fetch('https://api.coingecko.com/api/v3/coins/'+coinId+'/market_chart?vs_currency=usd&days='+rm.days+'&interval='+iv)
+      .then(r=>{if(r.status===429||!r.ok) throw new Error('fail');return r.json();})
       .then(d=>{
         if(cancelled) return;
         if(!d||!d.prices||d.prices.length<2) throw new Error('empty');
@@ -1285,13 +1285,13 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
       })
       .catch(()=>{
         if(cancelled) return;
-        const n=rm.last<9999?rm.last:(rm.days>1?120:240);
-        const s=makeSynth(n);
+        const n=rm.last<9999?rm.last:(rm.days>1?rm.days:240);
+        const s=makeSynth(n,rm);
         if(s){setPrices(s);setIsSynth(true);}
         setLoading(false);
       });
-    return ()=>{cancelled=true;};
-  },[coinId, range]);
+    return()=>{cancelled=true;};
+  },[coinId,range]);
 
   function handleMove(e){
     if(!prices||!svgRef.current) return;
@@ -1302,10 +1302,11 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
   }
 
   const W=dims.w, H=dims.h;
-  const PAD={l:2,r:2,t:22,b:6};
+  const PAD={l:4,r:4,t:20,b:6};
+  const timeH=16; // height below SVG for time labels
 
-  if(loading||!prices||prices.length<2) return (
-    <div ref={wrapRef} style={{height:H||140,display:'flex',alignItems:'center',
+  if(loading||!prices||prices.length<2) return(
+    <div ref={wrapRef} style={{height:(H||140)+timeH,display:'flex',alignItems:'center',
       justifyContent:'center',fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:3}}>
       {loading?'LOADING':'NO DATA'}
     </div>
@@ -1315,33 +1316,48 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
   const mn=Math.min(...vals),mx=Math.max(...vals),rng=mx-mn||mn*0.01||1;
   const toY=v=>PAD.t+(1-((v-mn)/rng))*(H-PAD.t-PAD.b);
   const toX=i=>PAD.l+(i/(prices.length-1))*(W-PAD.l-PAD.r);
-  const isUp=vals[vals.length-1]>=vals[0];
-  const col=isUp?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
 
-  // Path (downsample to max 200pts)
-  const step=Math.max(1,Math.floor(prices.length/200));
-  const sp=prices.filter((_,i)=>i%step===0||i===prices.length-1);
-  const spX=sp.map((_,i)=>toX(i*step>=prices.length?prices.length-1:i*step));
-  const spY=sp.map(p=>toY(p.v));
-  function makePath(){
-    let d=`M${spX[0].toFixed(1)},${spY[0].toFixed(1)}`;
-    for(let i=1;i<sp.length;i++){
-      const cp=(spX[i]-spX[i-1])*0.18;
-      d+=` C${(spX[i-1]+cp).toFixed(1)},${spY[i-1].toFixed(1)} ${(spX[i]-cp).toFixed(1)},${spY[i].toFixed(1)} ${spX[i].toFixed(1)},${spY[i].toFixed(1)}`;
-    }
-    return d;
+  // Build segment-colored path — each segment green if up, red if down
+  // Downsample first
+  const step=Math.max(1,Math.floor(prices.length/160));
+  const sp=[];
+  for(let i=0;i<prices.length;i+=step) sp.push({idx:i,v:prices[i].v,t:prices[i].t});
+  if(sp[sp.length-1].idx!==prices.length-1)
+    sp.push({idx:prices.length-1,v:prices[prices.length-1].v,t:prices[prices.length-1].t});
+
+  // Build colored segments as individual paths
+  const segments=[];
+  for(let i=1;i<sp.length;i++){
+    const prev=sp[i-1],curr=sp[i];
+    const x0=toX(prev.idx),y0=toY(prev.v);
+    const x1=toX(curr.idx),y1=toY(curr.v);
+    const cp=(x1-x0)*0.18;
+    const col=curr.v>=prev.v?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
+    segments.push({d:`M${x0.toFixed(1)},${y0.toFixed(1)} C${(x0+cp).toFixed(1)},${y0.toFixed(1)} ${(x1-cp).toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`,col});
   }
-  const pd=makePath();
-  const lastX=toX(prices.length-1), lastY=toY(vals[vals.length-1]);
 
-  // Peak/trough (global max/min)
+  // Full path for area fill (single color based on overall direction)
+  const overallUp=vals[vals.length-1]>=vals[0];
+  const mainCol=overallUp?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
+  let fullPath=`M${toX(sp[0].idx).toFixed(1)},${toY(sp[0].v).toFixed(1)}`;
+  for(let i=1;i<sp.length;i++){
+    const x0=toX(sp[i-1].idx),y0=toY(sp[i-1].v);
+    const x1=toX(sp[i].idx),y1=toY(sp[i].v);
+    const cp=(x1-x0)*0.18;
+    fullPath+=` C${(x0+cp).toFixed(1)},${y0.toFixed(1)} ${(x1-cp).toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
+  }
+  const areaPath=fullPath+` L${toX(sp[sp.length-1].idx).toFixed(1)},${H} L${toX(sp[0].idx).toFixed(1)},${H} Z`;
+
+  // Peak/trough global
   let pkIdx=0,trIdx=0;
-  vals.forEach((v,i)=>{ if(v>vals[pkIdx])pkIdx=i; if(v<vals[trIdx])trIdx=i; });
+  vals.forEach((v,i)=>{if(v>vals[pkIdx])pkIdx=i;if(v<vals[trIdx])trIdx=i;});
   const pkX=toX(pkIdx),pkY=toY(vals[pkIdx]);
   const trX=toX(trIdx),trY=toY(vals[trIdx]);
+  const pkLabelY=Math.max(PAD.t+8,pkY-13);
+  const trLabelY=Math.min(H-PAD.b-4,trY+17);
 
   // Bollinger
-  const BW=Math.min(20,Math.max(3,Math.floor(prices.length/5)));
+  const BW=Math.min(20,Math.max(3,Math.floor(vals.length/5)));
   const bands=[];
   for(let i=BW-1;i<vals.length;i++){
     const sl=vals.slice(i-BW+1,i+1);
@@ -1349,21 +1365,31 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
     const sig=Math.sqrt(sl.reduce((a,b)=>a+(b-avg)**2,0)/BW);
     bands.push({i,hi:avg+sig,lo:avg-sig});
   }
-  const bStep=Math.max(1,Math.floor(bands.length/80));
-  const bS=bands.filter((_,i)=>i%bStep===0||i===bands.length-1);
-  const bHi=bS.map((b,i)=>`${i?'L':'M'}${toX(b.i).toFixed(1)},${toY(b.hi).toFixed(1)}`).join('');
-  const bLo=bS.map((b,i)=>`${i?'L':'M'}${toX(b.i).toFixed(1)},${toY(b.lo).toFixed(1)}`).join('');
-  const bFill=bHi+bS.slice().reverse().map((b,i)=>`L${toX(b.i).toFixed(1)},${toY(b.lo).toFixed(1)}`).join('')+'Z';
+  const bStep=Math.max(1,Math.floor(bands.length/60));
+  const bS=bands.filter((_,k)=>k%bStep===0||k===bands.length-1);
+  const bHi=bS.map((b,k)=>`${k?'L':'M'}${toX(b.i).toFixed(1)},${toY(b.hi).toFixed(1)}`).join('');
+  const bLo=bS.map((b,k)=>`${k?'L':'M'}${toX(b.i).toFixed(1)},${toY(b.lo).toFixed(1)}`).join('');
+  const bFill=bHi+bS.slice().reverse().map(b=>`L${toX(b.i).toFixed(1)},${toY(b.lo).toFixed(1)}`).join('')+'Z';
 
-  // Grid
+  // Grid price levels
   const grid=[0,.25,.5,.75,1].map(t=>({y:toY(mn+t*rng),v:mn+t*rng}));
-  const hx=hover?toX(hover.idx):null, hy=hover?toY(hover.price):null;
 
-  // Keep peak/trough labels inside bounds
-  const pkLabelY=Math.max(10,pkY-14);
-  const trLabelY=Math.min(H-4,trY+18);
+  // Time labels — 4 evenly spaced, rendered BELOW svg in DOM
+  const nT=4;
+  const timeLabels=Array.from({length:nT},(_,k)=>{
+    const idx=Math.floor((k/(nT-1))*(prices.length-1));
+    const xPct=(toX(idx)/W*100).toFixed(1);
+    const d=new Date(prices[idx].t);
+    const rng_=range||'1d';
+    let label;
+    if(rng_==='1y'||rng_==='1m') label=d.toLocaleDateString('en',{month:'short',day:'numeric'});
+    else label=d.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',hour12:false});
+    return {xPct,label,anchor:k===0?'left':k===nT-1?'right':'center'};
+  });
 
-  return (
+  const hx=hover?toX(hover.idx):null,hy=hover?toY(hover.price):null;
+
+  return(
     <div ref={wrapRef} style={{position:'relative',width:'100%'}}>
       {/* Range tabs */}
       <div style={{display:'flex',gap:4,marginBottom:8,alignItems:'center'}}>
@@ -1377,20 +1403,21 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
             {r.label}
           </button>
         ))}
-        {isSynth&&!hover&&(
-          <span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:6,
-            color:'rgba(255,200,80,.45)',letterSpacing:2}}>ESTIMATED</span>
-        )}
+        {isSynth&&!hover&&<span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:6,color:'rgba(255,200,80,.45)',letterSpacing:2}}>ESTIMATED</span>}
         {hover&&(
-          <span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:9,color:col,letterSpacing:1}}>
+          <span style={{marginLeft:'auto',fontFamily:'var(--mono)',fontSize:9,
+            color:overallUp?'rgba(130,255,150,.9)':'rgba(255,100,80,.85)',letterSpacing:1}}>
             {fp(hover.price)}
             <span style={{fontSize:7,color:'var(--w4)',marginLeft:6}}>
-              {new Date(hover.time).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',hour12:false})}
+              {(()=>{const d=new Date(hover.time),r=range||'1d';
+                if(r==='1y'||r==='1m') return d.toLocaleDateString('en',{month:'short',day:'numeric'});
+                return d.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',hour12:false});})()}
             </span>
           </span>
         )}
       </div>
 
+      {/* SVG chart — no time labels inside */}
       <svg ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMid meet"
@@ -1399,82 +1426,75 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
         onMouseLeave={()=>setHover(null)}>
         <defs>
           <linearGradient id={`hcg-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={col} stopOpacity="0.14"/>
-            <stop offset="100%" stopColor={col} stopOpacity="0"/>
+            <stop offset="0%" stopColor={mainCol} stopOpacity="0.12"/>
+            <stop offset="100%" stopColor={mainCol} stopOpacity="0"/>
           </linearGradient>
           <linearGradient id={`hcb-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={col} stopOpacity="0.06"/>
-            <stop offset="100%" stopColor={col} stopOpacity="0.01"/>
+            <stop offset="0%" stopColor={mainCol} stopOpacity="0.05"/>
+            <stop offset="100%" stopColor={mainCol} stopOpacity="0.01"/>
           </linearGradient>
           <clipPath id={`hcc-${uid}`}><rect x="0" y="0" width={W} height={H}/></clipPath>
         </defs>
 
-        {/* Grid lines */}
+        {/* Horizontal grid */}
         {grid.map((g,i)=>(
           <line key={i} x1={PAD.l} y1={g.y.toFixed(1)} x2={W-PAD.r} y2={g.y.toFixed(1)}
             stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
         ))}
         {grid.filter((_,i)=>i>0&&i<4).map((g,i)=>(
           <text key={i} x={W-PAD.r-2} y={g.y} textAnchor="end" dominantBaseline="middle"
-            fill="rgba(255,255,255,.15)" fontSize="8" fontFamily="monospace">{fp(g.v)}</text>
+            fill="rgba(255,255,255,.14)" fontSize="8" fontFamily="monospace">{fp(g.v)}</text>
         ))}
 
-        {/* Bollinger */}
+        {/* Bollinger bands */}
         {bS.length>1&&<>
           <path d={bFill} fill={`url(#hcb-${uid})`} clipPath={`url(#hcc-${uid})`}/>
-          <path d={bHi} fill="none" stroke={col} strokeWidth="0.6" opacity="0.15" strokeDasharray="2,3" clipPath={`url(#hcc-${uid})`}/>
-          <path d={bLo} fill="none" stroke={col} strokeWidth="0.6" opacity="0.15" strokeDasharray="2,3" clipPath={`url(#hcc-${uid})`}/>
+          <path d={bHi} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="0.5" strokeDasharray="2,3" clipPath={`url(#hcc-${uid})`}/>
+          <path d={bLo} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="0.5" strokeDasharray="2,3" clipPath={`url(#hcc-${uid})`}/>
         </>}
 
-        {/* Open baseline */}
-        <line x1={PAD.l} y1={toY(vals[0]).toFixed(1)} x2={W-PAD.r} y2={toY(vals[0]).toFixed(1)}
-          stroke="rgba(255,255,255,.08)" strokeWidth="0.6" strokeDasharray="3,4"/>
+        {/* Area fill (single gradient, overall direction) */}
+        <path d={areaPath} fill={`url(#hcg-${uid})`} clipPath={`url(#hcc-${uid})`}/>
 
-        {/* Area + line */}
-        <path d={pd+` L${(W-PAD.r).toFixed(1)},${H} L${PAD.l},${H} Z`}
-          fill={`url(#hcg-${uid})`} clipPath={`url(#hcc-${uid})`}/>
-        <path d={pd} fill="none" stroke={col} strokeWidth="1.6" clipPath={`url(#hcc-${uid})`}/>
+        {/* Segment-colored price line */}
+        {segments.map((s,i)=>(
+          <path key={i} d={s.d} fill="none" stroke={s.col} strokeWidth="1.6"
+            clipPath={`url(#hcc-${uid})`}/>
+        ))}
 
         {/* Peak marker */}
-        <circle cx={pkX.toFixed(1)} cy={pkY.toFixed(1)} r="3" fill="rgba(130,255,150,.9)"/>
-        <line x1={pkX.toFixed(1)} y1={pkY.toFixed(1)} x2={pkX.toFixed(1)} y2={(pkY-8).toFixed(1)}
-          stroke="rgba(130,255,150,.4)" strokeWidth="1"/>
+        <circle cx={pkX.toFixed(1)} cy={pkY.toFixed(1)} r="2.5" fill="rgba(130,255,150,.9)"/>
+        <line x1={pkX.toFixed(1)} y1={pkY.toFixed(1)} x2={pkX.toFixed(1)} y2={(pkY-7).toFixed(1)}
+          stroke="rgba(130,255,150,.35)" strokeWidth="1"/>
         <text x={pkX.toFixed(1)} y={pkLabelY.toFixed(1)} textAnchor="middle"
-          fill="rgba(130,255,150,.7)" fontSize="7" fontFamily="monospace">
-          H {fp(vals[pkIdx])}
-        </text>
+          fill="rgba(130,255,150,.7)" fontSize="7" fontFamily="monospace">H {fp(vals[pkIdx])}</text>
 
         {/* Trough marker */}
-        <circle cx={trX.toFixed(1)} cy={trY.toFixed(1)} r="3" fill="rgba(255,100,80,.9)"/>
-        <line x1={trX.toFixed(1)} y1={trY.toFixed(1)} x2={trX.toFixed(1)} y2={(trY+8).toFixed(1)}
-          stroke="rgba(255,100,80,.4)" strokeWidth="1"/>
+        <circle cx={trX.toFixed(1)} cy={trY.toFixed(1)} r="2.5" fill="rgba(255,100,80,.9)"/>
+        <line x1={trX.toFixed(1)} y1={trY.toFixed(1)} x2={trX.toFixed(1)} y2={(trY+7).toFixed(1)}
+          stroke="rgba(255,100,80,.35)" strokeWidth="1"/>
         <text x={trX.toFixed(1)} y={trLabelY.toFixed(1)} textAnchor="middle"
-          fill="rgba(255,100,80,.7)" fontSize="7" fontFamily="monospace">
-          L {fp(vals[trIdx])}
-        </text>
+          fill="rgba(255,100,80,.7)" fontSize="7" fontFamily="monospace">L {fp(vals[trIdx])}</text>
 
-        {/* Hover crosshair + price tooltip */}
+        {/* Hover crosshair + tooltip */}
         {hx!=null&&(()=>{
           const priceStr=fp(hover.price);
-          const tW=priceStr.length*5.5+12;
-          const tH=14;
-          // position tooltip: above dot, clamp to chart bounds
-          const tX=Math.min(Math.max(hx-tW/2, PAD.l), W-PAD.r-tW);
-          const tY=Math.max(PAD.t+2, hy-tH-8);
-          return <>
+          const tW=priceStr.length*5.5+14;
+          const tH=15;
+          const tX=Math.min(Math.max(hx-tW/2,PAD.l+2),W-PAD.r-tW-2);
+          const tY=Math.max(PAD.t+3,hy-tH-9);
+          const hcol=hover.idx>0&&prices[hover.idx].v>=prices[hover.idx-1].v?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
+          return<>
             <line x1={hx.toFixed(1)} y1="0" x2={hx.toFixed(1)} y2={H}
-              stroke="rgba(255,255,255,.13)" strokeWidth="1" strokeDasharray="3,3"/>
+              stroke="rgba(255,255,255,.12)" strokeWidth="1" strokeDasharray="3,3"/>
             <line x1="0" y1={hy.toFixed(1)} x2={W} y2={hy.toFixed(1)}
-              stroke="rgba(255,255,255,.07)" strokeWidth="1" strokeDasharray="3,3"/>
-            <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="3.5" fill={col}/>
-            <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="6" fill="none" stroke={col} strokeWidth="0.8" opacity="0.3"/>
-            <rect x={tX.toFixed(1)} y={tY.toFixed(1)} width={tW.toFixed(1)} height={tH}
-              fill="rgba(0,0,0,.75)" rx="0"/>
-            <rect x={tX.toFixed(1)} y={tY.toFixed(1)} width={tW.toFixed(1)} height={tH}
-              fill="none" stroke={col} strokeWidth="0.5" opacity="0.6" rx="0"/>
-            <text x={(tX+tW/2).toFixed(1)} y={(tY+tH/2).toFixed(1)}
-              textAnchor="middle" dominantBaseline="middle"
-              fill={col} fontSize="7.5" fontFamily="monospace" fontWeight="500">
+              stroke="rgba(255,255,255,.06)" strokeWidth="1" strokeDasharray="3,3"/>
+            <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="3.5" fill={hcol}/>
+            <circle cx={hx.toFixed(1)} cy={hy.toFixed(1)} r="6" fill="none" stroke={hcol} strokeWidth="0.7" opacity="0.3"/>
+            <rect x={tX.toFixed(1)} y={tY.toFixed(1)} width={tW.toFixed(1)} height={tH} fill="rgba(0,0,0,.82)"/>
+            <rect x={tX.toFixed(1)} y={tY.toFixed(1)} width={tW.toFixed(1)} height={tH} fill="none" stroke={hcol} strokeWidth="0.5" opacity="0.7"/>
+            <text x={(tX+tW/2).toFixed(1)} y={(tY+tH/2).toFixed(1)} textAnchor="middle"
+              dominantBaseline="middle" fill={hcol} fontSize="7.5" fontFamily="monospace" fontWeight="500">
               {priceStr}
             </text>
           </>;
@@ -1482,10 +1502,25 @@ function HeroChart({coinId, coin, range, onRangeChange}) {
 
         {/* Live dot */}
         {!hover&&<>
-          <circle cx={lastX.toFixed(1)} cy={lastY.toFixed(1)} r="3" fill={col}/>
-          <circle cx={lastX.toFixed(1)} cy={lastY.toFixed(1)} r="5.5" fill="none" stroke={col} strokeWidth="0.7" opacity="0.35"/>
+          <circle cx={toX(prices.length-1).toFixed(1)} cy={toY(vals[vals.length-1]).toFixed(1)} r="3" fill={mainCol}/>
+          <circle cx={toX(prices.length-1).toFixed(1)} cy={toY(vals[vals.length-1]).toFixed(1)} r="5.5" fill="none" stroke={mainCol} strokeWidth="0.7" opacity="0.35"/>
         </>}
       </svg>
+
+      {/* Time labels BELOW svg — never inside chart area */}
+      <div style={{position:'relative',height:timeH,marginTop:3,overflow:'hidden'}}>
+        {timeLabels.map((tl,i)=>(
+          <span key={i} style={{
+            position:'absolute',
+            left:tl.anchor==='right'?'auto':tl.xPct+'%',
+            right:tl.anchor==='right'?'0':'auto',
+            transform:tl.anchor==='center'?'translateX(-50%)':'none',
+            fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,255,255,.2)',
+            letterSpacing:1,whiteSpace:'nowrap',top:0}}>
+            {tl.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
