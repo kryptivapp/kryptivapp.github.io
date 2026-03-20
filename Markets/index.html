@@ -27,9 +27,11 @@ self.addEventListener('fetch',e=>{
 }
 </script>
 
-<!--  STATE GATE  -->
+<!--  STATE GATE — skipped inside iframes  -->
 <script>
 (function(){
+  // Skip entirely if running inside an iframe (cross-origin or same-origin)
+  try { if (window.self !== window.top) return; } catch(e) { return; }
   fetch('../state.txt?_='+Date.now())
     .then(function(r){return r.ok?r.text():null;})
     .then(function(txt){
@@ -577,7 +579,6 @@ input,textarea,select{font-family:var(--sans)}
 .plan-back{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--w3);cursor:pointer;background:none;border:none}
 .plan-back:hover{color:var(--w)}
 .plan-back .mi{width:14px;height:14px}
-/* Scroll hint — icon only, no text */
 .plan-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;animation:floatY 2s ease-in-out infinite;z-index:20;pointer-events:none}
 .plan-hint .mi{width:28px;height:28px;color:rgba(255,255,255,.3)}
 .sub-coming-card{width:100%;max-width:520px;background:rgba(0,0,0,.10);backdrop-filter:blur(36px);border:1px solid rgba(255,255,255,.09);overflow:hidden;animation:fadeUp .5s ease both;position:relative}
@@ -619,14 +620,6 @@ input,textarea,select{font-family:var(--sans)}
 .pro-lock-lbl{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:var(--w4);text-transform:uppercase;line-height:1.5}
 .pro-lock-btn{padding:4px 12px;background:rgba(255,255,255,.12);color:var(--w3);border:1px solid var(--border2);font-family:var(--mono);font-weight:600;font-size:7px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
 .pro-lock-btn:hover{background:rgba(255,255,255,.2);color:var(--w)}
-/* Settings btn — icon only */
-.settings-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--w3);cursor:pointer;transition:all .15s;flex-shrink:0}
-.settings-btn:hover{border-color:var(--border2);color:var(--w)}
-.settings-btn .mi{width:16px;height:16px}
-.settings-btn.danger{border-color:rgba(255,100,80,.2);color:rgba(255,100,80,.6)}
-.settings-btn.danger:hover{border-color:rgba(255,100,80,.4);color:rgba(255,100,80,.9);background:rgba(255,100,80,.05)}
-
-/* Settings btn */
 .settings-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--w3);cursor:pointer;transition:all .15s;flex-shrink:0}
 .settings-btn:hover{border-color:var(--border2);color:var(--w)}
 .settings-btn .mi{width:16px;height:16px}
@@ -658,8 +651,7 @@ input,textarea,select{font-family:var(--sans)}
 @media(min-width:1400px){.scr{padding:32px 44px}}
 @media(min-width:1800px){.scr{max-width:1440px;margin:0 auto}}
 
-
-/* RESPONSIVE COIN ROWS — never squish */
+/* RESPONSIVE COIN ROWS */
 @media(max-width:400px){
   .c-nm{display:none}
   .c-rank{width:18px}
@@ -671,12 +663,24 @@ input,textarea,select{font-family:var(--sans)}
   .mth-spark{display:none}
   .c-spark{display:none}
 }
+
+/* ── CHART CURSOR FIX ──
+   The chart wrapper captures mouse events; SVG cursor must propagate correctly.
+   We set cursor on the wrapper div and use a transparent overlay rect in SVG
+   to ensure all pointer events are captured uniformly across the chart area. */
+.chart-mouse-area {
+  position: relative;
+  cursor: crosshair;
+  width: 100%;
+}
+.chart-mouse-area svg {
+  display: block;
+  width: 100%;
+}
 </style>
 </head>
 <body>
 <div id="root"></div>
-<!-- React + Babel via CDN (cached by browser after first load) -->
-<!-- preload so subsequent pages load from disk cache instantly -->
 <link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script" crossorigin>
 <link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin>
 <link rel="preload" href="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" as="script" crossorigin>
@@ -684,13 +688,6 @@ input,textarea,select{font-family:var(--sans)}
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js" crossorigin></script>
 <script>
-/* 
-   KRYPTIV v14 · GLOBALS
-   Real live prices — CoinGecko → Binance → Kraken
-   Caching: sessionStorage (60s TTL)
-   Babel cache: localStorage (compiled script cache)
- */
-
 /*  LOCAL STORAGE  */
 const LS = {
   get:   ()  => { try { return JSON.parse(localStorage.getItem('kryptiv_u') || 'null'); } catch { return null; } },
@@ -698,15 +695,11 @@ const LS = {
   clear: ()  => { try { localStorage.removeItem('kryptiv_u'); } catch {} },
 };
 
-/*  CACHE CLEAR (settings)  */
 function clearAllCache() {
   try {
-    // Clear price cache
     sessionStorage.removeItem('kryptiv_prices');
-    // Clear all kryptiv_ keys from localStorage except user account
     const keys = Object.keys(localStorage).filter(k => k.startsWith('kryptiv_') && k !== 'kryptiv_u');
     keys.forEach(k => localStorage.removeItem(k));
-    // Clear babel transform cache
     const babelKeys = Object.keys(localStorage).filter(k => k.startsWith('babel-'));
     babelKeys.forEach(k => localStorage.removeItem(k));
     return true;
@@ -774,13 +767,12 @@ const NAV_ITEMS = [
   { id:'privacy',   lbl:'Privacy',   icon:'shield',            path:'/Privacy/'    },
 ];
 
-/*  UTILITIES  */
 function genId() {
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({length:5}, ()=>c[Math.floor(Math.random()*c.length)]).join('');
 }
-const CURRENCY_KEY = 'kryptiv_currency'; // 'usd' | 'eur'
-const EUR_RATE     = 0.92; // approx USD→EUR — good enough for display
+const CURRENCY_KEY = 'kryptiv_currency';
+const EUR_RATE     = 0.92;
 function getCurrency() { try { return localStorage.getItem(CURRENCY_KEY)||'usd'; } catch { return 'usd'; } }
 function setCurrency(v) { try { localStorage.setItem(CURRENCY_KEY,v); } catch {} }
 function csym() { return getCurrency()==='eur'?'€':'$'; }
@@ -792,7 +784,7 @@ const fp = p => {
   if (v >= 1000) return s + v.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2});
   if (v >= 1)    return s + v.toFixed(2);
   if (v >= 0.01) return s + v.toFixed(4);
-  if (v > 0)     return '~'+s+'1';  // show ~$1 / ~€1 for tiny amounts
+  if (v > 0)     return '~'+s+'1';
   return s + v.toFixed(6);
 };
 const fc = c => { if (c == null || isNaN(c)) return '—'; const abs = Math.abs(c); const digits = abs < 0.01 ? 6 : abs < 0.1 ? 4 : 2; return (c >= 0 ? '+' : '') + c.toFixed(digits) + '%'; };
@@ -804,15 +796,13 @@ const fv = v => {
   if (val >= 1e6)  return s + (val/1e6).toFixed(2) + 'M';
   return s + val.toLocaleString('en', {maximumFractionDigits:0});
 };
-const fbtc = sats => (sats / 1e8).toFixed(6) + ' BTC';
 
 /*  PRICE CACHE  */
 const PRICE_CACHE_KEY   = 'kryptiv_prices';
 const FLASH_MODE_KEY    = 'kryptiv_flash';
-// Normal: 60s live TTL, 5s UI refresh (shows cached). Flash: 5s live TTL.
 const LIVE_TTL_NORMAL   = 60_000;
 const LIVE_TTL_FLASH    = 5_000;
-const UI_TICK_MS        = 5_000;   // always refresh UI display every 5s
+const UI_TICK_MS        = 5_000;
 
 function isFlashMode() { try { return localStorage.getItem(FLASH_MODE_KEY)==='1'; } catch { return false; } }
 function setFlashMode(on) { try { localStorage.setItem(FLASH_MODE_KEY, on?'1':'0'); } catch {} }
@@ -859,7 +849,6 @@ async function fetchBinance() {
 }
 
 async function fetchCoinGecko() {
-  // Single request for all 15 coins — avoids per-coin API limits
   const ids = COIN_LIST.map(c => c.id).join(',');
   const url = 'https://api.coingecko.com/api/v3/coins/markets' +
     '?vs_currency=usd&ids=' + ids + '&order=market_cap_desc&per_page=15&page=1' +
@@ -892,7 +881,6 @@ async function fetchKraken() {
   }).filter(c => c.price > 0);
 }
 
-// Returns {coins, src, cached, ageMs, rateLimited}
 async function fetchLivePrices() {
   const flash = isFlashMode();
   const ttl   = flash ? LIVE_TTL_FLASH : LIVE_TTL_NORMAL;
@@ -902,7 +890,6 @@ async function fetchLivePrices() {
       return { coins:stored.coins, src:stored.src, cached:true, ageMs:Date.now()-stored.ts, rateLimited:false };
     }
   } catch {}
-  // Try live fetch
   let rateLimited = false;
   try {
     const coins = await fetchCoinGecko();
@@ -921,7 +908,6 @@ async function fetchLivePrices() {
     sessionStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ coins, ts:Date.now(), src:'Kraken' }));
     return { coins, src:'Kraken', cached:false, ageMs:0, rateLimited:false };
   } catch {}
-  // If all fail, return last cached even if stale
   try {
     const stored = JSON.parse(sessionStorage.getItem(PRICE_CACHE_KEY) || 'null');
     if (stored) return { coins:stored.coins, src:stored.src, cached:true, ageMs:Date.now()-stored.ts, rateLimited };
@@ -929,7 +915,6 @@ async function fetchLivePrices() {
   return { coins:null, src:null, cached:false, ageMs:0, rateLimited };
 }
 
-/*  SPARKLINE CACHE  */
 const SPARK_CACHE = {};
 async function fetchSparkline(coinId) {
   if (SPARK_CACHE[coinId]) return SPARK_CACHE[coinId];
@@ -945,7 +930,6 @@ async function fetchSparkline(coinId) {
   } catch { return null; }
 }
 
-/*  LIVE PRICE UPDATER  */
 let _priceInterval = null;
 function startPriceUpdates(onUpdate, onError) {
   async function tick() {
@@ -962,12 +946,10 @@ function startPriceUpdates(onUpdate, onError) {
   }
   tick();
   if (_priceInterval) clearInterval(_priceInterval);
-  // Always tick every 5s — uses cache if still fresh, fetches live when cache expires
   _priceInterval = setInterval(tick, UI_TICK_MS);
   return () => clearInterval(_priceInterval);
 }
 
-/*  SESSION  */
 function getUser()  { return LS.get(); }
 function requireAuth() {
   const u = getUser();
@@ -975,9 +957,7 @@ function requireAuth() {
   return u;
 }
 
-/*  PAGE NAVIGATE with transition  */
 function navigate(path) {
-  // Minimal transition — just a thin progress bar, no logo text
   const ov = document.createElement('div');
   ov.className = 'page-transition';
   ov.innerHTML = '<div class="pt-bar" style="position:fixed;top:0;left:0;right:0;width:100%;height:2px;background:rgba(255,255,255,.08)"><div class="pt-fill"></div></div>';
@@ -985,10 +965,8 @@ function navigate(path) {
   setTimeout(function() { window.location.href = path; }, 180);
 }
 
-/*  MEMPOOL (live BTC chain data via Blockchain.info public API)  */
 async function fetchMempoolTxs() {
   try {
-    // Use blockchain.info unconfirmed transactions (public, CORS-enabled)
     const r = await fetch('https://blockchain.info/unconfirmed-transactions?format=json&cors=true');
     if (!r.ok) throw new Error('blockchain.info ' + r.status);
     const d = await r.json();
@@ -997,7 +975,7 @@ async function fetchMempoolTxs() {
       return {
         hash: tx.hash,
         shortHash: tx.hash.slice(0,8) + '…' + tx.hash.slice(-6),
-        value: outVal,  // in satoshis
+        value: outVal,
         btc: (outVal / 1e8).toFixed(4),
         fee: tx.fee || 0,
         inputs: tx.inputs?.length || 0,
@@ -1007,7 +985,6 @@ async function fetchMempoolTxs() {
     });
     return txs;
   } catch(e) {
-    // Fallback: blockstream.info
     try {
       const r2 = await fetch('https://blockstream.info/api/mempool/recent');
       if (!r2.ok) throw new Error('blockstream ' + r2.status);
@@ -1024,11 +1001,9 @@ async function fetchMempoolTxs() {
     } catch { return null; }
   }
 }
-
 </script>
 <script type="text/babel" data-presets="react">
 
-/*  SHELL COMPONENTS  */
 const ICONS = {
   add:              "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
   arrow_back:       "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z",
@@ -1073,7 +1048,6 @@ const ICONS = {
 function MI({n, style, className}) {
   const d = ICONS[n];
   if (!d) return null;
-  // Convert fontSize to width/height so SVG actually sizes correctly
   const s = style || {};
   const sz = s.fontSize || s.width;
   const svgStyle = {...s};
@@ -1091,7 +1065,6 @@ function MI({n, style, className}) {
 
 const {useState, useEffect, useRef, useCallback, useMemo} = React;
 
-/*  KRYPTIV CUSTOM SPARK  TV-inspired mini chart with area fill + VWAP band  */
 function Spark({prices, ch, w=46, h=20}) {
   const isUp = (ch||0) >= 0;
   const colLine = isUp ? 'rgba(130,255,150,.85)' : 'rgba(255,100,80,.75)';
@@ -1102,7 +1075,6 @@ function Spark({prices, ch, w=46, h=20}) {
   if (prices && prices.length >= 2) {
     vals = prices.slice(-18).map(p => typeof p === 'number' ? p : p[1]);
   } else {
-    // Deterministic placeholder shaped by ch
     const seed = Math.abs(ch||1.3) * 137.5;
     vals = Array.from({length:18}, (_,i) => {
       const t = i/17;
@@ -1117,7 +1089,6 @@ function Spark({prices, ch, w=46, h=20}) {
   const toX = i => pad + (i / (vals.length-1)) * (w - pad*2);
   const toY = v => (h - pad) - ((v - mn) / rng) * (h - pad*2);
 
-  // Catmull-Rom smooth path
   function smoothPath(xs, ys) {
     if (xs.length < 2) return '';
     let d = `M${xs[0].toFixed(1)},${ys[0].toFixed(1)}`;
@@ -1137,12 +1108,8 @@ function Spark({prices, ch, w=46, h=20}) {
   const ys = vals.map(v => toY(v));
   const linePath = smoothPath(xs, ys);
   const areaPath = linePath + ` L${xs[xs.length-1].toFixed(1)},${h} L${xs[0].toFixed(1)},${h} Z`;
-
-  // Simple VWAP-style midline (rolling mean of first half vs second half)
   const mid = (mn + mx) / 2;
   const midY = toY(mid).toFixed(1);
-
-  // Last-point dot
   const lx = xs[xs.length-1].toFixed(1);
   const ly = ys[ys.length-1].toFixed(1);
 
@@ -1155,22 +1122,17 @@ function Spark({prices, ch, w=46, h=20}) {
         </linearGradient>
         <clipPath id={`spclip-${uid}`}><rect x="0" y="0" width={w} height={h}/></clipPath>
       </defs>
-      {/* Mid reference dashes */}
       <line x1={pad} y1={midY} x2={w-pad} y2={midY}
         stroke={colLine} strokeWidth="0.4" strokeDasharray="2,2" opacity="0.25"
         clipPath={`url(#spclip-${uid})`}/>
-      {/* Area fill */}
       <path d={areaPath} fill={`url(#spfg-${uid})`} clipPath={`url(#spclip-${uid})`}/>
-      {/* Price line */}
       <path d={linePath} fill="none" stroke={colLine} strokeWidth="1.3"
         clipPath={`url(#spclip-${uid})`}/>
-      {/* Live dot */}
       <circle cx={lx} cy={ly} r="1.6" fill={colLine} opacity="0.9"/>
     </svg>
   );
 }
 
-/*  KRYPTIV CUSTOM BIGSPARK  Full 7d area chart with bands and volume bars  */
 function BigSpark({prices, ch}) {
   const sw=340, sh=76;
   const isUp = (ch||0) >= 0;
@@ -1192,7 +1154,6 @@ function BigSpark({prices, ch}) {
   const toX = i => padX + (i/(vals.length-1))*(sw-padX*2);
   const toY = v => padT + (1-((v-mn)/rng))*(sh-padT-padB);
 
-  // Smooth path
   function smoothPath(xs, ys) {
     let d = `M${xs[0].toFixed(1)},${ys[0].toFixed(1)}`;
     for (let i=0;i<xs.length-1;i++){
@@ -1211,7 +1172,6 @@ function BigSpark({prices, ch}) {
   const linePath = smoothPath(xs,ys);
   const areaPath = linePath + ` L${xs[xs.length-1].toFixed(1)},${sh} L${xs[0].toFixed(1)},${sh} Z`;
 
-  // Bollinger-style band (rolling 20-period ±1σ)
   const W=20;
   const bands = vals.map((_,i)=>{
     if(i<W-1) return null;
@@ -1225,7 +1185,6 @@ function BigSpark({prices, ch}) {
   const bandLoPath = bands.map((b,i)=>`${i===0?'M':'L'}${toX(i+bOff).toFixed(1)},${toY(b.lo).toFixed(1)}`).join(' ');
   const bandFillPath = bandHiPath + ' ' + bands.map((b,i)=>`L${toX(bands.length-1-i+bOff).toFixed(1)},${toY(bands[bands.length-1-i].lo).toFixed(1)}`).join(' ') + ' Z';
 
-  // Volume-proxy bars (use price delta as volume proxy when no real vol)
   const barCount = Math.min(24, vals.length);
   const step = Math.max(1, Math.floor(vals.length/barCount));
   const volBars = [];
@@ -1235,8 +1194,6 @@ function BigSpark({prices, ch}) {
   }
   const maxDelta=Math.max(...volBars.map(b=>b.delta),0.0001);
   const barMaxH=8;
-
-  // Grid lines (3 horizontal)
   const gridLevels=[0.25,0.5,0.75].map(t=>({y:toY(mn+t*rng).toFixed(1),v:mn+t*rng}));
 
   const lx=xs[xs.length-1].toFixed(1), ly=ys[ys.length-1].toFixed(1);
@@ -1259,48 +1216,31 @@ function BigSpark({prices, ch}) {
         </linearGradient>
         <clipPath id={`bsclip-${uid}`}><rect x="0" y="0" width={sw} height={sh}/></clipPath>
       </defs>
-
-      {/* Horizontal grid lines */}
       {gridLevels.map((g,i)=>(
         <line key={i} x1={padX} y1={g.y} x2={sw-padX} y2={g.y}
           stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
       ))}
-
-      {/* Volume bars at bottom */}
       {volBars.map((b,i)=>{
         const bh = Math.max(1, (b.delta/maxDelta)*barMaxH);
         return <rect key={i} x={b.x-1} y={sh-padB+2+barMaxH-bh}
           width={2} height={bh} fill={colLine} opacity="0.18"
           clipPath={`url(#bsclip-${uid})`}/>;
       })}
-
-      {/* Bollinger band fill */}
       {bands.length>1 && <path d={bandFillPath} fill={`url(#bsband-${uid})`}
         clipPath={`url(#bsclip-${uid})`}/>}
-      {/* Bollinger band hi/lo outlines */}
       {bands.length>1 && <>
         <path d={bandHiPath} fill="none" stroke={colLine} strokeWidth="0.5" opacity="0.2"
           strokeDasharray="2,3" clipPath={`url(#bsclip-${uid})`}/>
         <path d={bandLoPath} fill="none" stroke={colLine} strokeWidth="0.5" opacity="0.2"
           strokeDasharray="2,3" clipPath={`url(#bsclip-${uid})`}/>
       </>}
-
-      {/* Area fill */}
       <path d={areaPath} fill={`url(#bsfg-${uid})`} clipPath={`url(#bsclip-${uid})`}/>
-
-      {/* Main price line */}
       <path d={linePath} fill="none" stroke={colLine} strokeWidth="1.5"
         clipPath={`url(#bsclip-${uid})`}/>
-
-      {/* Start price horizontal reference */}
       <line x1={padX} y1={toY(firstPrice).toFixed(1)} x2={sw-padX} y2={toY(firstPrice).toFixed(1)}
         stroke="rgba(255,255,255,.12)" strokeWidth="0.6" strokeDasharray="3,4"/>
-
-      {/* Live dot + ring */}
       <circle cx={lx} cy={ly} r="3.5" fill={colLine} opacity="0.9"/>
       <circle cx={lx} cy={ly} r="6" fill="none" stroke={colLine} strokeWidth="0.8" opacity="0.3"/>
-
-      {/* Price label top-right */}
       <text x={sw-3} y={padT+1} textAnchor="end" dominantBaseline="hanging"
         fill="rgba(255,255,255,.35)" fontSize="6" fontFamily="monospace">
         {pctChange>=0?'+':''}{pctChange.toFixed(2)}%
@@ -1309,7 +1249,19 @@ function BigSpark({prices, ch}) {
   );
 }
 
-/* TRADING CHART — responsive, segment-colored, smooth, clean */
+/* ══════════════════════════════════════════════════════════════
+   TRADING CHART — FIXED cursor & mouse tracking for iframes
+   
+   Key changes vs original:
+   1. Mouse events moved to wrapper <div class="chart-mouse-area">
+      instead of the <svg> — ensures crosshair cursor works
+      across the entire chart area including transparent zones.
+   2. handleMove uses svgRef.getBoundingClientRect() for accurate
+      coordinate mapping regardless of SVG scaling/letterboxing.
+   3. Transparent overlay <rect> added inside SVG as the topmost
+      element — catches all pointer events even on empty areas.
+   4. Removed cursor:crosshair from SVG, using CSS class instead.
+══════════════════════════════════════════════════════════════ */
 function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, livePrice}) {
   const [prices,  setPrices]  = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1391,16 +1343,23 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
     return prices;
   },[prices,livePrice]);
 
+  // ── FIX: handleMove attached to wrapper div, uses svgRef for coordinates ──
   function handleMove(e){
     if(!allPts||!svgRef.current) return;
-    const rect=svgRef.current.getBoundingClientRect();
-    const ratio=(e.clientX-rect.left)/rect.width;
-    const idx=Math.min(Math.max(0,Math.round(ratio*(allPts.length-1))),allPts.length-1);
-    setHover({price:allPts[idx].v,time:allPts[idx].t,idx});
+    // Always use the SVG element's bounding rect for accurate coordinate mapping
+    // This correctly handles any scaling difference between the viewBox and rendered size
+    const rect = svgRef.current.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    const idx   = Math.min(Math.max(0, Math.round(ratio * (allPts.length-1))), allPts.length-1);
+    setHover({price:allPts[idx].v, time:allPts[idx].t, idx});
+  }
+
+  function handleLeave(e){
+    // Only clear hover if we've truly left the wrapper area
+    setHover(null);
   }
 
   const W=dims.w, H=dims.h;
-  // No vol bars - pure chart area with padding
   const PAD={l:4,r:4,t:22,b:8};
   const timeH=18;
 
@@ -1425,13 +1384,10 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
   const overallUp=vals[vals.length-1]>=vals[0];
   const mainCol=overallUp?'rgba(130,255,150,.85)':'rgba(255,100,80,.75)';
 
-  // Smart downsampling with tension control per range
-  // 1H: tension 0.32 (smoothest), 24H: 0.22, 1M: 0.28 (smooth out daily noise), 1Y: 0.25
   const tensions={
     '1h':0.32, '1d':0.22, '1m':0.28, '1y':0.25
   };
   const tension=tensions[activeRange]||0.25;
-  // More points for smooth curves, fewer for performance
   const maxPts={'1h':120,'1d':120,'1m':100,'1y':100};
   const targetPts=maxPts[activeRange]||100;
   const step=Math.max(1,Math.floor(allPts.length/targetPts));
@@ -1440,7 +1396,6 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
   if(sp[sp.length-1].idx!==allPts.length-1)
     sp.push({idx:allPts.length-1,v:allPts[allPts.length-1].v,t:allPts[allPts.length-1].t});
 
-  // Build green/red segments
   const segments=[];
   let fullPath=`M${toX(sp[0].idx).toFixed(1)},${toY(sp[0].v).toFixed(1)}`;
   for(let i=1;i<sp.length;i++){
@@ -1452,11 +1407,9 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
     segments.push({d:segD,col});
     fullPath+=` C${(x0+cp).toFixed(1)},${y0.toFixed(1)} ${(x1-cp).toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
   }
-  // Area fill closes to bottom of chart area (PAD.t+chartH = H-PAD.b)
   const areaClose=H-PAD.b;
   const areaPath=fullPath+` L${toX(sp[sp.length-1].idx).toFixed(1)},${areaClose.toFixed(1)} L${toX(sp[0].idx).toFixed(1)},${areaClose.toFixed(1)} Z`;
 
-  // Peaks / troughs
   const win=Math.max(3,Math.floor(vals.length/8));
   let peaks=[],troughs=[];
   for(let i=win;i<vals.length-win;i++){
@@ -1467,10 +1420,8 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
   peaks=peaks.sort((a,b)=>vals[b]-vals[a]).slice(0,2);
   troughs=troughs.sort((a,b)=>vals[a]-vals[b]).slice(0,2);
 
-  // Grid
   const gridY=[0,.25,.5,.75,1].map(t=>({y:toY(mn+t*vRng),v:mn+t*vRng}));
 
-  // Time labels (below SVG in DOM)
   const nT=4;
   const timeLabels=Array.from({length:nT},(_,k)=>{
     const idx=Math.floor((k/(nT-1))*(allPts.length-1));
@@ -1491,11 +1442,19 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
   const hx=hover?toX(hover.idx):null, hy=hover?toY(hover.price):null;
 
   return(
-    <div ref={wrapRef} style={{position:'relative',width:'100%',userSelect:'none'}}>
+    // ── FIX: wrapper div owns the mouse events and cursor ──
+    <div
+      ref={wrapRef}
+      className="chart-mouse-area"
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      style={{position:'relative',width:'100%',userSelect:'none'}}
+    >
       {showRangeSelector&&(
         <div style={{display:'flex',gap:4,marginBottom:8,alignItems:'center'}}>
           {RANGES.map(r=>(
-            <button key={r.id} onClick={()=>onRangeChange&&onRangeChange(r.id)}
+            <button key={r.id}
+              onClick={()=>onRangeChange&&onRangeChange(r.id)}
               style={{padding:'4px 9px',
                 background:activeRange===r.id?'rgba(255,255,255,.12)':'none',
                 border:'1px solid '+(activeRange===r.id?'rgba(255,255,255,.25)':'rgba(255,255,255,.08)'),
@@ -1515,14 +1474,14 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
         </div>
       )}
 
-      <svg ref={svgRef}
+      {/* ── FIX: SVG has NO mouse events — wrapper div handles them ── */}
+      <svg
+        ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMid meet"
-        style={{width:'100%',display:'block',cursor:'crosshair'}}
-        onMouseMove={handleMove}
-        onMouseLeave={()=>setHover(null)}>
+        style={{width:'100%',display:'block'}}
+      >
         <defs>
-          {/* Gradient only covers the actual chart draw area, not full SVG height */}
           <linearGradient id={`grad-${uid}`} x1="0" y1="0" x2="0" y2="1"
             gradientUnits="userSpaceOnUse"
             x1="0" y1={PAD.t} x2="0" y2={H-PAD.b}>
@@ -1543,7 +1502,7 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
             fill="rgba(255,255,255,.14)" fontSize="8" fontFamily="monospace">{fp(g.v)}</text>
         ))}
 
-        {/* Area fill — clipped */}
+        {/* Area fill */}
         <path d={areaPath} fill={`url(#grad-${uid})`} clipPath={`url(#cc-${uid})`}/>
 
         {/* Segment-colored price line */}
@@ -1552,7 +1511,7 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
             strokeLinejoin="round" clipPath={`url(#cc-${uid})`}/>
         ))}
 
-        {/* Peak markers */}
+        {/* Peak/trough markers */}
         {peaks.map((pi,k)=>{
           const px=toX(pi), py=toY(vals[pi]);
           const ly=Math.max(PAD.t+9, py-13);
@@ -1576,7 +1535,7 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
           </g>;
         })}
 
-        {/* Hover */}
+        {/* Hover crosshair + tooltip */}
         {hx!=null&&(()=>{
           const priceStr=fp(hover.price);
           const tW=priceStr.length*5.5+14, tH=15;
@@ -1600,11 +1559,22 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
           </>;
         })()}
 
+        {/* Live price dot (when not hovering) */}
         {!hover&&<>
           <circle cx={toX(allPts.length-1).toFixed(1)} cy={toY(vals[vals.length-1]).toFixed(1)} r="3" fill={mainCol}/>
           <circle cx={toX(allPts.length-1).toFixed(1)} cy={toY(vals[vals.length-1]).toFixed(1)} r="5.5"
             fill="none" stroke={mainCol} strokeWidth="0.7" opacity="0.35"/>
         </>}
+
+        {/* ── FIX: Full-area transparent overlay rect ensures pointer events
+               are captured uniformly across the entire SVG — this is the
+               topmost element so it catches all mouse events correctly.
+               It must be last (rendered on top) and use pointerEvents="all". ── */}
+        <rect
+          x="0" y="0" width={W} height={H}
+          fill="transparent"
+          style={{pointerEvents:'all'}}
+        />
       </svg>
 
       {/* Time labels below SVG */}
@@ -1634,14 +1604,12 @@ function ProbCalc({coin}) {
     const tgt = parseFloat(target);
     if (!tgt||!coin||!coin.price) return;
     const pct = ((tgt - coin.price) / coin.price) * 100;
-    const vol = Math.abs(coin.ch||2) * 1.5; // daily volatility proxy
+    const vol = Math.abs(coin.ch||2) * 1.5;
     const days = parseInt(period);
-    // Log-normal probability approximation
     const sigma = vol/100 * Math.sqrt(days);
     const logRet = Math.log(tgt/coin.price);
-    const drift  = (coin.ch7d||0)/700 * days; // weekly drift annualized
+    const drift  = (coin.ch7d||0)/700 * days;
     const z      = (logRet - drift) / Math.max(sigma, 0.001);
-    // Simple normal CDF approximation
     const prob   = Math.min(95, Math.max(1, Math.round((0.5 * (1 + Math.sign(-z) * (1 - Math.exp(-0.7 * z * z)))) * 100)));
     const probUp = pct > 0 ? (100-prob) : prob;
     setResult({pct, probUp: Math.min(95,Math.max(5,probUp)), days, tgt, dir: pct>0?'up':'down'});
@@ -1736,11 +1704,6 @@ function PriceError({errors, onRetry}) {
         KRYPTIV REQUIRES A LIVE INTERNET CONNECTION.<br/>
         TRIED COINGECKO, BINANCE, AND KRAKEN — ALL FAILED.
       </div>
-      {errors?.length > 0 && (
-        <div style={{fontFamily:'var(--mono)',fontSize:8,color:'rgba(255,100,80,.5)',marginBottom:22,lineHeight:2.2}}>
-          {errors.map((e,i)=><div key={i}>{e}</div>)}
-        </div>
-      )}
       <button onClick={onRetry} style={{padding:'12px 26px',background:'var(--w)',color:'#000',border:'none',
         fontFamily:'var(--sans)',fontWeight:700,fontSize:9,letterSpacing:3,textTransform:'uppercase',cursor:'pointer'}}>
         RETRY
@@ -1767,9 +1730,8 @@ function SettingsModal({onClose, flash, onToggleFlash}) {
   const act = (fn, txt) => { fn(); setMsg(txt); };
   const rows = [
     {icon:'refresh',       lbl:'Refresh Prices',   sub:'Force live price reload',   fn:()=>act(clearAllCache,'Prices will refresh.'),        danger:false},
-    {icon:'delete_sweep',  lbl:'Clear Holdings',    sub:'Remove all saved positions',fn:()=>act(()=>localStorage.removeItem('kryptiv_holdings'),'Holdings cleared.'), danger:true},
     {icon:'logout',        lbl:'Sign Out',          sub:'Keeps your account data',   fn:()=>{ LS.clear(); navigate('/'); },                   danger:false},
-    {icon:'delete_forever',lbl:'Reset Everything',  sub:'Wipe all data and sign out',fn:()=>{ if(confirm('Delete all data? Cannot be undone.')) nukeEverything(); },  danger:true},
+    {icon:'error_outline', lbl:'Reset Everything',  sub:'Wipe all data and sign out',fn:()=>{ if(confirm('Delete all data? Cannot be undone.')) nukeEverything(); },  danger:true},
   ];
   return (
     <div className="settings-modal">
@@ -1782,7 +1744,6 @@ function SettingsModal({onClose, flash, onToggleFlash}) {
           </button>
         </div>
 
-        {/* Currency toggle */}
         <div className="settings-row" style={{marginBottom:8}}>
           <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
             <MI n="swap_horiz" style={{fontSize:20,color:'var(--w4)',flexShrink:0}}/>
@@ -1800,7 +1761,6 @@ function SettingsModal({onClose, flash, onToggleFlash}) {
           </button>
         </div>
 
-        {/* Flash Mode toggle */}
         <div className="settings-row" style={{marginBottom:8}}>
           <div style={{display:'flex',alignItems:'center',gap:14,flex:1}}>
             <MI n="bolt" style={{fontSize:20,color:flash?'rgba(255,200,0,.8)':'var(--w4)',flexShrink:0}}/>
@@ -1817,10 +1777,6 @@ function SettingsModal({onClose, flash, onToggleFlash}) {
             {flash?'ON':'OFF'}
           </button>
         </div>
-
-        {flash&&<div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,140,0,.7)',letterSpacing:1,marginBottom:14,padding:'6px 10px',border:'1px solid rgba(255,140,0,.2)',lineHeight:1.7}}>
-          Flash mode refreshes every 5s. CoinGecko free API limit is ~10-30 req/min. You may get rate-limited — prices will show cached data with a warning.
-        </div>}
 
         {rows.map(r=>(
           <div key={r.lbl} className="settings-row">
@@ -1874,7 +1830,6 @@ function AppShell({user, setUser, view, children}) {
   const [priceErr, setPriceErr] = useState(null);
   const [priceSrc, setPriceSrc] = useState('');
   const [retryKey, setRetryKey] = useState(0);
-
   const [flash,     setFlash]     = useState(()=>isFlashMode());
   const [cacheAge,  setCacheAge]  = useState(0);
   const [rateLim,   setRateLim]   = useState(false);
@@ -1923,7 +1878,6 @@ function AppShell({user, setUser, view, children}) {
 
   return (
     <div className="app">
-      {/* SIDEBAR */}
       <div className="sidebar">
         <div className="sb-head">
           <div className="sb-logo">KRYPTIV</div>
@@ -1959,7 +1913,6 @@ function AppShell({user, setUser, view, children}) {
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
       <div className="content">
         <div className="topbar">
           <div className="tb-logo">KRYPTIV</div>
@@ -1967,7 +1920,7 @@ function AppShell({user, setUser, view, children}) {
           <Ticker coins={coins}/>
           <div className="tb-right">
             {rateLim && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,140,0,.8)',letterSpacing:1,padding:'0 8px',border:'1px solid rgba(255,140,0,.3)'}}>RATE LIMITED · CACHED</div>}
-            {!rateLim && cacheAge<=10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.7)',letterSpacing:2,display:'flex',alignItems:'center',gap:4}}><span style={{width:5,height:5,background:'rgba(130,255,150,.8)',borderRadius:'50%',display:'inline-block',animation:'pulse 2s infinite'}}/> LIVE</div>}
+            {!rateLim && cacheAge<=10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(130,255,150,.7)',letterSpacing:2,display:'flex',alignItems:'center',gap:4}}><span style={{width:5,height:5,background:'rgba(130,255,150,.8)',display:'inline-block',animation:'pulse 2s infinite'}}/> LIVE</div>}
             {!rateLim && cacheAge>10000 && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1}}>NEXT UPDATE {Math.max(0,Math.round((60000-cacheAge)/1000))}s</div>}
             {flash && <div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,200,0,.8)',letterSpacing:2,padding:'0 8px',border:'1px solid rgba(255,200,0,.25)'}}>⚡ FLASH</div>}
             <div className="ic-btn" title="Settings" onClick={()=>setSettOpen(true)}>
@@ -1981,7 +1934,6 @@ function AppShell({user, setUser, view, children}) {
         </div>
       </div>
 
-      {/* BOTTOM NAV */}
       <div className="botnav">
         {['dashboard','markets','ai','news'].map(id => {
           const n = NAV_ITEMS.find(x=>x.id===id);
@@ -2021,7 +1973,6 @@ function CoinDetail({coin, onClose}) {
     <div className="coin-detail">
       <div className="cd-backdrop" onClick={onClose}/>
       <div className="cd-panel" style={{maxHeight:'92vh',paddingBottom:28}}>
-        {/* Header */}
         <div className="cd-head" style={{marginBottom:14}}>
           <div>
             <div className="cd-sym">{coin.sym}</div>
@@ -2042,7 +1993,6 @@ function CoinDetail({coin, onClose}) {
           </div>
         </div>
 
-        {/* Stats row */}
         <div style={{display:'flex',gap:0,borderTop:'1px solid rgba(255,255,255,.05)',
           borderBottom:'1px solid rgba(255,255,255,.05)',marginBottom:16}}>
           {[
@@ -2062,11 +2012,9 @@ function CoinDetail({coin, onClose}) {
           ))}
         </div>
 
-        {/* Full trading chart */}
         <TradingChart coinId={coin.id} coin={coin} range={range} onRangeChange={setRange}
           height={180} showRangeSelector={true} livePrice={coin.price}/>
 
-        {/* Probability Calculator */}
         <ProbCalc coin={coin}/>
 
         <button onClick={()=>navigate('/AI/')} style={{width:'100%',padding:11,background:'var(--w)',
@@ -2115,7 +2063,6 @@ function Markets({user, coins, availCoins, priceSrc}) {
         </span>
       </div>
 
-      {/* Search */}
       <div className="srch-row" style={{display:'flex',alignItems:'center',gap:8,borderBottom:'1px solid rgba(255,255,255,.05)',marginBottom:14,paddingBottom:10}}>
         <MI n="search" style={{fontSize:15,color:'var(--w4)'}}/>
         <input
@@ -2128,14 +2075,12 @@ function Markets({user, coins, availCoins, priceSrc}) {
         {query && <MI n="close" style={{fontSize:15,color:'var(--w4)',cursor:'pointer'}} onClick={function(){setQuery('');}}/>}
       </div>
 
-      {/* Tabs */}
       <div className="tabs">
         {[['all','All'],['top','Top Gainers'],['down','Top Losers']].map(([id,lbl])=>(
           <div key={id} className={`tab${tab===id?' on':''}`} onClick={()=>setTab(id)}>{lbl}</div>
         ))}
       </div>
 
-      {/* Table header */}
       <div className="mkt-table-header">
         <div className="mth-rank">#</div>
         <div className="mth-name">COIN</div>
