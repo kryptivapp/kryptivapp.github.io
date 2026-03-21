@@ -680,166 +680,170 @@ input,textarea,select{font-family:var(--sans)}
 
 /* ═══════════════ LANDING PAGE ═══════════════ */
 
-/* ═══ LANDING PAGE ═══════════════════════════════════ */
-
-/* --- GLOBAL TRANSPARENCY: nothing is solid black --- */
-/* sections use rgba backgrounds so wall bleeds through */
-
-/* Landing wrapper — free scroll on mobile, snap on desktop */
+/* ─── SCROLL BEHAVIOUR
+   Desktop: JS-driven momentum snap — user scrolls freely inside a section,
+   hitting top/bottom edge triggers a smooth section jump.
+   Mobile: plain free scroll, no snapping at all.
+─── */
 .lp{
   position:relative;z-index:10;
-  height:100vh;overflow-y:auto;overflow-x:hidden;
+  height:100vh;overflow-y:scroll;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
+  scroll-behavior:auto; /* JS controls smooth transitions */
 }
 .lp::-webkit-scrollbar{display:none}
 
-/* Desktop: snap. Mobile: free scroll so no sections get skipped */
-@media(min-width:769px){
-  .lp{ scroll-snap-type:y mandatory; }
-  .lp-sec{ scroll-snap-align:start; }
-}
-
-/* Each section — min-height 100vh, transparent backgrounds */
+/* Each section is exactly 100vh so section boundaries are exact */
 .lp-sec{
-  min-height:100vh;
+  height:100vh;
   display:flex;flex-direction:column;
   position:relative;overflow:hidden;
-  /* frosted glass base — wall image bleeds through */
-  background:rgba(0,0,0,.18);
+  background:rgba(0,0,0,.15);
 }
-
-/* Alternating subtle tint so sections feel distinct */
-.lp-sec:nth-child(even){ background:rgba(0,0,0,.28); }
+.lp-sec:nth-child(even){background:rgba(0,0,0,.25);}
 
 /* ── NAV ── */
 .lp-nav{
   position:absolute;top:0;left:0;right:0;
   display:flex;align-items:center;justify-content:space-between;
-  padding:24px 7vw;
-  z-index:5;
-  background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent);
-  backdrop-filter:blur(0px);
+  padding:24px 7vw;z-index:5;
+  background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent);
+  flex-shrink:0;
 }
 .lp-nav-logo{font-family:var(--disp);font-size:24px;letter-spacing:5px}
 .lp-nav-right{display:flex;align-items:center;gap:14px}
 .lp-nav-login{
-  padding:9px 22px;background:rgba(255,255,255,.06);
-  border:1px solid var(--border2);color:var(--w3);
+  padding:9px 22px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.75);
   font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;
-  backdrop-filter:blur(8px);
+  cursor:pointer;transition:all .2s;backdrop-filter:blur(8px);
 }
-.lp-nav-login:hover{border-color:rgba(255,255,255,.35);color:var(--w);background:rgba(255,255,255,.1)}
+.lp-nav-login:hover{border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.12)}
 .lp-nav-cta{
   padding:9px 22px;background:rgba(255,255,255,.92);
   border:none;color:#000;
   font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;
-  position:relative;overflow:hidden;
+  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
 }
-.lp-nav-cta:hover{background:var(--w);opacity:.9}
+.lp-nav-cta:hover{background:#fff}
 .lp-nav-cta::after{content:'';position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shimmer 2.5s infinite}
 
-/* ── HERO SECTION ── */
+/* ── HERO ── */
 .lp-hero{
-  justify-content:center;
-  padding:0 7vw;
-  background:rgba(0,0,0,.12); /* most transparent — wall shines through */
+  justify-content:center;padding:0 7vw;
+  background:rgba(0,0,0,.10);
 }
 .lp-hero-content{
   display:flex;flex-direction:column;
-  padding-top:88px;
-  position:relative;z-index:1;
+  padding-top:90px;padding-bottom:24px;
+  position:relative;z-index:1;flex:1;justify-content:center;
 }
 .lp-eyebrow{
-  font-family:var(--mono);font-size:8px;letter-spacing:6px;color:var(--w4);
-  text-transform:uppercase;margin-bottom:22px;
+  font-family:var(--mono);font-size:8px;letter-spacing:6px;color:rgba(255,255,255,.45);
+  text-transform:uppercase;margin-bottom:20px;
   display:flex;align-items:center;gap:12px;
   animation:fadeUp .6s .1s both;
 }
 .lp-eyebrow::before{content:'';width:28px;height:1px;background:rgba(255,255,255,.35)}
 
-/* Headline — all white, no gray */
+/* ALL headline text — fully white, zero gray */
 .lp-h1{
   font-family:var(--disp);
-  font-size:clamp(58px,10vw,150px);
+  font-size:clamp(56px,9.5vw,144px);
   line-height:.88;letter-spacing:-1px;
   animation:fadeUp .6s .2s both;
-  color:var(--w); /* force full white */
+  color:#fff;
 }
-/* "TRADE SMARTER" — also full white, not dimmed */
-.lp-h1 span{ color:var(--w); }
+.lp-h1 span{color:#fff;}
 
 .lp-tagline{
-  font-family:var(--mono);font-size:clamp(8px,1vw,12px);
-  color:var(--w3);letter-spacing:4px;text-transform:uppercase;
-  margin-top:26px;margin-bottom:36px;
+  font-family:var(--mono);font-size:clamp(8px,.95vw,11px);
+  color:rgba(255,255,255,.65);letter-spacing:4px;text-transform:uppercase;
+  margin-top:24px;margin-bottom:32px;
   animation:fadeUp .6s .35s both;
-  max-width:420px;line-height:2.2;
+  max-width:440px;line-height:2.3;
 }
 .lp-hero-btns{
   display:flex;gap:14px;flex-wrap:wrap;
   animation:fadeUp .6s .45s both;
 }
 .lp-btn-primary{
-  padding:14px 34px;
-  background:rgba(255,255,255,.95);border:none;
+  padding:15px 36px;background:rgba(255,255,255,.95);border:none;
   color:#000;font-family:var(--sans);font-weight:700;
   font-size:10px;letter-spacing:3px;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;
-  position:relative;overflow:hidden;
+  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
 }
-.lp-btn-primary:hover{background:var(--w);opacity:.88}
-.lp-btn-primary::after{content:'';position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:shimmer 2s infinite}
+.lp-btn-primary:hover{background:#fff;opacity:.9}
+.lp-btn-primary::after{content:'';position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);animation:shimmer 2s infinite}
 .lp-btn-ghost{
-  padding:14px 34px;
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.22);color:var(--w2);
+  padding:15px 36px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.85);
   font-family:var(--mono);font-size:9px;letter-spacing:3px;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;
-  backdrop-filter:blur(6px);
+  cursor:pointer;transition:all .2s;backdrop-filter:blur(6px);
 }
-.lp-btn-ghost:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.4);color:var(--w)}
+.lp-btn-ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.45);color:#fff}
 
 /* Hero stats */
 .lp-hero-stats{
-  display:flex;gap:0;margin-top:52px;
+  display:flex;gap:0;margin-top:44px;
   border-top:1px solid rgba(255,255,255,.12);
-  animation:fadeUp .6s .55s both;
+  animation:fadeUp .6s .55s both;flex-shrink:0;
 }
-.lp-hstat{flex:1;padding:20px 0 0}
+.lp-hstat{flex:1;padding:18px 0 0}
 .lp-hstat+.lp-hstat{border-left:1px solid rgba(255,255,255,.12);padding-left:28px}
-.lp-hstat-val{font-family:var(--disp);font-size:34px;letter-spacing:1px;line-height:1;color:var(--w)}
-.lp-hstat-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.45);text-transform:uppercase;margin-top:6px}
+.lp-hstat-val{font-family:var(--disp);font-size:32px;letter-spacing:1px;line-height:1;color:#fff}
+.lp-hstat-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.42);text-transform:uppercase;margin-top:5px}
+
+/* Section progress dots (desktop) */
+.lp-dots{
+  position:fixed;right:28px;top:50%;transform:translateY(-50%);
+  z-index:100;display:flex;flex-direction:column;gap:10px;
+  pointer-events:none;
+}
+.lp-dot{
+  width:4px;height:4px;background:rgba(255,255,255,.22);
+  transition:all .35s ease;
+}
+.lp-dot.active{background:rgba(255,255,255,.75);height:16px;}
+@media(max-width:768px){.lp-dots{display:none}}
 
 /* Scroll indicator */
 .lp-scroll-hint{
-  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
   display:flex;flex-direction:column;align-items:center;gap:6px;
-  animation:floatY 2.5s ease-in-out infinite;
-  pointer-events:none;
+  animation:floatY 2.5s ease-in-out infinite;pointer-events:none;
 }
-.lp-scroll-hint-line{width:1px;height:36px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.35))}
-.lp-scroll-hint-dot{width:4px;height:4px;background:rgba(255,255,255,.35)}
+.lp-scroll-hint-line{width:1px;height:32px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.32))}
+.lp-scroll-hint-dot{width:4px;height:4px;background:rgba(255,255,255,.32)}
+@media(max-width:768px){.lp-scroll-hint{display:none}}
 
-/* ── SECTION SHARED LABEL / HEADING ── */
+/* ── SECTION LABEL / HEADING ── */
 .lp-sec-label{
-  font-family:var(--mono);font-size:7px;letter-spacing:6px;color:rgba(255,255,255,.4);
+  font-family:var(--mono);font-size:7px;letter-spacing:6px;color:rgba(255,255,255,.38);
   text-transform:uppercase;margin-bottom:14px;
-  display:flex;align-items:center;gap:12px;
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
 }
-.lp-sec-label::before{content:'';width:28px;height:1px;background:rgba(255,255,255,.3)}
+.lp-sec-label::before{content:'';width:28px;height:1px;background:rgba(255,255,255,.28)}
 .lp-sec-h2{
-  font-family:var(--disp);font-size:clamp(40px,6.5vw,88px);
-  line-height:.9;letter-spacing:-1px;margin-bottom:44px;color:var(--w);
+  font-family:var(--disp);
+  font-size:clamp(38px,5.5vw,80px);
+  line-height:.9;letter-spacing:-1px;
+  margin-bottom:36px;color:#fff;flex-shrink:0;
 }
+
+/* ── INNER SCROLL CONTAINERS (allow content scroll inside a section) ── */
+.lp-sec-scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:none;padding-bottom:8px;
+}
+.lp-sec-scroll::-webkit-scrollbar{display:none}
 
 /* ── FEATURES SECTION ── */
 .lp-features{
-  justify-content:center;
-  padding:72px 7vw 80px;
+  padding:0 7vw;
 }
+.lp-features-head{padding:52px 0 0;flex-shrink:0}
 .lp-feat-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -848,272 +852,287 @@ input,textarea,select{font-family:var(--sans)}
   border:1px solid rgba(255,255,255,.08);
 }
 .lp-feat-card{
-  background:rgba(0,0,0,.35);
-  padding:32px 28px;
-  transition:background .25s;
-  position:relative;overflow:hidden;
-  backdrop-filter:blur(12px);
+  background:rgba(0,0,0,.32);padding:28px 26px;
+  transition:background .25s;position:relative;overflow:hidden;
+  backdrop-filter:blur(14px);
 }
-.lp-feat-card:hover{background:rgba(255,255,255,.06)}
+.lp-feat-card:hover{background:rgba(255,255,255,.05)}
 .lp-feat-icon{
-  width:38px;height:38px;
-  border:1px solid rgba(255,255,255,.14);
+  width:36px;height:36px;
+  border:1px solid rgba(255,255,255,.13);
   background:rgba(255,255,255,.05);
   display:flex;align-items:center;justify-content:center;
-  margin-bottom:20px;
+  margin-bottom:18px;
 }
-.lp-feat-icon .mi{width:16px;height:16px;color:rgba(255,255,255,.65)}
-.lp-feat-title{
-  font-family:var(--mono);font-size:9px;letter-spacing:3px;
-  text-transform:uppercase;color:rgba(255,255,255,.9);margin-bottom:12px;
-}
-.lp-feat-desc{font-size:12px;color:rgba(255,255,255,.45);line-height:1.85;font-weight:300}
-.lp-feat-card::after{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);
-  opacity:0;transition:opacity .3s;
-}
+.lp-feat-icon .mi{width:15px;height:15px;color:rgba(255,255,255,.6)}
+.lp-feat-title{font-family:var(--mono);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.88);margin-bottom:10px;}
+.lp-feat-desc{font-size:12px;color:rgba(255,255,255,.42);line-height:1.9;font-weight:300}
+.lp-feat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);opacity:0;transition:opacity .3s}
 .lp-feat-card:hover::after{opacity:1}
 
 /* ── LIVE PRICES SECTION ── */
-.lp-live{
-  justify-content:center;
-  padding:72px 0 80px;
-  overflow:hidden;
-}
-.lp-live-inner{padding:0 7vw;margin-bottom:40px}
-.lp-live-inner:last-child{margin-bottom:0;margin-top:36px}
+.lp-live{overflow:hidden}
+.lp-live-inner{padding:0 7vw;flex-shrink:0}
+.lp-live-head{padding:52px 7vw 0;flex-shrink:0}
 .lp-live-prices{
-  display:flex;gap:1px;
+  display:flex;gap:1px;flex-shrink:0;
   background:rgba(255,255,255,.07);
   border-top:1px solid rgba(255,255,255,.09);
   border-bottom:1px solid rgba(255,255,255,.09);
 }
 .lp-price-cell{
-  flex:1;min-width:0;padding:28px 32px;
-  background:rgba(0,0,0,.28);
+  flex:1;min-width:0;padding:24px 28px;
+  background:rgba(0,0,0,.26);
   display:flex;flex-direction:column;gap:5px;
-  backdrop-filter:blur(10px);
-  transition:background .2s;
+  backdrop-filter:blur(10px);transition:background .2s;
 }
-.lp-price-cell:hover{background:rgba(255,255,255,.05)}
-.lp-pc-sym{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.9);font-weight:500}
-.lp-pc-nm{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.35);text-transform:uppercase}
-.lp-pc-price{font-family:var(--disp);font-size:30px;letter-spacing:1px;margin-top:8px;color:var(--w)}
-.lp-pc-ch{font-family:var(--mono);font-size:9px;margin-top:3px}
+.lp-price-cell:hover{background:rgba(255,255,255,.04)}
+.lp-pc-sym{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.88);font-weight:500}
+.lp-pc-nm{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.32);text-transform:uppercase}
+.lp-pc-price{font-family:var(--disp);font-size:28px;letter-spacing:1px;margin-top:6px;color:#fff}
+.lp-pc-ch{font-family:var(--mono);font-size:9px;margin-top:2px}
 .lp-pc-ch.up{color:var(--up)}
 .lp-pc-ch.dn{color:var(--dn)}
 .lp-live-bar{
   width:100%;overflow:hidden;
   border-top:1px solid rgba(255,255,255,.07);
   border-bottom:1px solid rgba(255,255,255,.07);
-  padding:14px 0;margin-top:0;
-  background:rgba(0,0,0,.2);
+  padding:13px 0;flex-shrink:0;
+  background:rgba(0,0,0,.18);
 }
-.lp-live-bar-track{display:flex;white-space:nowrap;animation:ticker 40s linear infinite}
+.lp-live-bar-track{display:flex;white-space:nowrap;animation:ticker 38s linear infinite}
 .lp-live-tick{
   display:inline-flex;align-items:center;gap:10px;
-  padding:0 24px;border-right:1px solid rgba(255,255,255,.07);
+  padding:0 22px;border-right:1px solid rgba(255,255,255,.07);
   font-family:var(--mono);font-size:8px;
 }
-.lp-live-tick-sym{color:rgba(255,255,255,.4)}
-.lp-live-tick-price{color:rgba(255,255,255,.75)}
+.lp-live-tick-sym{color:rgba(255,255,255,.38)}
+.lp-live-tick-price{color:rgba(255,255,255,.72)}
 .lp-live-tick-ch{color:var(--up)}
 .lp-live-tick-ch.dn{color:var(--dn)}
+.lp-live-cta{padding:28px 7vw;flex-shrink:0}
 
 /* ── PLANS SECTION ── */
-.lp-plans{
-  justify-content:center;
-  padding:72px 7vw 80px;
-}
+.lp-plans{padding:0 7vw}
+.lp-plans-head{padding:52px 0 0;flex-shrink:0}
 .lp-plans-grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:1px;
+  gap:1px;flex:1;
   background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.08);
-  margin-top:44px;
+  margin-top:28px;
 }
 .lp-plan-card{
-  background:rgba(0,0,0,.32);padding:32px 24px;
+  background:rgba(0,0,0,.30);padding:28px 22px;
   display:flex;flex-direction:column;
-  transition:background .2s;
-  position:relative;
-  backdrop-filter:blur(10px);
+  transition:background .2s;position:relative;
+  backdrop-filter:blur(12px);
 }
-.lp-plan-card:hover{background:rgba(255,255,255,.055)}
-.lp-plan-card.featured{background:rgba(255,255,255,.07)}
+.lp-plan-card:hover{background:rgba(255,255,255,.05)}
+.lp-plan-card.featured{background:rgba(255,255,255,.065)}
 .lp-plan-card.featured::before{
   content:'POPULAR';
-  position:absolute;top:18px;right:16px;
+  position:absolute;top:16px;right:14px;
   font-family:var(--mono);font-size:6px;letter-spacing:3px;
-  color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.12);padding:3px 8px;
+  color:rgba(255,255,255,.38);border:1px solid rgba(255,255,255,.12);padding:3px 8px;
   background:rgba(255,255,255,.04);
 }
-.lp-plan-nm{font-family:var(--disp);font-size:38px;letter-spacing:2px;line-height:1;margin-bottom:5px;color:var(--w)}
-.lp-plan-pr{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:20px}
-.lp-plan-feats{flex:1;display:flex;flex-direction:column;gap:9px;margin-bottom:24px}
-.lp-plan-feat{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.42);letter-spacing:1px;display:flex;gap:8px;align-items:flex-start;line-height:1.7}
-.lp-plan-feat::before{content:'→';color:rgba(255,255,255,.28);flex-shrink:0}
+.lp-plan-nm{font-family:var(--disp);font-size:36px;letter-spacing:2px;line-height:1;margin-bottom:4px;color:#fff}
+.lp-plan-pr{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.48);letter-spacing:2px;margin-bottom:18px}
+.lp-plan-feats{flex:1;display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.lp-plan-feat{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.4);letter-spacing:1px;display:flex;gap:8px;align-items:flex-start;line-height:1.7}
+.lp-plan-feat::before{content:'→';color:rgba(255,255,255,.24);flex-shrink:0}
 .lp-plan-cta{
   width:100%;padding:11px;background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5);
+  border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.48);
   font-family:var(--mono);font-size:8px;letter-spacing:2px;text-transform:uppercase;
   cursor:pointer;transition:all .2s;
 }
-.lp-plan-cta:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.8)}
+.lp-plan-cta:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.26);color:rgba(255,255,255,.8)}
 .lp-plan-card.featured .lp-plan-cta{background:rgba(255,255,255,.9);border-color:transparent;color:#000}
-.lp-plan-card.featured .lp-plan-cta:hover{background:var(--w)}
+.lp-plan-card.featured .lp-plan-cta:hover{background:#fff}
+
+/* Payment note */
+.lp-pay-note{
+  flex-shrink:0;margin-top:16px;
+  padding:14px 18px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.09);
+  backdrop-filter:blur(8px);
+  display:flex;align-items:flex-start;gap:10px;
+}
+.lp-pay-note-icon{flex-shrink:0;margin-top:1px}
+.lp-pay-note-icon .mi{width:13px;height:13px;color:rgba(255,255,255,.38)}
+.lp-pay-note-text{font-family:var(--mono);font-size:7px;color:rgba(255,255,255,.38);letter-spacing:1.5px;line-height:2;text-transform:uppercase}
+.lp-pay-note-text strong{color:rgba(255,255,255,.6);font-weight:500}
 
 /* ── FINAL CTA SECTION ── */
 .lp-cta-sec{
   justify-content:center;align-items:center;
-  text-align:center;padding:80px 7vw;
-  background:rgba(0,0,0,.1);
+  text-align:center;padding:0 7vw;
+  background:rgba(0,0,0,.10);
 }
 .lp-cta-sec-inner{
   position:relative;z-index:1;
   display:flex;flex-direction:column;align-items:center;
-  max-width:900px;margin:0 auto;
+  max-width:860px;margin:0 auto;
 }
-.lp-cta-pre{font-family:var(--mono);font-size:7px;letter-spacing:6px;color:rgba(255,255,255,.38);text-transform:uppercase;margin-bottom:20px}
-.lp-cta-h{font-family:var(--disp);font-size:clamp(50px,8.5vw,112px);line-height:.88;letter-spacing:-1px;margin-bottom:24px;color:var(--w)}
-.lp-cta-sub{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.38);text-transform:uppercase;margin-bottom:40px;line-height:2.2}
+.lp-cta-pre{font-family:var(--mono);font-size:7px;letter-spacing:6px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:20px}
+.lp-cta-h{font-family:var(--disp);font-size:clamp(48px,8vw,108px);line-height:.88;letter-spacing:-1px;margin-bottom:22px;color:#fff}
+.lp-cta-sub{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:36px;line-height:2.4}
 .lp-cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 
+/* Footer */
 .lp-footer{
+  position:absolute;bottom:0;left:0;right:0;
   border-top:1px solid rgba(255,255,255,.08);
-  padding:28px 7vw;
+  padding:22px 7vw;
   display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:12px;
-  background:rgba(0,0,0,.2);
-  backdrop-filter:blur(8px);
+  flex-wrap:wrap;gap:10px;
+  background:rgba(0,0,0,.18);backdrop-filter:blur(8px);
 }
-.lp-footer-logo{font-family:var(--disp);font-size:18px;letter-spacing:3px;color:rgba(255,255,255,.35)}
-.lp-footer-links{display:flex;gap:22px}
+.lp-footer-logo{font-family:var(--disp);font-size:17px;letter-spacing:3px;color:rgba(255,255,255,.32)}
+.lp-footer-links{display:flex;gap:20px}
 .lp-footer-link{
-  font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.3);
-  text-transform:uppercase;cursor:pointer;background:none;border:none;
-  transition:color .2s;
+  font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.28);
+  text-transform:uppercase;cursor:pointer;background:none;border:none;transition:color .2s;
 }
 .lp-footer-link:hover{color:rgba(255,255,255,.6)}
-.lp-footer-right{font-family:var(--mono);font-size:7px;color:rgba(255,255,255,.25);letter-spacing:2px}
+.lp-footer-right{font-family:var(--mono);font-size:7px;color:rgba(255,255,255,.22);letter-spacing:2px}
 
 /* Auth overlay */
 .auth-overlay{
   position:fixed;inset:0;z-index:500;
   display:flex;flex-direction:column;
-  background:rgba(0,0,0,.92);
+  background:rgba(0,0,0,.88);
   transform:translateY(100%);
-  transition:transform .55s cubic-bezier(.4,0,.2,1);
+  transition:transform .52s cubic-bezier(.4,0,.2,1);
+  backdrop-filter:blur(4px);
 }
 .auth-overlay.visible{transform:translateY(0)}
 .auth-overlay-close{
   position:absolute;top:20px;right:24px;z-index:10;
   width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
-  color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;
-  backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;backdrop-filter:blur(8px);
 }
-.auth-overlay-close:hover{border-color:rgba(255,255,255,.28);color:var(--w)}
+.auth-overlay-close:hover{border-color:rgba(255,255,255,.3);color:#fff}
 .auth-overlay-close .mi{width:16px;height:16px}
 
-/* Scroll-in animations */
-.lp-anim{opacity:0;transform:translateY(18px);transition:opacity .65s ease,transform .65s ease}
+/* Scroll-reveal animations */
+.lp-anim{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
 .lp-anim.in{opacity:1;transform:translateY(0)}
 
 /* Grid BG */
 .lp-grid-bg{
   position:absolute;inset:0;z-index:0;pointer-events:none;
   background-image:
-    linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
   background-size:64px 64px;
-  mask-image:radial-gradient(ellipse 85% 85% at 50% 50%,black,transparent);
-  -webkit-mask-image:radial-gradient(ellipse 85% 85% at 50% 50%,black,transparent);
+  mask-image:radial-gradient(ellipse 88% 88% at 50% 50%,black,transparent);
+  -webkit-mask-image:radial-gradient(ellipse 88% 88% at 50% 50%,black,transparent);
 }
 
-/* ── DESKTOP LAYOUT ENHANCEMENTS ── */
+/* ── DESKTOP ENHANCEMENTS ── */
 @media(min-width:1100px){
-  .lp-features{ padding:96px 8vw 104px; }
-  .lp-feat-grid{ grid-template-columns:repeat(3,1fr); gap:1px; }
-  .lp-feat-card{ padding:40px 36px; }
-  .lp-live{ padding:96px 0 104px; }
-  .lp-live-inner{ padding:0 8vw; }
-  .lp-price-cell{ padding:36px 40px; }
-  .lp-pc-price{ font-size:36px; }
-  .lp-plans{ padding:96px 8vw 104px; }
-  .lp-plans-grid{ gap:1px; margin-top:52px; }
-  .lp-plan-card{ padding:40px 32px; }
-  .lp-plan-nm{ font-size:42px; }
-  .lp-sec-h2{ margin-bottom:56px; }
-  .lp-cta-sec{ padding:112px 8vw; }
-  .lp-hero-stats{ margin-top:64px; }
-  .lp-hstat{ padding:24px 0 0; }
-  .lp-hstat-val{ font-size:38px; }
-  .lp-hstat+.lp-hstat{ padding-left:40px; }
-  .lp-hero-content{ padding-top:96px; }
+  .lp-nav{padding:28px 8vw}
+  .lp-hero{padding:0 8vw}
+  .lp-hero-content{padding-top:100px}
+  .lp-features{padding:0 8vw}
+  .lp-features-head{padding:60px 0 0}
+  .lp-feat-card{padding:36px 32px}
+  .lp-live-head{padding:60px 8vw 0}
+  .lp-live-inner{padding:0 8vw}
+  .lp-live-cta{padding:32px 8vw}
+  .lp-price-cell{padding:30px 36px}
+  .lp-pc-price{font-size:32px}
+  .lp-plans{padding:0 8vw}
+  .lp-plans-head{padding:60px 0 0}
+  .lp-plan-card{padding:34px 26px}
+  .lp-plan-nm{font-size:40px}
+  .lp-cta-sec{padding:0 8vw}
+  .lp-footer{padding:24px 8vw}
+  .lp-hstat-val{font-size:36px}
+  .lp-hstat+.lp-hstat{padding-left:36px}
+  .lp-sec-h2{font-size:clamp(44px,5.8vw,84px)}
 }
-@media(min-width:1400px){
-  .lp-feat-card{ padding:48px 40px; }
-  .lp-price-cell{ padding:40px 48px; }
-  .lp-plan-card{ padding:48px 36px; }
-  .lp-plan-nm{ font-size:48px; }
-  .lp-sec-h2{ margin-bottom:64px; }
+@media(min-width:1440px){
+  .lp-nav{padding:32px 9vw}
+  .lp-hero,.lp-features,.lp-plans,.lp-cta-sec{padding-left:9vw;padding-right:9vw}
+  .lp-live-head,.lp-live-inner,.lp-live-cta,.lp-footer{padding-left:9vw;padding-right:9vw}
+  .lp-feat-card{padding:44px 38px}
+  .lp-price-cell{padding:36px 44px}
+  .lp-plan-card{padding:40px 30px}
+  .lp-plan-nm{font-size:44px}
+  .lp-sec-h2{font-size:clamp(48px,6vw,90px)}
 }
 
 /* ── TABLET ── */
 @media(max-width:1099px) and (min-width:769px){
-  .lp-feat-grid{ grid-template-columns:repeat(2,1fr); }
-  .lp-plans-grid{ grid-template-columns:repeat(2,1fr); }
-  .lp-price-cell{ padding:22px 24px; }
+  .lp-feat-grid{grid-template-columns:repeat(2,1fr)}
+  .lp-plans-grid{grid-template-columns:repeat(2,1fr)}
+  .lp-price-cell{padding:20px 22px}
+  .lp-pc-price{font-size:24px}
 }
 
-/* ── MOBILE ── */
+/* ── MOBILE — free scroll, auto height sections ── */
 @media(max-width:768px){
-  .lp-sec{ min-height:auto; padding-bottom:0; } /* no forced 100vh — content dictates height */
+  /* Kill fixed 100vh so content breathes freely */
+  .lp-sec{height:auto;min-height:100svh}
   .lp-hero{
-    min-height:100vh; /* keep hero full-height */
-    padding:0 6vw;
+    min-height:100svh;padding:0 6vw;
     justify-content:flex-start;
   }
-  .lp-hero-content{ padding-top:80px; padding-bottom:60px; }
-  .lp-h1{ font-size:clamp(52px,14vw,80px); }
-  .lp-tagline{ margin-bottom:28px; }
-  .lp-hero-btns{ flex-direction:column; }
-  .lp-btn-primary,.lp-btn-ghost{ width:100%; text-align:center; padding:15px 20px; }
-  .lp-hero-stats{ flex-wrap:wrap; margin-top:36px; }
-  .lp-hstat{ min-width:50%; padding:14px 0 0; }
-  .lp-hstat:nth-child(3){ border-left:none; padding-left:0; }
-  .lp-hstat:nth-child(4){ border-left:1px solid rgba(255,255,255,.12); padding-left:14px; }
+  .lp-hero-content{
+    padding-top:84px;padding-bottom:52px;
+    flex:none;justify-content:flex-start;
+  }
+  .lp-h1{font-size:clamp(50px,13.5vw,82px)}
+  .lp-tagline{font-size:8px;margin-top:20px;margin-bottom:26px}
+  .lp-hero-btns{flex-direction:column}
+  .lp-btn-primary,.lp-btn-ghost{width:100%;text-align:center;padding:15px 20px}
+  .lp-hero-stats{flex-wrap:wrap;margin-top:32px}
+  .lp-hstat{min-width:50%;padding:14px 0 0}
+  .lp-hstat:nth-child(3){border-left:none;padding-left:0}
+  .lp-hstat:nth-child(4){border-left:1px solid rgba(255,255,255,.12);padding-left:14px}
+  .lp-hstat-val{font-size:28px}
 
-  .lp-features{ padding:56px 6vw 60px; }
-  .lp-feat-grid{ grid-template-columns:1fr; }
-  .lp-feat-card{ padding:24px 20px; }
+  .lp-features{padding:52px 6vw 56px}
+  .lp-features-head{padding:0}
+  .lp-feat-grid{grid-template-columns:1fr}
+  .lp-feat-card{padding:22px 18px}
+  .lp-sec-scroll{overflow:visible;flex:none}
 
-  .lp-live{ padding:56px 0 60px; }
-  .lp-live-inner{ padding:0 6vw; margin-bottom:28px; }
-  .lp-live-prices{ flex-direction:column; gap:1px; }
-  .lp-price-cell{ padding:20px 20px; }
-  .lp-pc-price{ font-size:26px; }
+  .lp-live{padding:52px 0 56px}
+  .lp-live-head{padding:0 6vw}
+  .lp-live-inner,.lp-live-cta{padding:0 6vw}
+  .lp-live-cta{padding-top:24px}
+  .lp-live-prices{flex-direction:column;gap:1px}
+  .lp-price-cell{padding:18px 18px}
+  .lp-pc-price{font-size:24px}
 
-  .lp-plans{ padding:56px 6vw 60px; }
-  .lp-plans-grid{ grid-template-columns:1fr 1fr; margin-top:28px; }
-  .lp-plan-card{ padding:22px 16px; }
-  .lp-plan-nm{ font-size:30px; }
+  .lp-plans{padding:52px 6vw 56px}
+  .lp-plans-head{padding:0}
+  .lp-plans-grid{grid-template-columns:1fr 1fr;margin-top:24px}
+  .lp-plan-card{padding:20px 14px}
+  .lp-plan-nm{font-size:28px}
+  .lp-plan-card.featured::before{display:none}
 
-  .lp-cta-sec{ padding:60px 6vw; }
-  .lp-footer{ flex-direction:column; align-items:flex-start; gap:16px; }
-
-  .lp-nav{ padding:20px 6vw; }
-  .lp-scroll-hint{ display:none; }
-  .lp-sec-h2{ margin-bottom:28px; }
-  .lp-plans-grid{ grid-template-columns:1fr; }
+  .lp-cta-sec{padding:52px 6vw 0;align-items:flex-start;text-align:left}
+  .lp-cta-sec-inner{align-items:flex-start}
+  .lp-cta-h{font-size:clamp(44px,11vw,70px)}
+  .lp-cta-btns{justify-content:flex-start}
+  .lp-footer{position:relative;padding:24px 6vw;flex-direction:column;align-items:flex-start;gap:14px}
+  .lp-nav{padding:20px 6vw}
+  .lp-sec-h2{font-size:clamp(36px,9vw,58px);margin-bottom:22px}
+  .lp-pay-note{margin-top:12px}
+  .lp-plans-grid{grid-template-columns:1fr}
 }
 @media(max-width:420px){
-  .lp-h1{ font-size:clamp(44px,13vw,64px); }
-  .lp-hstat:nth-child(3){ border-left:none; padding-left:0; }
-  .lp-plans-grid{ grid-template-columns:1fr; }
+  .lp-h1{font-size:clamp(44px,12.5vw,64px)}
+  .lp-plans-grid{grid-template-columns:1fr}
 }
 
 </style>
@@ -1547,41 +1566,132 @@ const LP_COINS = [
 ];
 
 const LP_FEATS = [
-  {icon:'bolt',          title:'Real-Time Data',         desc:'Live prices from CoinGecko, Binance & Kraken with 5-second refresh. Never miss a move that matters.'},
-  {icon:'smart_toy',     title:'AI Intelligence',        desc:'Built-in AI analyst for every coin. Get investment cases, outlook reports, and take-profit strategies on demand.'},
-  {icon:'newspaper',     title:'Live News Feed',          desc:'Curated crypto news with AI-powered sentiment scoring. Know the narrative before the market does.'},
-  {icon:'donut_small',   title:'Portfolio Tracker',      desc:'Track your holdings with live P&L, allocation charts, and risk metrics. Always know where you stand.'},
-  {icon:'candlestick_chart','title':'Market Overview',   desc:'Full market view with top movers, volume leaders, and sparkline charts across 15+ assets.'},
-  {icon:'workspace_premium','title':'Tiered Plans',      desc:'From free to Atmosphere — scale your edge. Unlock more coins, alerts, and AI depth as you grow.'},
+  {icon:'bolt',            title:'Real-Time Data',    desc:'Live prices from CoinGecko, Binance & Kraken with 5-second refresh. Never miss a move.'},
+  {icon:'smart_toy',       title:'AI Intelligence',   desc:'Built-in AI analyst for every coin. Investment cases, outlook reports, take-profit strategies on demand.'},
+  {icon:'newspaper',       title:'Live News Feed',     desc:'Curated crypto news with AI sentiment scoring. Know the narrative before the market does.'},
+  {icon:'donut_small',     title:'Portfolio Tracker',  desc:'Track holdings with live P&L, allocation charts, and risk metrics. Always know where you stand.'},
+  {icon:'candlestick_chart','title':'Market Overview', desc:'Full market view with top movers, volume leaders, and sparkline charts across 15+ assets.'},
+  {icon:'workspace_premium','title':'Tiered Plans',    desc:'From free to Atmosphere — scale your edge. More coins, alerts, and AI depth as you grow.'},
 ];
 
 const LP_PLANS_PREVIEW = [
-  {id:'free',       nm:'FREE',       pr:'$0',          feats:['BTC & SOL live data','AI analysis','News feed','Simulator']},
-  {id:'budget',     nm:'BUDGET',     pr:'$3.90/mo',    feats:['15 coins live','3B AI model','5 price alerts','CSV export'], featured:true},
-  {id:'pro',        nm:'PRO',        pr:'$14.90/mo',   feats:['Unlimited coins','8B AI model','Portfolio guidance','Exchange connect']},
-  {id:'atmosphere', nm:'ATMOSPHERE', pr:'$44.90/mo',   feats:['Everything in Pro','Whale alerts','Custom AI signals','Deep-dive reports']},
+  {id:'free',       nm:'FREE',       pr:'$0',         feats:['BTC & SOL live data','AI analysis','News feed','Simulator']},
+  {id:'budget',     nm:'BUDGET',     pr:'$3.90/mo',   feats:['15 coins live','3B AI model','5 price alerts','CSV export'], featured:true},
+  {id:'pro',        nm:'PRO',        pr:'$14.90/mo',  feats:['Unlimited coins','8B AI model','Portfolio guidance','Exchange connect']},
+  {id:'atmosphere', nm:'ATMOSPHERE', pr:'$44.90/mo',  feats:['Everything in Pro','Whale alerts','Custom AI signals','Deep-dive reports']},
 ];
 
 function Landing({ onEnter }) {
+  const lpRef     = useRef(null);
+  const [curSec, setCurSec] = useState(0);
+  const TOTAL_SECS = 5;
+  const isScrolling = useRef(false);
+  const lastScroll  = useRef(0);
+  const touchStart  = useRef(0);
 
-  /* Intersection observer for scroll animations */
+  /* ── Scroll-reveal via IntersectionObserver ── */
   useEffect(()=>{
     const obs = new IntersectionObserver(entries=>{
       entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); });
-    },{threshold:0.12});
+    },{threshold:0.08});
     document.querySelectorAll('.lp-anim').forEach(el=>obs.observe(el));
     return ()=>obs.disconnect();
   },[]);
 
-  const tickerItems = [...LP_COINS,...LP_COINS]; // double for seamless loop
+  /* ── JS Section Snap (desktop only) ── */
+  const goToSection = useCallback((idx)=>{
+    if(!lpRef.current) return;
+    const clamped = Math.max(0, Math.min(TOTAL_SECS-1, idx));
+    setCurSec(clamped);
+    isScrolling.current = true;
+    const el = lpRef.current;
+    const sectionH = el.clientHeight;
+    el.scrollTo({ top: clamped * sectionH, behavior:'smooth' });
+    setTimeout(()=>{ isScrolling.current = false; }, 800);
+  },[]);
+
+  useEffect(()=>{
+    const el = lpRef.current;
+    if(!el) return;
+    const isMobile = ()=>window.innerWidth <= 768;
+
+    /* Wheel handler */
+    const onWheel = (e)=>{
+      if(isMobile()) return; // free scroll on mobile
+      const sectionH = el.clientHeight;
+      const cur = Math.round(el.scrollTop / sectionH);
+      const atTop    = el.scrollTop % sectionH < 4;
+      const atBottom = Math.abs((el.scrollTop % sectionH) - sectionH) < 4;
+
+      /* If inside a section and not at an edge, let natural scroll run */
+      if(!atTop && !atBottom) return;
+
+      /* At an edge — intercept and jump */
+      e.preventDefault();
+      if(isScrolling.current) return;
+      const now = Date.now();
+      if(now - lastScroll.current < 900) return;
+      lastScroll.current = now;
+      if(e.deltaY > 0) goToSection(cur+1);
+      else              goToSection(cur-1);
+    };
+
+    /* Touch handler */
+    const onTouchStart = (e)=>{ touchStart.current = e.touches[0].clientY; };
+    const onTouchEnd   = (e)=>{
+      if(isMobile()) return;
+      const sectionH = el.clientHeight;
+      const cur = Math.round(el.scrollTop / sectionH);
+      const atTop    = el.scrollTop % sectionH < 4;
+      const atBottom = Math.abs((el.scrollTop % sectionH) - sectionH) < 4;
+      if(!atTop && !atBottom) return;
+      if(isScrolling.current) return;
+      const dy = touchStart.current - e.changedTouches[0].clientY;
+      if(Math.abs(dy) < 30) return;
+      const now = Date.now();
+      if(now - lastScroll.current < 900) return;
+      lastScroll.current = now;
+      if(dy > 0) goToSection(cur+1);
+      else        goToSection(cur-1);
+    };
+
+    /* Sync dot indicator on native scroll */
+    const onScroll = ()=>{
+      if(isMobile()) return;
+      const sectionH = el.clientHeight;
+      const cur = Math.round(el.scrollTop / sectionH);
+      setCurSec(Math.min(cur, TOTAL_SECS-1));
+    };
+
+    el.addEventListener('wheel', onWheel, {passive:false});
+    el.addEventListener('touchstart', onTouchStart, {passive:true});
+    el.addEventListener('touchend',   onTouchEnd,   {passive:true});
+    el.addEventListener('scroll',     onScroll,     {passive:true});
+    return ()=>{
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('scroll', onScroll);
+    };
+  },[goToSection]);
+
+  const tickerItems = [...LP_COINS,...LP_COINS];
 
   return (
-    <div className="lp">
+    <div className="lp" ref={lpRef}>
 
-      {/* ── SECTION 1: HERO ── */}
+      {/* Section progress dots */}
+      <div className="lp-dots">
+        {Array.from({length:TOTAL_SECS}).map((_,i)=>(
+          <div key={i} className={`lp-dot${curSec===i?' active':''}`}
+               style={{cursor:'pointer',pointerEvents:'all'}}
+               onClick={()=>goToSection(i)}/>
+        ))}
+      </div>
+
+      {/* ════ SECTION 1: HERO ════ */}
       <section className="lp-sec lp-hero">
         <div className="lp-grid-bg"/>
-        {/* Navbar */}
         <nav className="lp-nav">
           <div className="lp-nav-logo">KRYPTIV</div>
           <div className="lp-nav-right">
@@ -1589,39 +1699,21 @@ function Landing({ onEnter }) {
             <button className="lp-nav-cta"   onClick={onEnter}>GET STARTED</button>
           </div>
         </nav>
-        {/* Hero content */}
         <div className="lp-hero-content">
           <div className="lp-eyebrow">Crypto Intelligence Platform</div>
           <div className="lp-h1">
-            INVEST<br/>
-            SMART.<br/>
-            <span>TRADE</span><br/>
-            <span>SMARTER.</span>
+            INVEST<br/>SMART.<br/>TRADE<br/>SMARTER.
           </div>
           <div className="lp-tagline">Real-time prices · AI analysis · Portfolio tracking</div>
           <div className="lp-hero-btns">
             <button className="lp-btn-primary" onClick={onEnter}>START FREE — NO CARD</button>
-            <button className="lp-btn-ghost"   onClick={()=>document.querySelector('.lp').scrollBy({top:window.innerHeight,behavior:'smooth'})}>
-              SEE FEATURES ↓
-            </button>
+            <button className="lp-btn-ghost"   onClick={()=>goToSection(1)}>SEE FEATURES ↓</button>
           </div>
           <div className="lp-hero-stats">
-            <div className="lp-hstat">
-              <div className="lp-hstat-val">15+</div>
-              <div className="lp-hstat-lbl">Assets tracked</div>
-            </div>
-            <div className="lp-hstat">
-              <div className="lp-hstat-val">5s</div>
-              <div className="lp-hstat-lbl">Price refresh</div>
-            </div>
-            <div className="lp-hstat">
-              <div className="lp-hstat-val">AI</div>
-              <div className="lp-hstat-lbl">On every coin</div>
-            </div>
-            <div className="lp-hstat">
-              <div className="lp-hstat-val">$0</div>
-              <div className="lp-hstat-lbl">To start</div>
-            </div>
+            <div className="lp-hstat"><div className="lp-hstat-val">15+</div><div className="lp-hstat-lbl">Assets tracked</div></div>
+            <div className="lp-hstat"><div className="lp-hstat-val">5s</div><div className="lp-hstat-lbl">Price refresh</div></div>
+            <div className="lp-hstat"><div className="lp-hstat-val">AI</div><div className="lp-hstat-lbl">On every coin</div></div>
+            <div className="lp-hstat"><div className="lp-hstat-val">$0</div><div className="lp-hstat-lbl">To start</div></div>
           </div>
         </div>
         <div className="lp-scroll-hint">
@@ -1630,26 +1722,28 @@ function Landing({ onEnter }) {
         </div>
       </section>
 
-      {/* ── SECTION 2: FEATURES ── */}
+      {/* ════ SECTION 2: FEATURES ════ */}
       <section className="lp-sec lp-features">
-        <div className="lp-anim">
+        <div className="lp-features-head lp-anim">
           <div className="lp-sec-label">What you get</div>
           <div className="lp-sec-h2">YOUR EDGE,<br/>BUILT IN.</div>
         </div>
-        <div className="lp-feat-grid lp-anim">
-          {LP_FEATS.map((f,i)=>(
-            <div key={i} className="lp-feat-card">
-              <div className="lp-feat-icon"><MI n={f.icon}/></div>
-              <div className="lp-feat-title">{f.title}</div>
-              <div className="lp-feat-desc">{f.desc}</div>
-            </div>
-          ))}
+        <div className="lp-sec-scroll">
+          <div className="lp-feat-grid lp-anim">
+            {LP_FEATS.map((f,i)=>(
+              <div key={i} className="lp-feat-card">
+                <div className="lp-feat-icon"><MI n={f.icon}/></div>
+                <div className="lp-feat-title">{f.title}</div>
+                <div className="lp-feat-desc">{f.desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── SECTION 3: LIVE PRICES ── */}
+      {/* ════ SECTION 3: LIVE MARKETS ════ */}
       <section className="lp-sec lp-live">
-        <div className="lp-live-inner lp-anim">
+        <div className="lp-live-head lp-anim">
           <div className="lp-sec-label">Live market data</div>
           <div className="lp-sec-h2">MARKETS,<br/>ALWAYS ON.</div>
         </div>
@@ -1674,16 +1768,18 @@ function Landing({ onEnter }) {
             ))}
           </div>
         </div>
-        <div className="lp-live-inner" style={{marginTop:36}}>
-          <button className="lp-btn-primary" onClick={onEnter} style={{width:'100%',maxWidth:320}}>VIEW LIVE DASHBOARD →</button>
+        <div className="lp-live-cta lp-anim">
+          <button className="lp-btn-primary" onClick={onEnter} style={{minWidth:280}}>
+            VIEW LIVE DASHBOARD →
+          </button>
         </div>
       </section>
 
-      {/* ── SECTION 4: PLANS ── */}
+      {/* ════ SECTION 4: PLANS ════ */}
       <section className="lp-sec lp-plans">
-        <div className="lp-anim">
+        <div className="lp-plans-head lp-anim">
           <div className="lp-sec-label">Pricing</div>
-          <div className="lp-sec-h2">START FREE.<br/>SCALE WHEN<br/>YOU'RE READY.</div>
+          <div className="lp-sec-h2">START FREE.<br/>SCALE WHEN READY.</div>
         </div>
         <div className="lp-plans-grid lp-anim">
           {LP_PLANS_PREVIEW.map((p,i)=>(
@@ -1697,14 +1793,15 @@ function Landing({ onEnter }) {
             </div>
           ))}
         </div>
-        <div className="lp-anim" style={{marginTop:18}}>
-          <p style={{fontFamily:'var(--mono)',fontSize:'7px',color:'var(--w4)',letterSpacing:'2px',lineHeight:'2'}}>
-            * Payment processors coming soon. All plans start free during beta.
-          </p>
+        <div className="lp-pay-note lp-anim">
+          <span className="lp-pay-note-icon"><MI n="info"/></span>
+          <span className="lp-pay-note-text">
+            <strong>Subscriptions coming soon.</strong> Payments will be handled via <strong>Bitcoin (BTC)</strong> and other crypto — more payment methods added soon. All plans start free during beta.
+          </span>
         </div>
       </section>
 
-      {/* ── SECTION 5: FINAL CTA ── */}
+      {/* ════ SECTION 5: FINAL CTA ════ */}
       <section className="lp-sec lp-cta-sec">
         <div className="lp-grid-bg"/>
         <div className="lp-cta-sec-inner lp-anim">
