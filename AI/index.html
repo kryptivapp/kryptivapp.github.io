@@ -637,21 +637,17 @@ input,textarea,select{font-family:var(--sans)}
 <!-- coi-serviceworker: adds COOP/COEP headers via SW so SharedArrayBuffer works on GitHub Pages -->
 <script src="https://cdn.jsdelivr.net/gh/gzuidhof/coi-serviceworker/coi-serviceworker.min.js"></script>
 <script>
-/* WebLLM loader */
+/* WebLLM loader — Qwen2.5-7B-Instruct (permits financial/crypto analysis) */
 window._llm = { engine:null, loading:false, progress:'', error:'' };
 (function() {
-  // WebGPU check — requestAdapter is async, so we attempt load and let it fail if no GPU
-  if (!navigator.gpu) {
-    window._llm.error = 'no-webgpu';
-    return;
-  }
+  if (!navigator.gpu) { window._llm.error = 'no-webgpu'; return; }
   window._llm.loading = true;
-  window._llm.progress = 'Loading Llama 3.2…';
+  window._llm.progress = 'Loading Qwen2.5-7B…';
   var s = document.createElement('script');
   s.type = 'module';
   s.textContent = [
     'import("https://esm.run/@mlc-ai/web-llm").then(function(m){',
-    '  return m.CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC",{',
+    '  return m.CreateMLCEngine("Qwen2.5-7B-Instruct-q4f16_1-MLC",{',
     '    initProgressCallback:function(p){window._llm.progress=p.text||"";}',
     '  });',
     '}).then(function(e){',
@@ -1437,8 +1433,6 @@ function AIView(props) {
   var s3=useState('BTC'); var selCoin=s3[0]; var setSelCoin=s3[1];
   var s4=useState('invest'); var selPreset=s4[0]; var setPreset=s4[1];
   var s5=useState(''); var llmStatus=s5[0]; var setLlmStatus=s5[1];
-  var endRef=useRef(null);
-
   var msgsRef = useRef(null);
   useEffect(function(){
     if(msgs.length > 1 && msgsRef.current) {
@@ -1450,10 +1444,10 @@ function AIView(props) {
   },[availCoins]);
   useEffect(function(){
     function check(){
-      var L=window._llm;if(!L)return;
-      if(L.engine){setLlmStatus('ready');}
-      else if(L.error){setLlmStatus('err');}
-      else{setLlmStatus(L.progress||'Loading Llama 3.2…');}
+      var L=window._llm; if(!L) return;
+      if(L.engine) setLlmStatus('ready');
+      else if(L.error) setLlmStatus('err');
+      else setLlmStatus(L.progress||'Loading Qwen2.5-7B…');
     }
     check();
     var iv=setInterval(check,500);
@@ -1479,39 +1473,31 @@ function AIView(props) {
     setMsgs(function(m){return m.concat([{role:'user',text:display},{role:'ai',text:''}]);});
     setLoading(true);
     var ctx='';
-    if(coins)ctx='Market data: '+coins.map(function(c){return c.sym+' $'+c.price.toFixed(2)+' ('+fc(c.ch)+')';}).join(', ')+'.';
-    // No mention of "financial advice" — Llama refuses when prompted that way
-    var sys='You are a crypto market analyst assistant. '+ctx+' Answer concisely in 2-3 short paragraphs. Be direct with opinions and price targets.';
+    if(coins)ctx='Current live prices: '+coins.map(function(c){return c.sym+' '+fp(c.price)+' ('+fc(c.ch)+' 24h)';}).join(', ')+'. ';
+    var sys=ctx+
+      'You are a professional cryptocurrency and financial markets analyst. '+
+      'Provide direct, specific analysis with price targets, entry/exit levels, and clear verdicts. '+
+      'Always give a concrete recommendation. Use percentages and numbers. '+
+      'You fully engage with investment, trading, and financial strategy questions. '+
+      'Be concise: 3 short paragraphs max.';
     var hist=[{role:'system',content:sys}];
     msgs.slice(-4).forEach(function(m){if(m.text)hist.push({role:m.role==='ai'?'assistant':'user',content:m.text});});
     hist.push({role:'user',content:prompt});
-    // Use stream:true + .next() polling — no for-await needed in Babel
-    window._llm.engine.chat.completions.create({messages:hist,max_tokens:350,stream:true})
+    window._llm.engine.chat.completions.create({messages:hist,max_tokens:400,stream:true})
       .then(function(stream){
         var reply='';
         function read(){
           stream.next().then(function(res){
-            if(res.done){
-              setLoading(false);
-              return;
-            }
+            if(res.done){setLoading(false);return;}
             var delta=res.value&&res.value.choices&&res.value.choices[0]&&res.value.choices[0].delta;
             if(delta&&delta.content)reply+=delta.content;
-            setMsgs(function(m){
-              var updated=m.slice(0,-1);
-              updated.push({role:'ai',text:reply});
-              return updated;
-            });
+            setMsgs(function(m){var u=m.slice(0,-1);u.push({role:'ai',text:reply});return u;});
             read();
           }).catch(function(){setLoading(false);});
         }
         read();
       }).catch(function(e){
-        setMsgs(function(m){
-          var updated=m.slice(0,-1);
-          updated.push({role:'ai',text:'Error: '+e.message});
-          return updated;
-        });
+        setMsgs(function(m){var u=m.slice(0,-1);u.push({role:'ai',text:'Error: '+e.message});return u;});
         setLoading(false);
       });
   }
@@ -1532,7 +1518,7 @@ function AIView(props) {
       <div className="ai-header">
         <div className="ai-model-row">
           <div className="ai-dot"/>
-          <div className="ai-mb">LLAMA 3.2 · ON-DEVICE</div>
+          <div className="ai-mb">QWEN 2.5 · 7B · ON-DEVICE</div>
           <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:2,marginLeft:'auto',
             color:isReady?'rgba(130,255,150,.8)':hasError?'rgba(255,100,80,.6)':'var(--w4)'}}>
             {isReady?'READY':hasError?'NO WEBGPU':'LOADING'}
@@ -1543,7 +1529,7 @@ function AIView(props) {
         {hasError&&<div style={{fontFamily:'var(--mono)',fontSize:7,color:'rgba(255,100,80,.5)',letterSpacing:1,marginTop:4,lineHeight:1.7}}>
           {llmStatus==='no-webgpu'?'WebGPU not supported in this browser':'Loading error — try refreshing'}</div>}
         {coin&&<div className="live-price-row"><MI n="fiber_manual_record"/>{coin.sym} {fp(coin.price)} · {fc(coin.ch)} 24h</div>}
-        <div className="ai-dis">On-device inference · live prices · not financial advice</div>
+        <div className="ai-dis">On-device · crypto & financial analysis · live prices</div>
       </div>
 
       <div className="qb-wrap">
@@ -1571,12 +1557,12 @@ function AIView(props) {
       <div className="ai-msgs" ref={msgsRef}>
         {msgs.map(function(m,i){return (
           <div key={i} className="msg-wrap">
-            <div className="msg-meta"><MI n={m.role==='ai'?'smart_toy':'person'}/>{m.role==='ai'?'LLAMA 3.2':user.kryptid}</div>
+            <div className="msg-meta"><MI n={m.role==='ai'?'smart_toy':'person'}/>{m.role==='ai'?'QWEN 2.5':user.kryptid}</div>
             <div className={'msg-body'+(m.role==='user'?' usr':'')}>{m.role==='ai'?parseMd(m.text):m.text}</div>
           </div>
         );})}
         {loading&&<div className="msg-wrap">
-          <div className="msg-meta"><MI n="smart_toy"/>LLAMA 3.2</div>
+          <div className="msg-meta"><MI n="smart_toy"/>QWEN 2.5</div>
           <div className="thinking"><span/><span/><span/></div>
         </div>}
       </div>
