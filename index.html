@@ -680,28 +680,51 @@ input,textarea,select{font-family:var(--sans)}
 
 /* ═══════════════ LANDING PAGE ═══════════════ */
 
-/* ─── SCROLL BEHAVIOUR
-   Desktop: JS-driven momentum snap — user scrolls freely inside a section,
-   hitting top/bottom edge triggers a smooth section jump.
-   Mobile: plain free scroll, no snapping at all.
-─── */
+/* Pure smooth continuous scroll — no snapping, no section locking */
 .lp{
   position:relative;z-index:10;
-  height:100vh;overflow-y:scroll;overflow-x:hidden;
+  height:100vh;overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
-  scroll-behavior:auto; /* JS controls smooth transitions */
+  scroll-behavior:smooth;
 }
 .lp::-webkit-scrollbar{display:none}
 
-/* Each section is exactly 100vh so section boundaries are exact */
+/* Sections are natural height */
 .lp-sec{
-  height:100vh;
+  min-height:100vh;
   display:flex;flex-direction:column;
-  position:relative;overflow:hidden;
-  background:rgba(0,0,0,.15);
+  position:relative;
+  background:rgba(0,0,0,.14);
 }
-.lp-sec:nth-child(even){background:rgba(0,0,0,.25);}
+.lp-sec:nth-child(even){background:rgba(0,0,0,.20);}
+
+/* ── FLOATING CRYPTO ICONS ── */
+.lp-coins-bg{
+  position:fixed;inset:0;z-index:1;
+  pointer-events:none;overflow:hidden;
+}
+.lp-coin-icon{
+  position:absolute;
+  display:flex;align-items:center;justify-content:center;
+  animation:coinFloat linear infinite;
+  will-change:transform;
+}
+.lp-coin-icon img{
+  width:100%;height:100%;
+  object-fit:contain;
+  border-radius:50%;
+}
+@keyframes coinFloat{
+  0%  {transform:translateY(0px) rotate(0deg) scale(1);}
+  20% {transform:translateY(-14px) rotate(5deg) scale(1.02);}
+  45% {transform:translateY(-4px) rotate(-3deg) scale(.98);}
+  70% {transform:translateY(-20px) rotate(7deg) scale(1.01);}
+  100%{transform:translateY(0px) rotate(0deg) scale(1);}
+}
+
+/* All sections above coin bg */
+.lp-sec{z-index:2;}
 
 /* ── NAV ── */
 .lp-nav{
@@ -795,20 +818,13 @@ input,textarea,select{font-family:var(--sans)}
 .lp-hstat-val{font-family:var(--disp);font-size:32px;letter-spacing:1px;line-height:1;color:#fff}
 .lp-hstat-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.42);text-transform:uppercase;margin-top:5px}
 
-/* Section progress dots (desktop) */
-.lp-dots{
-  position:fixed;right:28px;top:50%;transform:translateY(-50%);
-  z-index:100;display:flex;flex-direction:column;gap:10px;
-  pointer-events:none;
+/* ── NAV ── */
+.lp-nav{
+  position:absolute;top:0;left:0;right:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:24px 7vw;z-index:5;
+  background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent);
 }
-.lp-dot{
-  width:4px;height:4px;background:rgba(255,255,255,.22);
-  transition:all .35s ease;
-}
-.lp-dot.active{background:rgba(255,255,255,.75);height:16px;}
-@media(max-width:768px){.lp-dots{display:none}}
-
-/* Scroll indicator */
 .lp-scroll-hint{
   position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
   display:flex;flex-direction:column;align-items:center;gap:6px;
@@ -833,17 +849,11 @@ input,textarea,select{font-family:var(--sans)}
 }
 
 /* ── INNER SCROLL CONTAINERS (allow content scroll inside a section) ── */
-.lp-sec-scroll{
-  flex:1;overflow-y:auto;overflow-x:hidden;
-  scrollbar-width:none;padding-bottom:8px;
-}
-.lp-sec-scroll::-webkit-scrollbar{display:none}
+.lp-sec-scroll{flex:1;overflow:visible;}
 
 /* ── FEATURES SECTION ── */
-.lp-features{
-  padding:0 7vw;
-}
-.lp-features-head{padding:52px 0 0;flex-shrink:0}
+.lp-features{padding:72px 7vw 80px}
+.lp-features-head{margin-bottom:0;flex-shrink:0}
 .lp-feat-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -871,9 +881,9 @@ input,textarea,select{font-family:var(--sans)}
 .lp-feat-card:hover::after{opacity:1}
 
 /* ── LIVE PRICES SECTION ── */
-.lp-live{overflow:hidden}
-.lp-live-inner{padding:0 7vw;flex-shrink:0}
-.lp-live-head{padding:52px 7vw 0;flex-shrink:0}
+.lp-live{padding:72px 0 80px}
+.lp-live-inner{padding:0 7vw}
+.lp-live-head{padding:0 7vw;margin-bottom:32px}
 .lp-live-prices{
   display:flex;gap:1px;flex-shrink:0;
   background:rgba(255,255,255,.07);
@@ -897,7 +907,7 @@ input,textarea,select{font-family:var(--sans)}
   width:100%;overflow:hidden;
   border-top:1px solid rgba(255,255,255,.07);
   border-bottom:1px solid rgba(255,255,255,.07);
-  padding:13px 0;flex-shrink:0;
+  padding:13px 0;margin-top:0;
   background:rgba(0,0,0,.18);
 }
 .lp-live-bar-track{display:flex;white-space:nowrap;animation:ticker 38s linear infinite}
@@ -910,15 +920,15 @@ input,textarea,select{font-family:var(--sans)}
 .lp-live-tick-price{color:rgba(255,255,255,.72)}
 .lp-live-tick-ch{color:var(--up)}
 .lp-live-tick-ch.dn{color:var(--dn)}
-.lp-live-cta{padding:28px 7vw;flex-shrink:0}
+.lp-live-cta{padding:32px 7vw 0}
 
 /* ── PLANS SECTION ── */
-.lp-plans{padding:0 7vw}
-.lp-plans-head{padding:52px 0 0;flex-shrink:0}
+.lp-plans{padding:72px 7vw 80px}
+.lp-plans-head{margin-bottom:0;flex-shrink:0}
 .lp-plans-grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:1px;flex:1;
+  gap:1px;
   background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.08);
   margin-top:28px;
@@ -970,13 +980,13 @@ input,textarea,select{font-family:var(--sans)}
 /* ── FINAL CTA SECTION ── */
 .lp-cta-sec{
   justify-content:center;align-items:center;
-  text-align:center;padding:0 7vw;
+  text-align:center;padding:80px 7vw 0;
   background:rgba(0,0,0,.10);
 }
 .lp-cta-sec-inner{
   position:relative;z-index:1;
   display:flex;flex-direction:column;align-items:center;
-  max-width:860px;margin:0 auto;
+  max-width:860px;margin:0 auto;flex:1;justify-content:center;
 }
 .lp-cta-pre{font-family:var(--mono);font-size:7px;letter-spacing:6px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:20px}
 .lp-cta-h{font-family:var(--disp);font-size:clamp(48px,8vw,108px);line-height:.88;letter-spacing:-1px;margin-bottom:22px;color:#fff}
@@ -985,9 +995,8 @@ input,textarea,select{font-family:var(--sans)}
 
 /* Footer */
 .lp-footer{
-  position:absolute;bottom:0;left:0;right:0;
   border-top:1px solid rgba(255,255,255,.08);
-  padding:22px 7vw;
+  padding:24px 7vw;margin-top:48px;
   display:flex;align-items:center;justify-content:space-between;
   flex-wrap:wrap;gap:10px;
   background:rgba(0,0,0,.18);backdrop-filter:blur(8px);
@@ -1040,28 +1049,31 @@ input,textarea,select{font-family:var(--sans)}
   .lp-nav{padding:28px 8vw}
   .lp-hero{padding:0 8vw}
   .lp-hero-content{padding-top:100px}
-  .lp-features{padding:0 8vw}
-  .lp-features-head{padding:60px 0 0}
+  .lp-features{padding:88px 8vw 96px}
   .lp-feat-card{padding:36px 32px}
-  .lp-live-head{padding:60px 8vw 0}
+  .lp-live{padding:88px 0 96px}
+  .lp-live-head{padding:0 8vw;margin-bottom:36px}
   .lp-live-inner{padding:0 8vw}
-  .lp-live-cta{padding:32px 8vw}
+  .lp-live-cta{padding:36px 8vw 0}
   .lp-price-cell{padding:30px 36px}
   .lp-pc-price{font-size:32px}
-  .lp-plans{padding:0 8vw}
-  .lp-plans-head{padding:60px 0 0}
+  .lp-plans{padding:88px 8vw 96px}
   .lp-plan-card{padding:34px 26px}
   .lp-plan-nm{font-size:40px}
-  .lp-cta-sec{padding:0 8vw}
-  .lp-footer{padding:24px 8vw}
+  .lp-cta-sec{padding:88px 8vw 0}
+  .lp-footer{padding:24px 8vw;margin-top:52px}
   .lp-hstat-val{font-size:36px}
   .lp-hstat+.lp-hstat{padding-left:36px}
-  .lp-sec-h2{font-size:clamp(44px,5.8vw,84px)}
+  .lp-sec-h2{font-size:clamp(44px,5.8vw,84px);margin-bottom:36px}
 }
 @media(min-width:1440px){
   .lp-nav{padding:32px 9vw}
-  .lp-hero,.lp-features,.lp-plans,.lp-cta-sec{padding-left:9vw;padding-right:9vw}
-  .lp-live-head,.lp-live-inner,.lp-live-cta,.lp-footer{padding-left:9vw;padding-right:9vw}
+  .lp-hero{padding-left:9vw;padding-right:9vw}
+  .lp-features{padding:100px 9vw 108px}
+  .lp-live-head,.lp-live-inner,.lp-live-cta{padding-left:9vw;padding-right:9vw}
+  .lp-plans{padding:100px 9vw 108px}
+  .lp-cta-sec{padding:100px 9vw 0}
+  .lp-footer{padding:28px 9vw}
   .lp-feat-card{padding:44px 38px}
   .lp-price-cell{padding:36px 44px}
   .lp-plan-card{padding:40px 30px}
@@ -1077,20 +1089,12 @@ input,textarea,select{font-family:var(--sans)}
   .lp-pc-price{font-size:24px}
 }
 
-/* ── MOBILE — free scroll, auto height sections ── */
+/* ── MOBILE ── */
 @media(max-width:768px){
-  /* Kill fixed 100vh so content breathes freely */
-  .lp-sec{height:auto;min-height:100svh}
-  .lp-hero{
-    min-height:100svh;padding:0 6vw;
-    justify-content:flex-start;
-  }
-  .lp-hero-content{
-    padding-top:84px;padding-bottom:52px;
-    flex:none;justify-content:flex-start;
-  }
-  .lp-h1{font-size:clamp(50px,13.5vw,82px)}
-  .lp-tagline{font-size:8px;margin-top:20px;margin-bottom:26px}
+  .lp-hero{padding:0 6vw}
+  .lp-hero-content{padding-top:84px;padding-bottom:52px}
+  .lp-h1{font-size:clamp(50px,13.5vw,80px)}
+  .lp-tagline{font-size:8px;margin-top:18px;margin-bottom:24px}
   .lp-hero-btns{flex-direction:column}
   .lp-btn-primary,.lp-btn-ghost{width:100%;text-align:center;padding:15px 20px}
   .lp-hero-stats{flex-wrap:wrap;margin-top:32px}
@@ -1099,40 +1103,37 @@ input,textarea,select{font-family:var(--sans)}
   .lp-hstat:nth-child(4){border-left:1px solid rgba(255,255,255,.12);padding-left:14px}
   .lp-hstat-val{font-size:28px}
 
-  .lp-features{padding:52px 6vw 56px}
-  .lp-features-head{padding:0}
+  .lp-features{padding:56px 6vw 60px}
   .lp-feat-grid{grid-template-columns:1fr}
   .lp-feat-card{padding:22px 18px}
-  .lp-sec-scroll{overflow:visible;flex:none}
 
-  .lp-live{padding:52px 0 56px}
-  .lp-live-head{padding:0 6vw}
+  .lp-live{padding:56px 0 60px}
+  .lp-live-head{padding:0 6vw;margin-bottom:24px}
   .lp-live-inner,.lp-live-cta{padding:0 6vw}
-  .lp-live-cta{padding-top:24px}
+  .lp-live-cta{padding-top:20px}
   .lp-live-prices{flex-direction:column;gap:1px}
   .lp-price-cell{padding:18px 18px}
   .lp-pc-price{font-size:24px}
 
-  .lp-plans{padding:52px 6vw 56px}
-  .lp-plans-head{padding:0}
-  .lp-plans-grid{grid-template-columns:1fr 1fr;margin-top:24px}
+  .lp-plans{padding:56px 6vw 60px}
+  .lp-plans-grid{grid-template-columns:1fr;margin-top:22px}
   .lp-plan-card{padding:20px 14px}
   .lp-plan-nm{font-size:28px}
   .lp-plan-card.featured::before{display:none}
 
-  .lp-cta-sec{padding:52px 6vw 0;align-items:flex-start;text-align:left}
-  .lp-cta-sec-inner{align-items:flex-start}
+  .lp-cta-sec{padding:56px 6vw 0;align-items:flex-start;text-align:left}
+  .lp-cta-sec-inner{align-items:flex-start;justify-content:flex-start}
   .lp-cta-h{font-size:clamp(44px,11vw,70px)}
   .lp-cta-btns{justify-content:flex-start}
-  .lp-footer{position:relative;padding:24px 6vw;flex-direction:column;align-items:flex-start;gap:14px}
+  .lp-footer{margin-top:36px;padding:24px 6vw;flex-direction:column;align-items:flex-start;gap:14px}
   .lp-nav{padding:20px 6vw}
   .lp-sec-h2{font-size:clamp(36px,9vw,58px);margin-bottom:22px}
-  .lp-pay-note{margin-top:12px}
-  .lp-plans-grid{grid-template-columns:1fr}
+  .lp-pay-note{margin-top:14px}
 }
 @media(max-width:420px){
   .lp-h1{font-size:clamp(44px,12.5vw,64px)}
   .lp-plans-grid{grid-template-columns:1fr}
+}
 }
 
 </style>
@@ -1555,143 +1556,123 @@ const {useState, useEffect, useRef, useCallback, useMemo} = React;
 
 /* ═══════════════ LANDING PAGE COMPONENT ═══════════════ */
 
-/* Live ticker data for landing (static demo, updates via coinData if available) */
+/* ═══════════════ LANDING PAGE COMPONENT ═══════════════ */
+
 const LP_COINS = [
-  {sym:'BTC',nm:'Bitcoin',  price:'$84,210',ch:'+2.14%',up:true},
-  {sym:'ETH',nm:'Ethereum', price:'$3,192', ch:'+1.87%',up:true},
-  {sym:'SOL',nm:'Solana',   price:'$147',   ch:'+4.22%',up:true},
-  {sym:'BNB',nm:'BNB',      price:'$612',   ch:'-0.43%',up:false},
-  {sym:'XRP',nm:'XRP',      price:'$0.58',  ch:'+1.11%',up:true},
-  {sym:'AVAX',nm:'Avalanche',price:'$38.4', ch:'-1.03%',up:false},
+  {sym:'BTC', nm:'Bitcoin',   price:'$84,210', ch:'+2.14%', up:true},
+  {sym:'ETH', nm:'Ethereum',  price:'$3,192',  ch:'+1.87%', up:true},
+  {sym:'SOL', nm:'Solana',    price:'$147',    ch:'+4.22%', up:true},
+  {sym:'BNB', nm:'BNB',       price:'$612',    ch:'-0.43%', up:false},
+  {sym:'XRP', nm:'XRP',       price:'$0.58',   ch:'+1.11%', up:true},
+  {sym:'AVAX',nm:'Avalanche', price:'$38.4',   ch:'-1.03%', up:false},
 ];
 
 const LP_FEATS = [
-  {icon:'bolt',            title:'Real-Time Data',    desc:'Live prices from CoinGecko, Binance & Kraken with 5-second refresh. Never miss a move.'},
-  {icon:'smart_toy',       title:'AI Intelligence',   desc:'Built-in AI analyst for every coin. Investment cases, outlook reports, take-profit strategies on demand.'},
-  {icon:'newspaper',       title:'Live News Feed',     desc:'Curated crypto news with AI sentiment scoring. Know the narrative before the market does.'},
-  {icon:'donut_small',     title:'Portfolio Tracker',  desc:'Track holdings with live P&L, allocation charts, and risk metrics. Always know where you stand.'},
-  {icon:'candlestick_chart','title':'Market Overview', desc:'Full market view with top movers, volume leaders, and sparkline charts across 15+ assets.'},
-  {icon:'workspace_premium','title':'Tiered Plans',    desc:'From free to Atmosphere — scale your edge. More coins, alerts, and AI depth as you grow.'},
+  {icon:'bolt',             title:'Real-Time Data',    desc:'Live prices from CoinGecko, Binance & Kraken with 5-second refresh. Never miss a move.'},
+  {icon:'smart_toy',        title:'AI Intelligence',   desc:'Built-in AI analyst for every coin. Investment cases, outlook reports, take-profit strategies on demand.'},
+  {icon:'newspaper',        title:'Live News Feed',    desc:'Curated crypto news with AI sentiment scoring. Know the narrative before the market does.'},
+  {icon:'donut_small',      title:'Portfolio Tracker', desc:'Track holdings with live P&L, allocation charts, and risk metrics. Always know where you stand.'},
+  {icon:'candlestick_chart',title:'Market Overview',   desc:'Full market view with top movers, volume leaders, and sparkline charts across 15+ assets.'},
+  {icon:'workspace_premium',title:'Tiered Plans',      desc:'From free to Atmosphere — scale your edge. More coins, alerts, and AI depth as you grow.'},
 ];
 
 const LP_PLANS_PREVIEW = [
-  {id:'free',       nm:'FREE',       pr:'$0',         feats:['BTC & SOL live data','AI analysis','News feed','Simulator']},
-  {id:'budget',     nm:'BUDGET',     pr:'$3.90/mo',   feats:['15 coins live','3B AI model','5 price alerts','CSV export'], featured:true},
-  {id:'pro',        nm:'PRO',        pr:'$14.90/mo',  feats:['Unlimited coins','8B AI model','Portfolio guidance','Exchange connect']},
-  {id:'atmosphere', nm:'ATMOSPHERE', pr:'$44.90/mo',  feats:['Everything in Pro','Whale alerts','Custom AI signals','Deep-dive reports']},
+  {id:'free',       nm:'FREE',       pr:'$0',        feats:['BTC & SOL live data','AI analysis','News feed','Simulator']},
+  {id:'budget',     nm:'BUDGET',     pr:'$3.90/mo',  feats:['15 coins live','3B AI model','5 price alerts','CSV export'], featured:true},
+  {id:'pro',        nm:'PRO',        pr:'$14.90/mo', feats:['Unlimited coins','8B AI model','Portfolio guidance','Exchange connect']},
+  {id:'atmosphere', nm:'ATMOSPHERE', pr:'$44.90/mo', feats:['Everything in Pro','Whale alerts','Custom AI signals','Deep-dive reports']},
 ];
 
+/* Crypto icon URLs — CoinGecko large format */
+const COIN_ICONS = [
+  'https://assets.coingecko.com/coins/images/1/large/bitcoin.png',
+  'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+  'https://assets.coingecko.com/coins/images/4128/large/solana.png',
+  'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png',
+  'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png',
+  'https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png',
+  'https://assets.coingecko.com/coins/images/975/large/cardano.png',
+  'https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png',
+  'https://assets.coingecko.com/coins/images/5/large/dogecoin.png',
+  'https://assets.coingecko.com/coins/images/11939/large/shiba.png',
+  'https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png',
+  'https://assets.coingecko.com/coins/images/13397/large/Graph_Token.png',
+];
+
+/* Fixed layout — deterministic, looks intentional */
+const COIN_LAYOUT = [
+  {x: 4,  y: 8,  s: 68, dur: 16, del: 0,   op: 0.065, bl: 14},
+  {x: 80, y: 6,  s: 52, dur: 20, del: 2.8, op: 0.055, bl: 18},
+  {x: 52, y: 3,  s: 38, dur: 24, del: 1.2, op: 0.07,  bl: 10},
+  {x: 15, y: 52, s: 82, dur: 18, del: 4.2, op: 0.05,  bl: 22},
+  {x: 88, y: 42, s: 58, dur: 22, del: 1.8, op: 0.065, bl: 16},
+  {x: 68, y: 72, s: 74, dur: 14, del: 3.5, op: 0.055, bl: 20},
+  {x: 28, y: 78, s: 46, dur: 19, del: 0.7, op: 0.07,  bl: 9 },
+  {x: 46, y: 58, s: 34, dur: 27, del: 5.2, op: 0.05,  bl: 24},
+  {x:  3, y: 32, s: 54, dur: 21, del: 2.2, op: 0.065, bl: 16},
+  {x: 91, y: 68, s: 42, dur: 23, del: 3.8, op: 0.055, bl: 13},
+  {x: 60, y: 32, s: 62, dur: 17, del: 1.0, op: 0.05,  bl: 21},
+  {x: 36, y: 20, s: 50, dur: 25, del: 4.8, op: 0.065, bl: 11},
+];
+
+function FloatingCoins() {
+  return (
+    <div className="lp-coins-bg" aria-hidden="true">
+      {COIN_LAYOUT.map((c, i) => (
+        <div
+          key={i}
+          className="lp-coin-icon"
+          style={{
+            left:   c.x + '%',
+            top:    c.y + '%',
+            width:  c.s + 'px',
+            height: c.s + 'px',
+            opacity: c.op,
+            filter: `blur(${c.bl}px) saturate(0.35) brightness(0.9)`,
+            animationDuration: c.dur + 's',
+            animationDelay:   '-' + c.del + 's',
+          }}
+        >
+          <img
+            src={COIN_ICONS[i % COIN_ICONS.length]}
+            alt=""
+            loading="lazy"
+            onError={e => { e.target.style.display = 'none'; }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Landing({ onEnter }) {
-  const lpRef     = useRef(null);
-  const [curSec, setCurSec] = useState(0);
-  const TOTAL_SECS = 5;
-  const isScrolling = useRef(false);
-  const lastScroll  = useRef(0);
-  const touchStart  = useRef(0);
+  const lpRef = useRef(null);
 
-  /* ── Scroll-reveal via IntersectionObserver ── */
-  useEffect(()=>{
-    const obs = new IntersectionObserver(entries=>{
-      entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); });
-    },{threshold:0.08});
-    document.querySelectorAll('.lp-anim').forEach(el=>obs.observe(el));
-    return ()=>obs.disconnect();
-  },[]);
+  /* Scroll-reveal via IntersectionObserver */
+  useEffect(() => {
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.lp-anim').forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
 
-  /* ── JS Section Snap (desktop only) ── */
-  const goToSection = useCallback((idx)=>{
-    if(!lpRef.current) return;
-    const clamped = Math.max(0, Math.min(TOTAL_SECS-1, idx));
-    setCurSec(clamped);
-    isScrolling.current = true;
-    const el = lpRef.current;
-    const sectionH = el.clientHeight;
-    el.scrollTo({ top: clamped * sectionH, behavior:'smooth' });
-    setTimeout(()=>{ isScrolling.current = false; }, 800);
-  },[]);
+  const smoothScrollTo = (id) => {
+    const target = document.querySelector(id);
+    if (target && lpRef.current) {
+      lpRef.current.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+    }
+  };
 
-  useEffect(()=>{
-    const el = lpRef.current;
-    if(!el) return;
-    const isMobile = ()=>window.innerWidth <= 768;
-
-    /* Wheel handler */
-    const onWheel = (e)=>{
-      if(isMobile()) return; // free scroll on mobile
-      const sectionH = el.clientHeight;
-      const cur = Math.round(el.scrollTop / sectionH);
-      const atTop    = el.scrollTop % sectionH < 4;
-      const atBottom = Math.abs((el.scrollTop % sectionH) - sectionH) < 4;
-
-      /* If inside a section and not at an edge, let natural scroll run */
-      if(!atTop && !atBottom) return;
-
-      /* At an edge — intercept and jump */
-      e.preventDefault();
-      if(isScrolling.current) return;
-      const now = Date.now();
-      if(now - lastScroll.current < 900) return;
-      lastScroll.current = now;
-      if(e.deltaY > 0) goToSection(cur+1);
-      else              goToSection(cur-1);
-    };
-
-    /* Touch handler */
-    const onTouchStart = (e)=>{ touchStart.current = e.touches[0].clientY; };
-    const onTouchEnd   = (e)=>{
-      if(isMobile()) return;
-      const sectionH = el.clientHeight;
-      const cur = Math.round(el.scrollTop / sectionH);
-      const atTop    = el.scrollTop % sectionH < 4;
-      const atBottom = Math.abs((el.scrollTop % sectionH) - sectionH) < 4;
-      if(!atTop && !atBottom) return;
-      if(isScrolling.current) return;
-      const dy = touchStart.current - e.changedTouches[0].clientY;
-      if(Math.abs(dy) < 30) return;
-      const now = Date.now();
-      if(now - lastScroll.current < 900) return;
-      lastScroll.current = now;
-      if(dy > 0) goToSection(cur+1);
-      else        goToSection(cur-1);
-    };
-
-    /* Sync dot indicator on native scroll */
-    const onScroll = ()=>{
-      if(isMobile()) return;
-      const sectionH = el.clientHeight;
-      const cur = Math.round(el.scrollTop / sectionH);
-      setCurSec(Math.min(cur, TOTAL_SECS-1));
-    };
-
-    el.addEventListener('wheel', onWheel, {passive:false});
-    el.addEventListener('touchstart', onTouchStart, {passive:true});
-    el.addEventListener('touchend',   onTouchEnd,   {passive:true});
-    el.addEventListener('scroll',     onScroll,     {passive:true});
-    return ()=>{
-      el.removeEventListener('wheel', onWheel);
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchend', onTouchEnd);
-      el.removeEventListener('scroll', onScroll);
-    };
-  },[goToSection]);
-
-  const tickerItems = [...LP_COINS,...LP_COINS];
+  const tickerItems = [...LP_COINS, ...LP_COINS];
 
   return (
     <div className="lp" ref={lpRef}>
+      <FloatingCoins />
 
-      {/* Section progress dots */}
-      <div className="lp-dots">
-        {Array.from({length:TOTAL_SECS}).map((_,i)=>(
-          <div key={i} className={`lp-dot${curSec===i?' active':''}`}
-               style={{cursor:'pointer',pointerEvents:'all'}}
-               onClick={()=>goToSection(i)}/>
-        ))}
-      </div>
-
-      {/* ════ SECTION 1: HERO ════ */}
-      <section className="lp-sec lp-hero">
-        <div className="lp-grid-bg"/>
+      {/* ══ HERO ══ */}
+      <section className="lp-sec lp-hero" id="lp-s1">
+        <div className="lp-grid-bg" />
         <nav className="lp-nav">
           <div className="lp-nav-logo">KRYPTIV</div>
           <div className="lp-nav-right">
@@ -1701,13 +1682,11 @@ function Landing({ onEnter }) {
         </nav>
         <div className="lp-hero-content">
           <div className="lp-eyebrow">Crypto Intelligence Platform</div>
-          <div className="lp-h1">
-            INVEST<br/>SMART.<br/>TRADE<br/>SMARTER.
-          </div>
+          <div className="lp-h1">INVEST<br />SMART.<br />TRADE<br />SMARTER.</div>
           <div className="lp-tagline">Real-time prices · AI analysis · Portfolio tracking</div>
           <div className="lp-hero-btns">
             <button className="lp-btn-primary" onClick={onEnter}>START FREE — NO CARD</button>
-            <button className="lp-btn-ghost"   onClick={()=>goToSection(1)}>SEE FEATURES ↓</button>
+            <button className="lp-btn-ghost"   onClick={() => smoothScrollTo('#lp-s2')}>SEE FEATURES ↓</button>
           </div>
           <div className="lp-hero-stats">
             <div className="lp-hstat"><div className="lp-hstat-val">15+</div><div className="lp-hstat-lbl">Assets tracked</div></div>
@@ -1717,96 +1696,94 @@ function Landing({ onEnter }) {
           </div>
         </div>
         <div className="lp-scroll-hint">
-          <div className="lp-scroll-hint-line"/>
-          <div className="lp-scroll-hint-dot"/>
+          <div className="lp-scroll-hint-line" />
+          <div className="lp-scroll-hint-dot" />
         </div>
       </section>
 
-      {/* ════ SECTION 2: FEATURES ════ */}
-      <section className="lp-sec lp-features">
+      {/* ══ FEATURES ══ */}
+      <section className="lp-sec lp-features" id="lp-s2">
         <div className="lp-features-head lp-anim">
           <div className="lp-sec-label">What you get</div>
-          <div className="lp-sec-h2">YOUR EDGE,<br/>BUILT IN.</div>
+          <div className="lp-sec-h2">YOUR EDGE,<br />BUILT IN.</div>
         </div>
-        <div className="lp-sec-scroll">
-          <div className="lp-feat-grid lp-anim">
-            {LP_FEATS.map((f,i)=>(
-              <div key={i} className="lp-feat-card">
-                <div className="lp-feat-icon"><MI n={f.icon}/></div>
-                <div className="lp-feat-title">{f.title}</div>
-                <div className="lp-feat-desc">{f.desc}</div>
-              </div>
-            ))}
-          </div>
+        <div className="lp-feat-grid lp-anim">
+          {LP_FEATS.map((f, i) => (
+            <div key={i} className="lp-feat-card">
+              <div className="lp-feat-icon"><MI n={f.icon} /></div>
+              <div className="lp-feat-title">{f.title}</div>
+              <div className="lp-feat-desc">{f.desc}</div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ════ SECTION 3: LIVE MARKETS ════ */}
-      <section className="lp-sec lp-live">
+      {/* ══ LIVE MARKETS ══ */}
+      <section className="lp-sec lp-live" id="lp-s3">
         <div className="lp-live-head lp-anim">
           <div className="lp-sec-label">Live market data</div>
-          <div className="lp-sec-h2">MARKETS,<br/>ALWAYS ON.</div>
+          <div className="lp-sec-h2">MARKETS,<br />ALWAYS ON.</div>
         </div>
         <div className="lp-live-prices lp-anim">
-          {LP_COINS.slice(0,4).map((c,i)=>(
+          {LP_COINS.slice(0, 4).map((c, i) => (
             <div key={i} className="lp-price-cell">
               <div className="lp-pc-sym">{c.sym}</div>
               <div className="lp-pc-nm">{c.nm}</div>
               <div className="lp-pc-price">{c.price}</div>
-              <div className={`lp-pc-ch${c.up?'':' dn'}`}>{c.ch}</div>
+              <div className={`lp-pc-ch${c.up ? '' : ' dn'}`}>{c.ch}</div>
             </div>
           ))}
         </div>
         <div className="lp-live-bar">
           <div className="lp-live-bar-track">
-            {tickerItems.map((c,i)=>(
+            {tickerItems.map((c, i) => (
               <span key={i} className="lp-live-tick">
                 <span className="lp-live-tick-sym">{c.sym}</span>
                 <span className="lp-live-tick-price">{c.price}</span>
-                <span className={`lp-live-tick-ch${c.up?'':' dn'}`}>{c.ch}</span>
+                <span className={`lp-live-tick-ch${c.up ? '' : ' dn'}`}>{c.ch}</span>
               </span>
             ))}
           </div>
         </div>
         <div className="lp-live-cta lp-anim">
-          <button className="lp-btn-primary" onClick={onEnter} style={{minWidth:280}}>
+          <button className="lp-btn-primary" onClick={onEnter} style={{minWidth: 280}}>
             VIEW LIVE DASHBOARD →
           </button>
         </div>
       </section>
 
-      {/* ════ SECTION 4: PLANS ════ */}
-      <section className="lp-sec lp-plans">
+      {/* ══ PLANS ══ */}
+      <section className="lp-sec lp-plans" id="lp-s4">
         <div className="lp-plans-head lp-anim">
           <div className="lp-sec-label">Pricing</div>
-          <div className="lp-sec-h2">START FREE.<br/>SCALE WHEN READY.</div>
+          <div className="lp-sec-h2">START FREE.<br />SCALE WHEN READY.</div>
         </div>
         <div className="lp-plans-grid lp-anim">
-          {LP_PLANS_PREVIEW.map((p,i)=>(
-            <div key={i} className={`lp-plan-card${p.featured?' featured':''}`}>
+          {LP_PLANS_PREVIEW.map((p, i) => (
+            <div key={i} className={`lp-plan-card${p.featured ? ' featured' : ''}`}>
               <div className="lp-plan-nm">{p.nm}</div>
               <div className="lp-plan-pr">{p.pr}</div>
               <div className="lp-plan-feats">
-                {p.feats.map((f,j)=><div key={j} className="lp-plan-feat">{f}</div>)}
+                {p.feats.map((f, j) => <div key={j} className="lp-plan-feat">{f}</div>)}
               </div>
-              <button className="lp-plan-cta" onClick={onEnter}>{p.featured?'GET STARTED':'SELECT'}</button>
+              <button className="lp-plan-cta" onClick={onEnter}>{p.featured ? 'GET STARTED' : 'SELECT'}</button>
             </div>
           ))}
         </div>
         <div className="lp-pay-note lp-anim">
-          <span className="lp-pay-note-icon"><MI n="info"/></span>
+          <span className="lp-pay-note-icon"><MI n="info" /></span>
           <span className="lp-pay-note-text">
-            <strong>Subscriptions coming soon.</strong> Payments will be handled via <strong>Bitcoin (BTC)</strong> and other crypto — more payment methods added soon. All plans start free during beta.
+            <strong>Subscriptions coming soon.</strong> Payments handled via <strong>Bitcoin (BTC)</strong> and other crypto — more methods added soon. All plans start free during beta.
           </span>
         </div>
       </section>
 
-      {/* ════ SECTION 5: FINAL CTA ════ */}
-      <section className="lp-sec lp-cta-sec">
-        <div className="lp-grid-bg"/>
+      {/* ══ FINAL CTA ══ */}
+      <section className="lp-sec lp-cta-sec" id="lp-s5">
+        <div className="lp-grid-bg" />
         <div className="lp-cta-sec-inner lp-anim">
           <div className="lp-cta-pre">Join KRYPTIV today</div>
-          <div className="lp-cta-h">YOUR NEXT<br/>TRADE<br/>STARTS HERE.</div>
+          <div className="lp-cta-h">YOUR NEXT<br />TRADE<br />STARTS HERE.</div>
           <div className="lp-cta-sub">Free forever · No credit card · Instant access</div>
           <div className="lp-cta-btns">
             <button className="lp-btn-primary" onClick={onEnter}>CREATE FREE ACCOUNT</button>
@@ -1828,7 +1805,6 @@ function Landing({ onEnter }) {
   );
 }
 
-/* ═══════════════ AUTH / INDEX PAGE ═══════════════ */
 
 function Auth() {
   const [tab,   setTab]   = useState('login');
