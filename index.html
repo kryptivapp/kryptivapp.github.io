@@ -678,464 +678,484 @@ input,textarea,select{font-family:var(--sans)}
 @media(min-width:1400px){.scr{padding:32px 44px}}
 @media(min-width:1800px){.scr{max-width:1440px;margin:0 auto}}
 
-/* ═══════════════ LANDING PAGE ═══════════════ */
 
-/* Pure smooth continuous scroll — no snapping, no section locking */
+/* ══════════════════════════════════════════
+   LANDING PAGE  —  clean rewrite
+   Smooth native scroll, transparent sections,
+   floating blurred crypto coin icons
+══════════════════════════════════════════ */
+
+/* Outer scroll container */
 .lp{
   position:relative;z-index:10;
   height:100vh;overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
   scroll-behavior:smooth;
+  scrollbar-width:none;
 }
 .lp::-webkit-scrollbar{display:none}
 
-/* Sections are natural height */
+/* Each section — min-height 100vh, natural content flow */
 .lp-sec{
   min-height:100vh;
   display:flex;flex-direction:column;
   position:relative;
-  background:rgba(0,0,0,.14);
 }
-.lp-sec:nth-child(even){background:rgba(0,0,0,.20);}
+.lp-sec:nth-child(odd) {background:rgba(0,0,0,.12);}
+.lp-sec:nth-child(even){background:rgba(0,0,0,.22);}
 
-/* ── FLOATING CRYPTO ICONS ── */
+/* ── FLOATING COINS LAYER ──────────────── */
 .lp-coins-bg{
-  position:fixed;inset:0;z-index:1;
+  position:fixed;inset:0;
+  z-index:2;          /* above wall, below .lp-sec (z:3) */
   pointer-events:none;overflow:hidden;
 }
 .lp-coin-icon{
   position:absolute;
-  display:flex;align-items:center;justify-content:center;
   animation:coinFloat linear infinite;
   will-change:transform;
 }
 .lp-coin-icon img{
-  width:100%;height:100%;
-  object-fit:contain;
-  border-radius:50%;
+  display:block;width:100%;height:100%;
+  object-fit:contain;border-radius:50%;
 }
 @keyframes coinFloat{
-  0%  {transform:translateY(0px) rotate(0deg) scale(1);}
-  20% {transform:translateY(-14px) rotate(5deg) scale(1.02);}
-  45% {transform:translateY(-4px) rotate(-3deg) scale(.98);}
-  70% {transform:translateY(-20px) rotate(7deg) scale(1.01);}
-  100%{transform:translateY(0px) rotate(0deg) scale(1);}
+  0%  {transform:translateY(0px)   rotate(0deg)  scale(1);}
+  20% {transform:translateY(-14px) rotate(5deg)  scale(1.02);}
+  50% {transform:translateY(-5px)  rotate(-3deg) scale(.98);}
+  75% {transform:translateY(-20px) rotate(7deg)  scale(1.01);}
+  100%{transform:translateY(0px)   rotate(0deg)  scale(1);}
 }
+/* Sections sit above coins */
+.lp-sec{z-index:3;}
 
-/* All sections above coin bg */
-.lp-sec{z-index:2;}
-
-/* ── NAV ── */
+/* ── NAVBAR ────────────────────────────── */
 .lp-nav{
-  position:absolute;top:0;left:0;right:0;
+  position:absolute;top:0;left:0;right:0;z-index:10;
   display:flex;align-items:center;justify-content:space-between;
-  padding:24px 7vw;z-index:5;
-  background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent);
-  flex-shrink:0;
+  padding:22px 7vw;
+  background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent);
 }
-.lp-nav-logo{font-family:var(--disp);font-size:24px;letter-spacing:5px}
-.lp-nav-right{display:flex;align-items:center;gap:14px}
+.lp-nav-logo{
+  font-family:var(--disp);font-size:22px;letter-spacing:5px;color:#fff;
+}
+.lp-nav-right{display:flex;align-items:center;gap:12px;}
 .lp-nav-login{
-  padding:9px 22px;background:rgba(255,255,255,.07);
-  border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.75);
+  padding:8px 20px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.18);
+  color:rgba(255,255,255,.78);
   font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;
   cursor:pointer;transition:all .2s;backdrop-filter:blur(8px);
 }
-.lp-nav-login:hover{border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.12)}
-.lp-nav-cta{
-  padding:9px 22px;background:rgba(255,255,255,.92);
-  border:none;color:#000;
-  font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
+.lp-nav-login:hover{
+  border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.13);
 }
-.lp-nav-cta:hover{background:#fff}
-.lp-nav-cta::after{content:'';position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shimmer 2.5s infinite}
+.lp-nav-cta{
+  padding:8px 20px;
+  background:rgba(255,255,255,.92);border:none;color:#000;
+  font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;transition:all .18s;position:relative;overflow:hidden;
+}
+.lp-nav-cta:hover{background:#fff;}
+.lp-nav-cta::after{
+  content:'';position:absolute;top:0;bottom:0;width:40%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);
+  animation:shimmer 2.5s infinite;
+}
 
-/* ── HERO ── */
+/* ── HERO SECTION ──────────────────────── */
 .lp-hero{
-  justify-content:center;padding:0 7vw;
-  background:rgba(0,0,0,.10);
+  justify-content:center;
+  padding:0 7vw;
+  background:rgba(0,0,0,.08) !important;/* most see-through */
 }
 .lp-hero-content{
+  position:relative;z-index:1;
   display:flex;flex-direction:column;
-  padding-top:90px;padding-bottom:24px;
-  position:relative;z-index:1;flex:1;justify-content:center;
+  padding-top:96px;padding-bottom:48px;
 }
 .lp-eyebrow{
-  font-family:var(--mono);font-size:8px;letter-spacing:6px;color:rgba(255,255,255,.45);
-  text-transform:uppercase;margin-bottom:20px;
+  font-family:var(--mono);font-size:8px;letter-spacing:6px;
+  color:rgba(255,255,255,.45);text-transform:uppercase;
+  margin-bottom:20px;
   display:flex;align-items:center;gap:12px;
   animation:fadeUp .6s .1s both;
 }
-.lp-eyebrow::before{content:'';width:28px;height:1px;background:rgba(255,255,255,.35)}
-
-/* ALL headline text — fully white, zero gray */
+.lp-eyebrow::before{content:'';width:28px;height:1px;background:rgba(255,255,255,.3);}
 .lp-h1{
   font-family:var(--disp);
-  font-size:clamp(56px,9.5vw,144px);
-  line-height:.88;letter-spacing:-1px;
+  font-size:clamp(58px,9.5vw,148px);
+  line-height:.88;letter-spacing:-1px;color:#fff;
   animation:fadeUp .6s .2s both;
-  color:#fff;
 }
-.lp-h1 span{color:#fff;}
-
 .lp-tagline{
-  font-family:var(--mono);font-size:clamp(8px,.95vw,11px);
-  color:rgba(255,255,255,.65);letter-spacing:4px;text-transform:uppercase;
-  margin-top:24px;margin-bottom:32px;
+  font-family:var(--mono);font-size:clamp(8px,.9vw,11px);
+  color:rgba(255,255,255,.6);letter-spacing:4px;text-transform:uppercase;
+  margin-top:22px;margin-bottom:30px;max-width:440px;line-height:2.3;
   animation:fadeUp .6s .35s both;
-  max-width:440px;line-height:2.3;
 }
 .lp-hero-btns{
-  display:flex;gap:14px;flex-wrap:wrap;
+  display:flex;gap:12px;flex-wrap:wrap;
   animation:fadeUp .6s .45s both;
 }
+
+/* Primary button (white) */
 .lp-btn-primary{
-  padding:15px 36px;background:rgba(255,255,255,.95);border:none;
+  padding:14px 34px;
+  background:rgba(255,255,255,.94);border:none;
   color:#000;font-family:var(--sans);font-weight:700;
   font-size:10px;letter-spacing:3px;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
+  cursor:pointer;transition:all .18s;position:relative;overflow:hidden;
 }
-.lp-btn-primary:hover{background:#fff;opacity:.9}
-.lp-btn-primary::after{content:'';position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);animation:shimmer 2s infinite}
+.lp-btn-primary:hover{background:#fff;opacity:.88;}
+.lp-btn-primary::after{
+  content:'';position:absolute;top:0;bottom:0;width:40%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);
+  animation:shimmer 2s infinite;
+}
+
+/* Ghost button */
 .lp-btn-ghost{
-  padding:15px 36px;background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.85);
+  padding:14px 34px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.24);color:rgba(255,255,255,.82);
   font-family:var(--mono);font-size:9px;letter-spacing:3px;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;backdrop-filter:blur(6px);
+  cursor:pointer;transition:all .18s;backdrop-filter:blur(6px);
 }
-.lp-btn-ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.45);color:#fff}
+.lp-btn-ghost:hover{
+  background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.45);color:#fff;
+}
 
-/* Hero stats */
+/* Hero stats row */
 .lp-hero-stats{
-  display:flex;gap:0;margin-top:44px;
+  display:flex;margin-top:44px;
   border-top:1px solid rgba(255,255,255,.12);
-  animation:fadeUp .6s .55s both;flex-shrink:0;
+  animation:fadeUp .6s .55s both;
 }
-.lp-hstat{flex:1;padding:18px 0 0}
-.lp-hstat+.lp-hstat{border-left:1px solid rgba(255,255,255,.12);padding-left:28px}
-.lp-hstat-val{font-family:var(--disp);font-size:32px;letter-spacing:1px;line-height:1;color:#fff}
-.lp-hstat-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.42);text-transform:uppercase;margin-top:5px}
+.lp-hstat{flex:1;padding:18px 0 0;}
+.lp-hstat+.lp-hstat{border-left:1px solid rgba(255,255,255,.12);padding-left:28px;}
+.lp-hstat-val{font-family:var(--disp);font-size:32px;letter-spacing:1px;line-height:1;color:#fff;}
+.lp-hstat-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:5px;}
 
-/* ── NAV ── */
-.lp-nav{
-  position:absolute;top:0;left:0;right:0;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:24px 7vw;z-index:5;
-  background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent);
-}
+/* Scroll hint */
 .lp-scroll-hint{
   position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
   display:flex;flex-direction:column;align-items:center;gap:6px;
   animation:floatY 2.5s ease-in-out infinite;pointer-events:none;
 }
-.lp-scroll-hint-line{width:1px;height:32px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.32))}
-.lp-scroll-hint-dot{width:4px;height:4px;background:rgba(255,255,255,.32)}
-@media(max-width:768px){.lp-scroll-hint{display:none}}
+.lp-scroll-hint-line{width:1px;height:32px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.3));}
+.lp-scroll-hint-dot{width:4px;height:4px;background:rgba(255,255,255,.3);}
 
-/* ── SECTION LABEL / HEADING ── */
+/* ── SHARED SECTION HEADING ────────────── */
+.lp-sec-head{margin-bottom:32px;}
 .lp-sec-label{
-  font-family:var(--mono);font-size:7px;letter-spacing:6px;color:rgba(255,255,255,.38);
-  text-transform:uppercase;margin-bottom:14px;
-  display:flex;align-items:center;gap:12px;flex-shrink:0;
+  font-family:var(--mono);font-size:7px;letter-spacing:6px;
+  color:rgba(255,255,255,.36);text-transform:uppercase;
+  margin-bottom:14px;display:flex;align-items:center;gap:12px;
 }
-.lp-sec-label::before{content:'';width:28px;height:1px;background:rgba(255,255,255,.28)}
+.lp-sec-label::before{content:'';width:24px;height:1px;background:rgba(255,255,255,.26);}
 .lp-sec-h2{
-  font-family:var(--disp);
-  font-size:clamp(38px,5.5vw,80px);
-  line-height:.9;letter-spacing:-1px;
-  margin-bottom:36px;color:#fff;flex-shrink:0;
+  font-family:var(--disp);font-size:clamp(40px,5.5vw,82px);
+  line-height:.9;letter-spacing:-1px;color:#fff;margin-bottom:0;
 }
 
-/* ── INNER SCROLL CONTAINERS (allow content scroll inside a section) ── */
-.lp-sec-scroll{flex:1;overflow:visible;}
-
-/* ── FEATURES SECTION ── */
-.lp-features{padding:72px 7vw 80px}
-.lp-features-head{margin-bottom:0;flex-shrink:0}
+/* ── FEATURES SECTION ──────────────────── */
+.lp-features{
+  padding:72px 7vw 80px;
+  justify-content:center;
+}
 .lp-feat-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:1px;
-  background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.08);
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;margin-top:36px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.07);
 }
 .lp-feat-card{
-  background:rgba(0,0,0,.32);padding:28px 26px;
-  transition:background .25s;position:relative;overflow:hidden;
-  backdrop-filter:blur(14px);
+  background:rgba(0,0,0,.28);
+  padding:28px 24px;
+  transition:background .22s;
+  position:relative;overflow:hidden;
+  backdrop-filter:blur(12px);
 }
-.lp-feat-card:hover{background:rgba(255,255,255,.05)}
+.lp-feat-card:hover{background:rgba(255,255,255,.05);}
 .lp-feat-icon{
-  width:36px;height:36px;
-  border:1px solid rgba(255,255,255,.13);
+  width:34px;height:34px;
+  border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.05);
   display:flex;align-items:center;justify-content:center;
-  margin-bottom:18px;
+  margin-bottom:16px;
 }
-.lp-feat-icon .mi{width:15px;height:15px;color:rgba(255,255,255,.6)}
-.lp-feat-title{font-family:var(--mono);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.88);margin-bottom:10px;}
-.lp-feat-desc{font-size:12px;color:rgba(255,255,255,.42);line-height:1.9;font-weight:300}
-.lp-feat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);opacity:0;transition:opacity .3s}
-.lp-feat-card:hover::after{opacity:1}
+.lp-feat-icon .mi{width:15px;height:15px;color:rgba(255,255,255,.58);}
+.lp-feat-title{
+  font-family:var(--mono);font-size:9px;letter-spacing:3px;
+  text-transform:uppercase;color:rgba(255,255,255,.86);margin-bottom:10px;
+}
+.lp-feat-desc{font-size:12px;color:rgba(255,255,255,.4);line-height:1.9;font-weight:300;}
 
-/* ── LIVE PRICES SECTION ── */
-.lp-live{padding:72px 0 80px}
-.lp-live-inner{padding:0 7vw}
-.lp-live-head{padding:0 7vw;margin-bottom:32px}
+/* ── LIVE MARKETS SECTION ──────────────── */
+.lp-live{padding:72px 0 80px;justify-content:center;}
+.lp-live-head{padding:0 7vw;margin-bottom:32px;}
 .lp-live-prices{
-  display:flex;gap:1px;flex-shrink:0;
-  background:rgba(255,255,255,.07);
-  border-top:1px solid rgba(255,255,255,.09);
-  border-bottom:1px solid rgba(255,255,255,.09);
+  display:flex;
+  background:rgba(255,255,255,.06);
+  border-top:1px solid rgba(255,255,255,.08);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  gap:1px;
 }
 .lp-price-cell{
   flex:1;min-width:0;padding:24px 28px;
-  background:rgba(0,0,0,.26);
+  background:rgba(0,0,0,.24);
   display:flex;flex-direction:column;gap:5px;
-  backdrop-filter:blur(10px);transition:background .2s;
+  backdrop-filter:blur(10px);transition:background .18s;
 }
-.lp-price-cell:hover{background:rgba(255,255,255,.04)}
-.lp-pc-sym{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.88);font-weight:500}
-.lp-pc-nm{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.32);text-transform:uppercase}
-.lp-pc-price{font-family:var(--disp);font-size:28px;letter-spacing:1px;margin-top:6px;color:#fff}
-.lp-pc-ch{font-family:var(--mono);font-size:9px;margin-top:2px}
-.lp-pc-ch.up{color:var(--up)}
-.lp-pc-ch.dn{color:var(--dn)}
+.lp-price-cell:hover{background:rgba(255,255,255,.04);}
+.lp-pc-sym{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.85);font-weight:500;}
+.lp-pc-nm{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.3);text-transform:uppercase;}
+.lp-pc-price{font-family:var(--disp);font-size:28px;letter-spacing:1px;margin-top:6px;color:#fff;}
+.lp-pc-ch{font-family:var(--mono);font-size:9px;margin-top:2px;}
+.lp-pc-ch.up{color:var(--up);}
+.lp-pc-ch.dn{color:var(--dn);}
+
+/* Ticker bar */
 .lp-live-bar{
-  width:100%;overflow:hidden;
-  border-top:1px solid rgba(255,255,255,.07);
-  border-bottom:1px solid rgba(255,255,255,.07);
-  padding:13px 0;margin-top:0;
-  background:rgba(0,0,0,.18);
+  overflow:hidden;
+  border-top:1px solid rgba(255,255,255,.06);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  padding:12px 0;
+  background:rgba(0,0,0,.16);
 }
-.lp-live-bar-track{display:flex;white-space:nowrap;animation:ticker 38s linear infinite}
+.lp-live-bar-track{display:flex;white-space:nowrap;animation:ticker 38s linear infinite;}
 .lp-live-tick{
   display:inline-flex;align-items:center;gap:10px;
-  padding:0 22px;border-right:1px solid rgba(255,255,255,.07);
+  padding:0 22px;border-right:1px solid rgba(255,255,255,.06);
   font-family:var(--mono);font-size:8px;
 }
-.lp-live-tick-sym{color:rgba(255,255,255,.38)}
-.lp-live-tick-price{color:rgba(255,255,255,.72)}
-.lp-live-tick-ch{color:var(--up)}
-.lp-live-tick-ch.dn{color:var(--dn)}
-.lp-live-cta{padding:32px 7vw 0}
+.lp-live-tick-sym  {color:rgba(255,255,255,.35);}
+.lp-live-tick-price{color:rgba(255,255,255,.7);}
+.lp-live-tick-ch   {color:var(--up);}
+.lp-live-tick-ch.dn{color:var(--dn);}
+.lp-live-cta{padding:30px 7vw 0;}
 
-/* ── PLANS SECTION ── */
-.lp-plans{padding:72px 7vw 80px}
-.lp-plans-head{margin-bottom:0;flex-shrink:0}
+/* ── PLANS SECTION ─────────────────────── */
+.lp-plans{padding:72px 7vw 80px;justify-content:center;}
 .lp-plans-grid{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:1px;
-  background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.08);
-  margin-top:28px;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;margin-top:36px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.07);
 }
 .lp-plan-card{
-  background:rgba(0,0,0,.30);padding:28px 22px;
+  background:rgba(0,0,0,.26);padding:28px 20px;
   display:flex;flex-direction:column;
-  transition:background .2s;position:relative;
-  backdrop-filter:blur(12px);
+  transition:background .22s;position:relative;
+  backdrop-filter:blur(10px);
 }
-.lp-plan-card:hover{background:rgba(255,255,255,.05)}
-.lp-plan-card.featured{background:rgba(255,255,255,.065)}
+.lp-plan-card:hover{background:rgba(255,255,255,.05);}
+.lp-plan-card.featured{background:rgba(255,255,255,.06);}
 .lp-plan-card.featured::before{
   content:'POPULAR';
-  position:absolute;top:16px;right:14px;
+  position:absolute;top:14px;right:14px;
   font-family:var(--mono);font-size:6px;letter-spacing:3px;
-  color:rgba(255,255,255,.38);border:1px solid rgba(255,255,255,.12);padding:3px 8px;
-  background:rgba(255,255,255,.04);
+  color:rgba(255,255,255,.36);border:1px solid rgba(255,255,255,.1);
+  padding:3px 8px;background:rgba(255,255,255,.04);
 }
-.lp-plan-nm{font-family:var(--disp);font-size:36px;letter-spacing:2px;line-height:1;margin-bottom:4px;color:#fff}
-.lp-plan-pr{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.48);letter-spacing:2px;margin-bottom:18px}
-.lp-plan-feats{flex:1;display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
-.lp-plan-feat{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.4);letter-spacing:1px;display:flex;gap:8px;align-items:flex-start;line-height:1.7}
-.lp-plan-feat::before{content:'→';color:rgba(255,255,255,.24);flex-shrink:0}
+.lp-plan-nm{font-family:var(--disp);font-size:36px;letter-spacing:2px;line-height:1;margin-bottom:4px;color:#fff;}
+.lp-plan-pr{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.45);letter-spacing:2px;margin-bottom:18px;}
+.lp-plan-feats{flex:1;display:flex;flex-direction:column;gap:8px;margin-bottom:18px;}
+.lp-plan-feat{
+  font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.38);
+  letter-spacing:1px;display:flex;gap:8px;align-items:flex-start;line-height:1.7;
+}
+.lp-plan-feat::before{content:'→';color:rgba(255,255,255,.22);flex-shrink:0;}
 .lp-plan-cta{
-  width:100%;padding:11px;background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.48);
+  width:100%;padding:11px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.11);color:rgba(255,255,255,.46);
   font-family:var(--mono);font-size:8px;letter-spacing:2px;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;
+  cursor:pointer;transition:all .18s;
 }
-.lp-plan-cta:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.26);color:rgba(255,255,255,.8)}
-.lp-plan-card.featured .lp-plan-cta{background:rgba(255,255,255,.9);border-color:transparent;color:#000}
-.lp-plan-card.featured .lp-plan-cta:hover{background:#fff}
+.lp-plan-cta:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.24);color:rgba(255,255,255,.78);}
+.lp-plan-card.featured .lp-plan-cta{background:rgba(255,255,255,.9);border-color:transparent;color:#000;}
+.lp-plan-card.featured .lp-plan-cta:hover{background:#fff;}
 
 /* Payment note */
 .lp-pay-note{
-  flex-shrink:0;margin-top:16px;
-  padding:14px 18px;
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.09);
+  margin-top:16px;padding:14px 18px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
   backdrop-filter:blur(8px);
   display:flex;align-items:flex-start;gap:10px;
 }
-.lp-pay-note-icon{flex-shrink:0;margin-top:1px}
-.lp-pay-note-icon .mi{width:13px;height:13px;color:rgba(255,255,255,.38)}
-.lp-pay-note-text{font-family:var(--mono);font-size:7px;color:rgba(255,255,255,.38);letter-spacing:1.5px;line-height:2;text-transform:uppercase}
-.lp-pay-note-text strong{color:rgba(255,255,255,.6);font-weight:500}
+.lp-pay-note-icon .mi{width:13px;height:13px;color:rgba(255,255,255,.35);}
+.lp-pay-note-text{font-family:var(--mono);font-size:7px;color:rgba(255,255,255,.36);letter-spacing:1.5px;line-height:2;text-transform:uppercase;}
+.lp-pay-note-text strong{color:rgba(255,255,255,.58);font-weight:500;}
 
-/* ── FINAL CTA SECTION ── */
+/* ── FINAL CTA SECTION ─────────────────── */
 .lp-cta-sec{
   justify-content:center;align-items:center;
   text-align:center;padding:80px 7vw 0;
-  background:rgba(0,0,0,.10);
+  background:rgba(0,0,0,.10) !important;
 }
 .lp-cta-sec-inner{
   position:relative;z-index:1;
   display:flex;flex-direction:column;align-items:center;
-  max-width:860px;margin:0 auto;flex:1;justify-content:center;
+  flex:1;justify-content:center;
+  max-width:860px;margin:0 auto;
 }
-.lp-cta-pre{font-family:var(--mono);font-size:7px;letter-spacing:6px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:20px}
-.lp-cta-h{font-family:var(--disp);font-size:clamp(48px,8vw,108px);line-height:.88;letter-spacing:-1px;margin-bottom:22px;color:#fff}
-.lp-cta-sub{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:36px;line-height:2.4}
-.lp-cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.lp-cta-pre{font-family:var(--mono);font-size:7px;letter-spacing:6px;color:rgba(255,255,255,.32);text-transform:uppercase;margin-bottom:18px;}
+.lp-cta-h{font-family:var(--disp);font-size:clamp(50px,8vw,110px);line-height:.88;letter-spacing:-1px;margin-bottom:20px;color:#fff;}
+.lp-cta-sub{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.32);text-transform:uppercase;margin-bottom:34px;line-height:2.4;}
+.lp-cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
 
 /* Footer */
 .lp-footer{
-  border-top:1px solid rgba(255,255,255,.08);
-  padding:24px 7vw;margin-top:48px;
+  margin-top:auto;padding:22px 7vw;
+  border-top:1px solid rgba(255,255,255,.07);
   display:flex;align-items:center;justify-content:space-between;
   flex-wrap:wrap;gap:10px;
-  background:rgba(0,0,0,.18);backdrop-filter:blur(8px);
+  background:rgba(0,0,0,.18);backdrop-filter:blur(10px);
 }
-.lp-footer-logo{font-family:var(--disp);font-size:17px;letter-spacing:3px;color:rgba(255,255,255,.32)}
-.lp-footer-links{display:flex;gap:20px}
+.lp-footer-logo{font-family:var(--disp);font-size:16px;letter-spacing:3px;color:rgba(255,255,255,.3);}
+.lp-footer-links{display:flex;gap:20px;}
 .lp-footer-link{
-  font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(255,255,255,.28);
-  text-transform:uppercase;cursor:pointer;background:none;border:none;transition:color .2s;
+  font-family:var(--mono);font-size:7px;letter-spacing:3px;
+  color:rgba(255,255,255,.26);text-transform:uppercase;
+  cursor:pointer;background:none;border:none;transition:color .18s;
 }
-.lp-footer-link:hover{color:rgba(255,255,255,.6)}
-.lp-footer-right{font-family:var(--mono);font-size:7px;color:rgba(255,255,255,.22);letter-spacing:2px}
+.lp-footer-link:hover{color:rgba(255,255,255,.56);}
+.lp-footer-right{font-family:var(--mono);font-size:7px;color:rgba(255,255,255,.2);letter-spacing:2px;}
 
-/* Auth overlay */
+/* ── AUTH OVERLAY ──────────────────────── */
 .auth-overlay{
   position:fixed;inset:0;z-index:500;
   display:flex;flex-direction:column;
-  background:rgba(0,0,0,.88);
+  background:rgba(0,0,0,.9);
   transform:translateY(100%);
   transition:transform .52s cubic-bezier(.4,0,.2,1);
   backdrop-filter:blur(4px);
 }
-.auth-overlay.visible{transform:translateY(0)}
+.auth-overlay.visible{transform:translateY(0);}
 .auth-overlay-close{
   position:absolute;top:20px;right:24px;z-index:10;
   width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-  border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);
   color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;backdrop-filter:blur(8px);
 }
-.auth-overlay-close:hover{border-color:rgba(255,255,255,.3);color:#fff}
-.auth-overlay-close .mi{width:16px;height:16px}
+.auth-overlay-close:hover{border-color:rgba(255,255,255,.3);color:#fff;}
+.auth-overlay-close .mi{width:16px;height:16px;}
 
-/* Scroll-reveal animations */
-.lp-anim{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
-.lp-anim.in{opacity:1;transform:translateY(0)}
+/* ── SCROLL-REVEAL ─────────────────────── */
+.lp-anim{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease;}
+.lp-anim.in{opacity:1;transform:translateY(0);}
 
-/* Grid BG */
+/* ── GRID BG (hero / cta) ──────────────── */
 .lp-grid-bg{
   position:absolute;inset:0;z-index:0;pointer-events:none;
   background-image:
-    linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+    linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
   background-size:64px 64px;
-  mask-image:radial-gradient(ellipse 88% 88% at 50% 50%,black,transparent);
-  -webkit-mask-image:radial-gradient(ellipse 88% 88% at 50% 50%,black,transparent);
+  mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,black,transparent);
+  -webkit-mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,black,transparent);
 }
 
-/* ── DESKTOP ENHANCEMENTS ── */
+/* ── DESKTOP ≥1100px ───────────────────── */
 @media(min-width:1100px){
-  .lp-nav{padding:28px 8vw}
-  .lp-hero{padding:0 8vw}
-  .lp-hero-content{padding-top:100px}
-  .lp-features{padding:88px 8vw 96px}
-  .lp-feat-card{padding:36px 32px}
-  .lp-live{padding:88px 0 96px}
-  .lp-live-head{padding:0 8vw;margin-bottom:36px}
-  .lp-live-inner{padding:0 8vw}
-  .lp-live-cta{padding:36px 8vw 0}
-  .lp-price-cell{padding:30px 36px}
-  .lp-pc-price{font-size:32px}
-  .lp-plans{padding:88px 8vw 96px}
-  .lp-plan-card{padding:34px 26px}
-  .lp-plan-nm{font-size:40px}
-  .lp-cta-sec{padding:88px 8vw 0}
-  .lp-footer{padding:24px 8vw;margin-top:52px}
-  .lp-hstat-val{font-size:36px}
-  .lp-hstat+.lp-hstat{padding-left:36px}
-  .lp-sec-h2{font-size:clamp(44px,5.8vw,84px);margin-bottom:36px}
+  .lp-nav{padding:26px 8vw;}
+  .lp-hero{padding:0 8vw;}
+  .lp-hero-content{padding-top:108px;}
+  .lp-hstat-val{font-size:38px;}
+  .lp-hstat+.lp-hstat{padding-left:36px;}
+  .lp-hero-stats{margin-top:52px;}
+
+  .lp-features{padding:88px 8vw 96px;}
+  .lp-feat-card{padding:36px 30px;}
+  .lp-feat-grid{margin-top:44px;}
+
+  .lp-live{padding:88px 0 96px;}
+  .lp-live-head{padding:0 8vw;margin-bottom:36px;}
+  .lp-live-cta{padding:36px 8vw 0;}
+  .lp-price-cell{padding:28px 34px;}
+  .lp-pc-price{font-size:32px;}
+
+  .lp-plans{padding:88px 8vw 96px;}
+  .lp-plan-card{padding:32px 24px;}
+  .lp-plan-nm{font-size:40px;}
+  .lp-plans-grid{margin-top:44px;}
+
+  .lp-cta-sec{padding:88px 8vw 0;}
+  .lp-footer{padding:22px 8vw;}
+  .lp-sec-h2{font-size:clamp(44px,5.5vw,82px);}
+  .lp-sec-head{margin-bottom:0;}
 }
 @media(min-width:1440px){
-  .lp-nav{padding:32px 9vw}
-  .lp-hero{padding-left:9vw;padding-right:9vw}
-  .lp-features{padding:100px 9vw 108px}
-  .lp-live-head,.lp-live-inner,.lp-live-cta{padding-left:9vw;padding-right:9vw}
-  .lp-plans{padding:100px 9vw 108px}
-  .lp-cta-sec{padding:100px 9vw 0}
-  .lp-footer{padding:28px 9vw}
-  .lp-feat-card{padding:44px 38px}
-  .lp-price-cell{padding:36px 44px}
-  .lp-plan-card{padding:40px 30px}
-  .lp-plan-nm{font-size:44px}
-  .lp-sec-h2{font-size:clamp(48px,6vw,90px)}
+  .lp-nav{padding:30px 9vw;}
+  .lp-hero{padding:0 9vw;}
+  .lp-features,.lp-plans{padding-left:9vw;padding-right:9vw;}
+  .lp-live-head,.lp-live-cta{padding-left:9vw;padding-right:9vw;}
+  .lp-cta-sec{padding:100px 9vw 0;}
+  .lp-footer{padding:24px 9vw;}
+  .lp-feat-card{padding:42px 36px;}
+  .lp-price-cell{padding:34px 42px;}
+  .lp-plan-card{padding:38px 28px;}
+  .lp-plan-nm{font-size:44px;}
+  .lp-sec-h2{font-size:clamp(48px,5.8vw,88px);}
 }
 
-/* ── TABLET ── */
+/* ── TABLET 769-1099px ─────────────────── */
 @media(max-width:1099px) and (min-width:769px){
-  .lp-feat-grid{grid-template-columns:repeat(2,1fr)}
-  .lp-plans-grid{grid-template-columns:repeat(2,1fr)}
-  .lp-price-cell{padding:20px 22px}
-  .lp-pc-price{font-size:24px}
+  .lp-feat-grid{grid-template-columns:repeat(2,1fr);}
+  .lp-plans-grid{grid-template-columns:repeat(2,1fr);}
+  .lp-price-cell{padding:20px 22px;}
+  .lp-pc-price{font-size:24px;}
 }
 
-/* ── MOBILE ── */
+/* ── MOBILE ≤768px ─────────────────────── */
 @media(max-width:768px){
-  .lp-hero{padding:0 6vw}
-  .lp-hero-content{padding-top:84px;padding-bottom:52px}
-  .lp-h1{font-size:clamp(50px,13.5vw,80px)}
-  .lp-tagline{font-size:8px;margin-top:18px;margin-bottom:24px}
-  .lp-hero-btns{flex-direction:column}
-  .lp-btn-primary,.lp-btn-ghost{width:100%;text-align:center;padding:15px 20px}
-  .lp-hero-stats{flex-wrap:wrap;margin-top:32px}
-  .lp-hstat{min-width:50%;padding:14px 0 0}
-  .lp-hstat:nth-child(3){border-left:none;padding-left:0}
-  .lp-hstat:nth-child(4){border-left:1px solid rgba(255,255,255,.12);padding-left:14px}
-  .lp-hstat-val{font-size:28px}
+  .lp-sec{min-height:100svh;}
+  .lp-nav{padding:18px 5vw;}
+  .lp-hero{padding:0 5vw;}
+  .lp-hero-content{padding-top:80px;padding-bottom:48px;}
+  .lp-h1{font-size:clamp(50px,13vw,80px);}
+  .lp-tagline{font-size:8px;margin-top:18px;margin-bottom:24px;}
+  .lp-hero-btns{flex-direction:column;}
+  .lp-btn-primary,.lp-btn-ghost{width:100%;text-align:center;padding:14px 20px;}
+  .lp-hero-stats{flex-wrap:wrap;margin-top:30px;}
+  .lp-hstat{min-width:50%;padding:14px 0 0;}
+  .lp-hstat:nth-child(3){border-left:none;padding-left:0;}
+  .lp-hstat:nth-child(4){border-left:1px solid rgba(255,255,255,.12);padding-left:14px;}
+  .lp-hstat-val{font-size:28px;}
+  .lp-scroll-hint{display:none;}
 
-  .lp-features{padding:56px 6vw 60px}
-  .lp-feat-grid{grid-template-columns:1fr}
-  .lp-feat-card{padding:22px 18px}
+  .lp-features{padding:52px 5vw 56px;}
+  .lp-feat-grid{grid-template-columns:1fr;margin-top:24px;}
+  .lp-feat-card{padding:20px 16px;}
 
-  .lp-live{padding:56px 0 60px}
-  .lp-live-head{padding:0 6vw;margin-bottom:24px}
-  .lp-live-inner,.lp-live-cta{padding:0 6vw}
-  .lp-live-cta{padding-top:20px}
-  .lp-live-prices{flex-direction:column;gap:1px}
-  .lp-price-cell{padding:18px 18px}
-  .lp-pc-price{font-size:24px}
+  .lp-live{padding:52px 0 56px;}
+  .lp-live-head{padding:0 5vw;margin-bottom:22px;}
+  .lp-live-cta{padding:20px 5vw 0;}
+  .lp-live-prices{flex-direction:column;}
+  .lp-price-cell{padding:16px 18px;}
+  .lp-pc-price{font-size:24px;}
 
-  .lp-plans{padding:56px 6vw 60px}
-  .lp-plans-grid{grid-template-columns:1fr;margin-top:22px}
-  .lp-plan-card{padding:20px 14px}
-  .lp-plan-nm{font-size:28px}
-  .lp-plan-card.featured::before{display:none}
+  .lp-plans{padding:52px 5vw 56px;}
+  .lp-plans-grid{grid-template-columns:1fr;margin-top:20px;}
+  .lp-plan-card{padding:18px 14px;}
+  .lp-plan-nm{font-size:28px;}
+  .lp-plan-card.featured::before{display:none;}
 
-  .lp-cta-sec{padding:56px 6vw 0;align-items:flex-start;text-align:left}
-  .lp-cta-sec-inner{align-items:flex-start;justify-content:flex-start}
-  .lp-cta-h{font-size:clamp(44px,11vw,70px)}
-  .lp-cta-btns{justify-content:flex-start}
-  .lp-footer{margin-top:36px;padding:24px 6vw;flex-direction:column;align-items:flex-start;gap:14px}
-  .lp-nav{padding:20px 6vw}
-  .lp-sec-h2{font-size:clamp(36px,9vw,58px);margin-bottom:22px}
-  .lp-pay-note{margin-top:14px}
+  .lp-cta-sec{padding:56px 5vw 0;align-items:flex-start;text-align:left;}
+  .lp-cta-sec-inner{align-items:flex-start;}
+  .lp-cta-h{font-size:clamp(44px,11vw,68px);}
+  .lp-cta-btns{justify-content:flex-start;}
+  .lp-footer{padding:20px 5vw;flex-direction:column;align-items:flex-start;gap:12px;}
+
+  .lp-sec-h2{font-size:clamp(34px,9vw,56px);}
+  .lp-pay-note{margin-top:14px;}
 }
 @media(max-width:420px){
-  .lp-h1{font-size:clamp(44px,12.5vw,64px)}
-  .lp-plans-grid{grid-template-columns:1fr}
+  .lp-h1{font-size:clamp(44px,12vw,62px);}
 }
-}
-
 </style>
 </head>
 <body>
@@ -1554,26 +1574,25 @@ function MI({n, style, className}) {
 
 const {useState, useEffect, useRef, useCallback, useMemo} = React;
 
-/* ═══════════════ LANDING PAGE COMPONENT ═══════════════ */
 
 /* ═══════════════ LANDING PAGE COMPONENT ═══════════════ */
 
 const LP_COINS = [
-  {sym:'BTC', nm:'Bitcoin',   price:'$84,210', ch:'+2.14%', up:true},
-  {sym:'ETH', nm:'Ethereum',  price:'$3,192',  ch:'+1.87%', up:true},
-  {sym:'SOL', nm:'Solana',    price:'$147',    ch:'+4.22%', up:true},
+  {sym:'BTC', nm:'Bitcoin',   price:'$84,210', ch:'+2.14%', up:true },
+  {sym:'ETH', nm:'Ethereum',  price:'$3,192',  ch:'+1.87%', up:true },
+  {sym:'SOL', nm:'Solana',    price:'$147',    ch:'+4.22%', up:true },
   {sym:'BNB', nm:'BNB',       price:'$612',    ch:'-0.43%', up:false},
-  {sym:'XRP', nm:'XRP',       price:'$0.58',   ch:'+1.11%', up:true},
+  {sym:'XRP', nm:'XRP',       price:'$0.58',   ch:'+1.11%', up:true },
   {sym:'AVAX',nm:'Avalanche', price:'$38.4',   ch:'-1.03%', up:false},
 ];
 
 const LP_FEATS = [
-  {icon:'bolt',             title:'Real-Time Data',    desc:'Live prices from CoinGecko, Binance & Kraken with 5-second refresh. Never miss a move.'},
-  {icon:'smart_toy',        title:'AI Intelligence',   desc:'Built-in AI analyst for every coin. Investment cases, outlook reports, take-profit strategies on demand.'},
+  {icon:'bolt',             title:'Real-Time Data',    desc:'Live prices from CoinGecko, Binance & Kraken refreshed every 5 seconds. Never miss a move.'},
+  {icon:'smart_toy',        title:'AI Intelligence',   desc:'Built-in AI analyst for every coin. Investment cases, outlook reports, and take-profit strategies.'},
   {icon:'newspaper',        title:'Live News Feed',    desc:'Curated crypto news with AI sentiment scoring. Know the narrative before the market does.'},
-  {icon:'donut_small',      title:'Portfolio Tracker', desc:'Track holdings with live P&L, allocation charts, and risk metrics. Always know where you stand.'},
+  {icon:'donut_small',      title:'Portfolio Tracker', desc:'Track holdings with live P&L, allocation charts, and risk metrics. Always know your position.'},
   {icon:'candlestick_chart',title:'Market Overview',   desc:'Full market view with top movers, volume leaders, and sparkline charts across 15+ assets.'},
-  {icon:'workspace_premium',title:'Tiered Plans',      desc:'From free to Atmosphere — scale your edge. More coins, alerts, and AI depth as you grow.'},
+  {icon:'workspace_premium',title:'Tiered Plans',      desc:'From free to Atmosphere. Scale your edge with more coins, alerts, and AI depth as you grow.'},
 ];
 
 const LP_PLANS_PREVIEW = [
@@ -1583,7 +1602,6 @@ const LP_PLANS_PREVIEW = [
   {id:'atmosphere', nm:'ATMOSPHERE', pr:'$44.90/mo', feats:['Everything in Pro','Whale alerts','Custom AI signals','Deep-dive reports']},
 ];
 
-/* Crypto icon URLs — CoinGecko large format */
 const COIN_ICONS = [
   'https://assets.coingecko.com/coins/images/1/large/bitcoin.png',
   'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
@@ -1599,46 +1617,35 @@ const COIN_ICONS = [
   'https://assets.coingecko.com/coins/images/13397/large/Graph_Token.png',
 ];
 
-/* Fixed layout — deterministic, looks intentional */
 const COIN_LAYOUT = [
-  {x: 4,  y: 8,  s: 68, dur: 16, del: 0,   op: 0.065, bl: 14},
-  {x: 80, y: 6,  s: 52, dur: 20, del: 2.8, op: 0.055, bl: 18},
-  {x: 52, y: 3,  s: 38, dur: 24, del: 1.2, op: 0.07,  bl: 10},
-  {x: 15, y: 52, s: 82, dur: 18, del: 4.2, op: 0.05,  bl: 22},
-  {x: 88, y: 42, s: 58, dur: 22, del: 1.8, op: 0.065, bl: 16},
-  {x: 68, y: 72, s: 74, dur: 14, del: 3.5, op: 0.055, bl: 20},
-  {x: 28, y: 78, s: 46, dur: 19, del: 0.7, op: 0.07,  bl: 9 },
-  {x: 46, y: 58, s: 34, dur: 27, del: 5.2, op: 0.05,  bl: 24},
-  {x:  3, y: 32, s: 54, dur: 21, del: 2.2, op: 0.065, bl: 16},
-  {x: 91, y: 68, s: 42, dur: 23, del: 3.8, op: 0.055, bl: 13},
-  {x: 60, y: 32, s: 62, dur: 17, del: 1.0, op: 0.05,  bl: 21},
-  {x: 36, y: 20, s: 50, dur: 25, del: 4.8, op: 0.065, bl: 11},
+  {x:4,  y:8,  s:68, dur:16, del:0,   op:.065, bl:14},
+  {x:80, y:6,  s:52, dur:20, del:2.8, op:.055, bl:18},
+  {x:52, y:3,  s:38, dur:24, del:1.2, op:.07,  bl:10},
+  {x:15, y:52, s:82, dur:18, del:4.2, op:.05,  bl:22},
+  {x:88, y:42, s:58, dur:22, del:1.8, op:.065, bl:16},
+  {x:68, y:72, s:74, dur:14, del:3.5, op:.055, bl:20},
+  {x:28, y:78, s:46, dur:19, del:0.7, op:.07,  bl:9 },
+  {x:46, y:58, s:34, dur:27, del:5.2, op:.05,  bl:24},
+  {x:3,  y:32, s:54, dur:21, del:2.2, op:.065, bl:16},
+  {x:91, y:68, s:42, dur:23, del:3.8, op:.055, bl:13},
+  {x:60, y:32, s:62, dur:17, del:1.0, op:.05,  bl:21},
+  {x:36, y:20, s:50, dur:25, del:4.8, op:.065, bl:11},
 ];
 
 function FloatingCoins() {
   return (
     <div className="lp-coins-bg" aria-hidden="true">
       {COIN_LAYOUT.map((c, i) => (
-        <div
-          key={i}
-          className="lp-coin-icon"
-          style={{
-            left:   c.x + '%',
-            top:    c.y + '%',
-            width:  c.s + 'px',
-            height: c.s + 'px',
-            opacity: c.op,
-            filter: `blur(${c.bl}px) saturate(0.35) brightness(0.9)`,
-            animationDuration: c.dur + 's',
-            animationDelay:   '-' + c.del + 's',
-          }}
-        >
-          <img
-            src={COIN_ICONS[i % COIN_ICONS.length]}
-            alt=""
-            loading="lazy"
-            onError={e => { e.target.style.display = 'none'; }}
-          />
+        <div key={i} className="lp-coin-icon" style={{
+          left: c.x+'%', top: c.y+'%',
+          width: c.s+'px', height: c.s+'px',
+          opacity: c.op,
+          filter: `blur(${c.bl}px) saturate(0.3) brightness(0.85)`,
+          animationDuration: c.dur+'s',
+          animationDelay: '-'+c.del+'s',
+        }}>
+          <img src={COIN_ICONS[i % COIN_ICONS.length]} alt=""
+               loading="lazy" onError={e=>e.target.style.display='none'}/>
         </div>
       ))}
     </div>
@@ -1648,31 +1655,29 @@ function FloatingCoins() {
 function Landing({ onEnter }) {
   const lpRef = useRef(null);
 
-  /* Scroll-reveal via IntersectionObserver */
-  useEffect(() => {
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
-    }, { threshold: 0.08 });
-    document.querySelectorAll('.lp-anim').forEach(el => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
+  /* Scroll-reveal */
+  useEffect(()=>{
+    const obs = new IntersectionObserver(entries=>{
+      entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); });
+    },{threshold:0.07});
+    document.querySelectorAll('.lp-anim').forEach(el=>obs.observe(el));
+    return ()=>obs.disconnect();
+  },[]);
 
-  const smoothScrollTo = (id) => {
-    const target = document.querySelector(id);
-    if (target && lpRef.current) {
-      lpRef.current.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
-    }
+  const goTo = (id) => {
+    const el = document.querySelector(id);
+    if(el && lpRef.current) lpRef.current.scrollTo({top:el.offsetTop, behavior:'smooth'});
   };
 
-  const tickerItems = [...LP_COINS, ...LP_COINS];
+  const ticker = [...LP_COINS, ...LP_COINS];
 
   return (
     <div className="lp" ref={lpRef}>
-      <FloatingCoins />
+      <FloatingCoins/>
 
-      {/* ══ HERO ══ */}
+      {/* ── HERO ── */}
       <section className="lp-sec lp-hero" id="lp-s1">
-        <div className="lp-grid-bg" />
+        <div className="lp-grid-bg"/>
         <nav className="lp-nav">
           <div className="lp-nav-logo">KRYPTIV</div>
           <div className="lp-nav-right">
@@ -1682,11 +1687,11 @@ function Landing({ onEnter }) {
         </nav>
         <div className="lp-hero-content">
           <div className="lp-eyebrow">Crypto Intelligence Platform</div>
-          <div className="lp-h1">INVEST<br />SMART.<br />TRADE<br />SMARTER.</div>
+          <div className="lp-h1">INVEST<br/>SMART.<br/>TRADE<br/>SMARTER.</div>
           <div className="lp-tagline">Real-time prices · AI analysis · Portfolio tracking</div>
           <div className="lp-hero-btns">
             <button className="lp-btn-primary" onClick={onEnter}>START FREE — NO CARD</button>
-            <button className="lp-btn-ghost"   onClick={() => smoothScrollTo('#lp-s2')}>SEE FEATURES ↓</button>
+            <button className="lp-btn-ghost"   onClick={()=>goTo('#lp-s2')}>SEE FEATURES ↓</button>
           </div>
           <div className="lp-hero-stats">
             <div className="lp-hstat"><div className="lp-hstat-val">15+</div><div className="lp-hstat-lbl">Assets tracked</div></div>
@@ -1696,21 +1701,21 @@ function Landing({ onEnter }) {
           </div>
         </div>
         <div className="lp-scroll-hint">
-          <div className="lp-scroll-hint-line" />
-          <div className="lp-scroll-hint-dot" />
+          <div className="lp-scroll-hint-line"/>
+          <div className="lp-scroll-hint-dot"/>
         </div>
       </section>
 
-      {/* ══ FEATURES ══ */}
+      {/* ── FEATURES ── */}
       <section className="lp-sec lp-features" id="lp-s2">
-        <div className="lp-features-head lp-anim">
+        <div className="lp-sec-head lp-anim">
           <div className="lp-sec-label">What you get</div>
-          <div className="lp-sec-h2">YOUR EDGE,<br />BUILT IN.</div>
+          <div className="lp-sec-h2">YOUR EDGE,<br/>BUILT IN.</div>
         </div>
         <div className="lp-feat-grid lp-anim">
-          {LP_FEATS.map((f, i) => (
+          {LP_FEATS.map((f,i)=>(
             <div key={i} className="lp-feat-card">
-              <div className="lp-feat-icon"><MI n={f.icon} /></div>
+              <div className="lp-feat-icon"><MI n={f.icon}/></div>
               <div className="lp-feat-title">{f.title}</div>
               <div className="lp-feat-desc">{f.desc}</div>
             </div>
@@ -1718,72 +1723,74 @@ function Landing({ onEnter }) {
         </div>
       </section>
 
-      {/* ══ LIVE MARKETS ══ */}
+      {/* ── LIVE MARKETS ── */}
       <section className="lp-sec lp-live" id="lp-s3">
         <div className="lp-live-head lp-anim">
           <div className="lp-sec-label">Live market data</div>
-          <div className="lp-sec-h2">MARKETS,<br />ALWAYS ON.</div>
+          <div className="lp-sec-h2">MARKETS,<br/>ALWAYS ON.</div>
         </div>
         <div className="lp-live-prices lp-anim">
-          {LP_COINS.slice(0, 4).map((c, i) => (
+          {LP_COINS.slice(0,4).map((c,i)=>(
             <div key={i} className="lp-price-cell">
               <div className="lp-pc-sym">{c.sym}</div>
               <div className="lp-pc-nm">{c.nm}</div>
               <div className="lp-pc-price">{c.price}</div>
-              <div className={`lp-pc-ch${c.up ? '' : ' dn'}`}>{c.ch}</div>
+              <div className={`lp-pc-ch${c.up?'':' dn'}`}>{c.ch}</div>
             </div>
           ))}
         </div>
         <div className="lp-live-bar">
           <div className="lp-live-bar-track">
-            {tickerItems.map((c, i) => (
+            {ticker.map((c,i)=>(
               <span key={i} className="lp-live-tick">
                 <span className="lp-live-tick-sym">{c.sym}</span>
                 <span className="lp-live-tick-price">{c.price}</span>
-                <span className={`lp-live-tick-ch${c.up ? '' : ' dn'}`}>{c.ch}</span>
+                <span className={`lp-live-tick-ch${c.up?'':' dn'}`}>{c.ch}</span>
               </span>
             ))}
           </div>
         </div>
         <div className="lp-live-cta lp-anim">
-          <button className="lp-btn-primary" onClick={onEnter} style={{minWidth: 280}}>
+          <button className="lp-btn-primary" onClick={onEnter} style={{minWidth:270}}>
             VIEW LIVE DASHBOARD →
           </button>
         </div>
       </section>
 
-      {/* ══ PLANS ══ */}
+      {/* ── PLANS ── */}
       <section className="lp-sec lp-plans" id="lp-s4">
-        <div className="lp-plans-head lp-anim">
+        <div className="lp-sec-head lp-anim">
           <div className="lp-sec-label">Pricing</div>
-          <div className="lp-sec-h2">START FREE.<br />SCALE WHEN READY.</div>
+          <div className="lp-sec-h2">START FREE.<br/>SCALE WHEN READY.</div>
         </div>
         <div className="lp-plans-grid lp-anim">
-          {LP_PLANS_PREVIEW.map((p, i) => (
-            <div key={i} className={`lp-plan-card${p.featured ? ' featured' : ''}`}>
+          {LP_PLANS_PREVIEW.map((p,i)=>(
+            <div key={i} className={`lp-plan-card${p.featured?' featured':''}`}>
               <div className="lp-plan-nm">{p.nm}</div>
               <div className="lp-plan-pr">{p.pr}</div>
               <div className="lp-plan-feats">
-                {p.feats.map((f, j) => <div key={j} className="lp-plan-feat">{f}</div>)}
+                {p.feats.map((f,j)=><div key={j} className="lp-plan-feat">{f}</div>)}
               </div>
-              <button className="lp-plan-cta" onClick={onEnter}>{p.featured ? 'GET STARTED' : 'SELECT'}</button>
+              <button className="lp-plan-cta" onClick={onEnter}>
+                {p.featured?'GET STARTED':'SELECT'}
+              </button>
             </div>
           ))}
         </div>
         <div className="lp-pay-note lp-anim">
-          <span className="lp-pay-note-icon"><MI n="info" /></span>
+          <span className="lp-pay-note-icon"><MI n="info"/></span>
           <span className="lp-pay-note-text">
-            <strong>Subscriptions coming soon.</strong> Payments handled via <strong>Bitcoin (BTC)</strong> and other crypto — more methods added soon. All plans start free during beta.
+            <strong>Subscriptions coming soon.</strong> Payments via <strong>Bitcoin (BTC)</strong> and other crypto — more methods added soon. All plans start free during beta.
           </span>
         </div>
       </section>
 
-      {/* ══ FINAL CTA ══ */}
+      {/* ── FINAL CTA ── */}
       <section className="lp-sec lp-cta-sec" id="lp-s5">
-        <div className="lp-grid-bg" />
+        <div className="lp-grid-bg"/>
         <div className="lp-cta-sec-inner lp-anim">
           <div className="lp-cta-pre">Join KRYPTIV today</div>
-          <div className="lp-cta-h">YOUR NEXT<br />TRADE<br />STARTS HERE.</div>
+          <div className="lp-cta-h">YOUR NEXT<br/>TRADE<br/>STARTS HERE.</div>
           <div className="lp-cta-sub">Free forever · No credit card · Instant access</div>
           <div className="lp-cta-btns">
             <button className="lp-btn-primary" onClick={onEnter}>CREATE FREE ACCOUNT</button>
@@ -1800,11 +1807,9 @@ function Landing({ onEnter }) {
           <div className="lp-footer-right">© 2025 KRYPTIV · ALL RIGHTS RESERVED</div>
         </footer>
       </section>
-
     </div>
   );
 }
-
 
 function Auth() {
   const [tab,   setTab]   = useState('login');
