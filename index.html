@@ -4,6 +4,36 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="https://i.ibb.co/21hGqzmF/file-000000005820720a96d027e8e636c7d6.png">
 <link rel="apple-touch-icon" href="https://i.ibb.co/21hGqzmF/file-000000005820720a96d027e8e636c7d6.png">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KRYPTIV">
+<meta name="application-name" content="KRYPTIV">
+<meta name="description" content="Invest Smart. Trade Smarter. Real-time crypto intelligence platform.">
+<link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22KRYPTIV%22%2C%22short_name%22%3A%22KRYPTIV%22%2C%22description%22%3A%22Invest%20Smart.%20Trade%20Smarter.%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23000000%22%2C%22theme_color%22%3A%22%23000000%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fi.ibb.co%2F21hGqzmF%2Ffile-000000005820720a96d027e8e636c7d6.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fi.ibb.co%2F21hGqzmF%2Ffile-000000005820720a96d027e8e636c7d6.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+<!-- PWA Service Worker -->
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    var swCode = [
+      "const CACHE='kryptiv-v1';",
+      "const STATIC=['/','/index.html'];",
+      "self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)).catch(()=>{})));",
+      "self.addEventListener('fetch',e=>{",
+      "  if(e.request.method!=='GET')return;",
+      "  e.respondWith(fetch(e.request).then(r=>{",
+      "    if(r&&r.status===200){const cl=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}",
+      "    return r;",
+      "  }).catch(()=>caches.match(e.request)));",
+      "});"
+    ].join('\n');
+    var blob = new Blob([swCode],{type:'application/javascript'});
+    var swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl).catch(function(){});
+  });
+}
+</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5113834742218816"
      crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
@@ -70,7 +100,7 @@
 }
 
 html,body{background:#000;color:#fff;font-family:var(--sans);height:100%;overflow:hidden}
-#root{height:100vh;overflow:hidden}
+#root{height:100vh;overflow:hidden;position:relative}
 @supports(height:100dvh){html,body{height:100dvh}#root{height:100dvh}}
 
 /* Material Icons — force block display so ligature text never shows */
@@ -648,6 +678,322 @@ input,textarea,select{font-family:var(--sans)}
 @media(min-width:1400px){.scr{padding:32px 44px}}
 @media(min-width:1800px){.scr{max-width:1440px;margin:0 auto}}
 
+/* ═══════════════ LANDING PAGE ═══════════════ */
+
+/* Landing wrapper — full viewport scroll container */
+.lp{
+  position:relative;z-index:10;
+  height:100vh;overflow-y:auto;overflow-x:hidden;
+  scroll-snap-type:y mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.lp::-webkit-scrollbar{display:none}
+
+/* Each section snaps full height */
+.lp-sec{
+  min-height:100vh;
+  scroll-snap-align:start;
+  display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+}
+
+/* ── HERO SECTION ── */
+.lp-hero{
+  justify-content:center;
+  padding:0 8vw;
+}
+.lp-nav{
+  position:absolute;top:0;left:0;right:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 8vw;
+  z-index:5;
+  background:linear-gradient(to bottom,rgba(0,0,0,.5),transparent);
+}
+.lp-nav-logo{font-family:var(--disp);font-size:22px;letter-spacing:4px}
+.lp-nav-right{display:flex;align-items:center;gap:12px}
+.lp-nav-login{
+  padding:8px 20px;background:none;
+  border:1px solid var(--border2);color:var(--w3);
+  font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+}
+.lp-nav-login:hover{border-color:var(--w3);color:var(--w)}
+.lp-nav-cta{
+  padding:8px 20px;background:var(--w);
+  border:none;color:#000;
+  font-family:var(--mono);font-size:8px;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;transition:opacity .2s;
+  position:relative;overflow:hidden;
+}
+.lp-nav-cta:hover{opacity:.85}
+.lp-nav-cta::after{content:'';position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shimmer 2.5s infinite}
+
+/* Hero content */
+.lp-hero-content{
+  display:flex;flex-direction:column;
+  padding-top:80px;
+}
+.lp-eyebrow{
+  font-family:var(--mono);font-size:8px;letter-spacing:6px;color:var(--w4);
+  text-transform:uppercase;margin-bottom:20px;
+  display:flex;align-items:center;gap:10px;
+  animation:fadeUp .6s .1s both;
+}
+.lp-eyebrow::before{content:'';width:24px;height:1px;background:var(--w4)}
+.lp-h1{
+  font-family:var(--disp);
+  font-size:clamp(64px,11vw,160px);
+  line-height:.88;letter-spacing:-1px;
+  animation:fadeUp .6s .2s both;
+  margin-bottom:0;
+}
+.lp-h1 span{color:var(--w4)}
+.lp-tagline{
+  font-family:var(--mono);font-size:clamp(9px,1.1vw,13px);
+  color:var(--w3);letter-spacing:4px;text-transform:uppercase;
+  margin-top:24px;margin-bottom:36px;
+  animation:fadeUp .6s .35s both;
+  max-width:480px;line-height:2;
+}
+.lp-hero-btns{
+  display:flex;gap:12px;flex-wrap:wrap;
+  animation:fadeUp .6s .45s both;
+}
+.lp-btn-primary{
+  padding:14px 32px;background:var(--w);border:none;
+  color:#000;font-family:var(--sans);font-weight:700;
+  font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;transition:opacity .2s;
+  position:relative;overflow:hidden;
+}
+.lp-btn-primary:hover{opacity:.85}
+.lp-btn-primary::after{content:'';position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:shimmer 2s infinite}
+.lp-btn-ghost{
+  padding:14px 32px;background:none;
+  border:1px solid var(--border2);color:var(--w3);
+  font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+}
+.lp-btn-ghost:hover{border-color:var(--w3);color:var(--w)}
+
+/* Hero stats row */
+.lp-hero-stats{
+  display:flex;gap:0;margin-top:48px;border-top:1px solid var(--border);
+  animation:fadeUp .6s .55s both;
+}
+.lp-hstat{flex:1;padding:18px 0 0}
+.lp-hstat+.lp-hstat{border-left:1px solid var(--border);padding-left:24px}
+.lp-hstat-val{font-family:var(--disp);font-size:32px;letter-spacing:1px;line-height:1}
+.lp-hstat-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;margin-top:5px}
+@media(max-width:600px){
+  .lp-hstat-val{font-size:22px}
+  .lp-hstat+.lp-hstat{padding-left:14px}
+}
+
+/* Scroll indicator */
+.lp-scroll-hint{
+  position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  animation:floatY 2.5s ease-in-out infinite;
+  pointer-events:none;
+}
+.lp-scroll-hint-line{width:1px;height:32px;background:linear-gradient(to bottom,transparent,var(--w4))}
+.lp-scroll-hint-dot{width:4px;height:4px;background:var(--w4)}
+
+/* ── FEATURES SECTION ── */
+.lp-features{
+  justify-content:center;padding:60px 8vw;
+}
+.lp-sec-label{
+  font-family:var(--mono);font-size:7px;letter-spacing:6px;color:var(--w4);
+  text-transform:uppercase;margin-bottom:16px;
+  display:flex;align-items:center;gap:10px;
+}
+.lp-sec-label::before{content:'';width:24px;height:1px;background:var(--w4)}
+.lp-sec-h2{
+  font-family:var(--disp);font-size:clamp(44px,7vw,96px);
+  line-height:.9;letter-spacing:-1px;margin-bottom:48px;
+}
+.lp-feat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:1px;border:1px solid var(--border);
+  background:var(--border);
+}
+.lp-feat-card{
+  background:#000;padding:28px 24px;
+  transition:background .2s;
+  position:relative;overflow:hidden;
+}
+.lp-feat-card:hover{background:rgba(255,255,255,.03)}
+.lp-feat-icon{
+  width:36px;height:36px;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:18px;
+}
+.lp-feat-icon .mi{width:16px;height:16px;color:var(--w3)}
+.lp-feat-title{
+  font-family:var(--mono);font-size:9px;letter-spacing:3px;
+  text-transform:uppercase;color:var(--w2);margin-bottom:10px;
+}
+.lp-feat-desc{font-size:13px;color:var(--w4);line-height:1.8;font-weight:300}
+.lp-feat-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.lp-feat-card:hover::after{opacity:1}
+
+/* ── TICKER / LIVE PRICES SECTION ── */
+.lp-live{
+  justify-content:center;padding:60px 0;
+  overflow:hidden;
+}
+.lp-live-inner{padding:0 8vw;margin-bottom:36px}
+.lp-live-prices{
+  display:flex;gap:1px;background:var(--border);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  overflow:hidden;
+}
+.lp-price-cell{
+  flex:1;min-width:0;padding:20px 24px;background:#000;
+  display:flex;flex-direction:column;gap:4px;
+}
+.lp-pc-sym{font-family:var(--mono);font-size:11px;color:var(--w);font-weight:500}
+.lp-pc-nm{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:var(--w4);text-transform:uppercase}
+.lp-pc-price{font-family:var(--disp);font-size:28px;letter-spacing:1px;margin-top:6px}
+.lp-pc-ch{font-family:var(--mono);font-size:9px;margin-top:2px}
+.lp-pc-ch.up{color:var(--up)}
+.lp-pc-ch.dn{color:var(--dn)}
+.lp-live-bar{
+  width:100%;overflow:hidden;border-top:1px solid var(--border);
+  padding:12px 0;margin-top:24px;
+}
+.lp-live-bar-track{display:flex;white-space:nowrap;animation:ticker 40s linear infinite}
+.lp-live-tick{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:0 20px;border-right:1px solid var(--border);
+  font-family:var(--mono);font-size:8px;
+}
+.lp-live-tick-sym{color:var(--w4)}
+.lp-live-tick-price{color:var(--w2)}
+.lp-live-tick-ch{color:var(--up)}
+.lp-live-tick-ch.dn{color:var(--dn)}
+
+/* ── PLANS PREVIEW SECTION ── */
+.lp-plans{
+  justify-content:center;padding:60px 8vw;
+}
+.lp-plans-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);
+  margin-top:40px;
+}
+.lp-plan-card{
+  background:#000;padding:28px 20px;
+  display:flex;flex-direction:column;
+  transition:background .2s;cursor:default;
+  position:relative;
+}
+.lp-plan-card:hover{background:rgba(255,255,255,.025)}
+.lp-plan-card.featured{background:rgba(255,255,255,.04)}
+.lp-plan-card.featured::before{
+  content:'POPULAR';
+  position:absolute;top:16px;right:16px;
+  font-family:var(--mono);font-size:6px;letter-spacing:3px;
+  color:var(--w4);border:1px solid var(--border);padding:3px 8px;
+}
+.lp-plan-nm{font-family:var(--disp);font-size:36px;letter-spacing:2px;line-height:1;margin-bottom:4px}
+.lp-plan-pr{font-family:var(--mono);font-size:11px;color:var(--w3);letter-spacing:2px;margin-bottom:16px}
+.lp-plan-feats{flex:1;display:flex;flex-direction:column;gap:7px;margin-bottom:20px}
+.lp-plan-feat{font-family:var(--mono);font-size:8px;color:var(--w4);letter-spacing:1px;display:flex;gap:7px;align-items:flex-start;line-height:1.6}
+.lp-plan-feat::before{content:'→';color:var(--w4);flex-shrink:0}
+.lp-plan-cta{
+  width:100%;padding:10px;background:none;
+  border:1px solid var(--border);color:var(--w4);
+  font-family:var(--mono);font-size:8px;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+}
+.lp-plan-cta:hover{border-color:var(--border2);color:var(--w3)}
+.lp-plan-card.featured .lp-plan-cta{background:var(--w);border-color:var(--w);color:#000}
+.lp-plan-card.featured .lp-plan-cta:hover{opacity:.85}
+
+/* ── CTA SECTION ── */
+.lp-cta-sec{
+  justify-content:center;align-items:center;
+  text-align:center;padding:60px 8vw;
+  background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(255,255,255,.04),transparent);
+}
+.lp-cta-pre{font-family:var(--mono);font-size:7px;letter-spacing:6px;color:var(--w4);text-transform:uppercase;margin-bottom:18px}
+.lp-cta-h{font-family:var(--disp);font-size:clamp(52px,9vw,120px);line-height:.88;letter-spacing:-1px;margin-bottom:20px}
+.lp-cta-sub{font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--w4);text-transform:uppercase;margin-bottom:36px;line-height:2}
+.lp-cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.lp-footer{
+  border-top:1px solid var(--border);
+  padding:24px 8vw;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.lp-footer-logo{font-family:var(--disp);font-size:18px;letter-spacing:3px;color:var(--w4)}
+.lp-footer-links{display:flex;gap:20px}
+.lp-footer-link{
+  font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--w4);
+  text-transform:uppercase;cursor:pointer;background:none;border:none;
+  transition:color .2s;
+}
+.lp-footer-link:hover{color:var(--w3)}
+.lp-footer-right{font-family:var(--mono);font-size:7px;color:var(--w4);letter-spacing:2px}
+
+/* Auth overlay transition */
+.auth-overlay{
+  position:fixed;inset:0;z-index:500;
+  display:flex;flex-direction:column;
+  background:#000;
+  transform:translateY(100%);
+  transition:transform .55s cubic-bezier(.4,0,.2,1);
+}
+.auth-overlay.visible{transform:translateY(0)}
+.auth-overlay-close{
+  position:absolute;top:20px;right:24px;z-index:10;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);background:rgba(0,0,0,.5);
+  color:var(--w3);cursor:pointer;transition:all .15s;
+}
+.auth-overlay-close:hover{border-color:var(--border2);color:var(--w)}
+.auth-overlay-close .mi{width:16px;height:16px}
+
+/* Animate landing sections on scroll into view */
+.lp-anim{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease}
+.lp-anim.in{opacity:1;transform:translateY(0)}
+
+/* Floating grid lines background */
+.lp-grid-bg{
+  position:absolute;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);
+  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);
+  pointer-events:none;
+}
+.lp-hero-content{position:relative;z-index:1}
+
+@media(max-width:600px){
+  .lp-plans-grid{grid-template-columns:1fr 1fr}
+  .lp-feat-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .lp-plans-grid{grid-template-columns:1fr}
+  .lp-live-prices{flex-direction:column}
+  .lp-price-cell{border-bottom:1px solid var(--border)}
+  .lp-hero-stats{flex-wrap:wrap}
+  .lp-hstat{min-width:50%}
+}
+
 </style>
 </head>
 <body>
@@ -1066,6 +1412,203 @@ function MI({n, style, className}) {
 
 const {useState, useEffect, useRef, useCallback, useMemo} = React;
 
+/* ═══════════════ LANDING PAGE COMPONENT ═══════════════ */
+
+/* Live ticker data for landing (static demo, updates via coinData if available) */
+const LP_COINS = [
+  {sym:'BTC',nm:'Bitcoin',  price:'$84,210',ch:'+2.14%',up:true},
+  {sym:'ETH',nm:'Ethereum', price:'$3,192', ch:'+1.87%',up:true},
+  {sym:'SOL',nm:'Solana',   price:'$147',   ch:'+4.22%',up:true},
+  {sym:'BNB',nm:'BNB',      price:'$612',   ch:'-0.43%',up:false},
+  {sym:'XRP',nm:'XRP',      price:'$0.58',  ch:'+1.11%',up:true},
+  {sym:'AVAX',nm:'Avalanche',price:'$38.4', ch:'-1.03%',up:false},
+];
+
+const LP_FEATS = [
+  {icon:'bolt',          title:'Real-Time Data',         desc:'Live prices from CoinGecko, Binance & Kraken with 5-second refresh. Never miss a move that matters.'},
+  {icon:'smart_toy',     title:'AI Intelligence',        desc:'Built-in AI analyst for every coin. Get investment cases, outlook reports, and take-profit strategies on demand.'},
+  {icon:'newspaper',     title:'Live News Feed',          desc:'Curated crypto news with AI-powered sentiment scoring. Know the narrative before the market does.'},
+  {icon:'donut_small',   title:'Portfolio Tracker',      desc:'Track your holdings with live P&L, allocation charts, and risk metrics. Always know where you stand.'},
+  {icon:'candlestick_chart','title':'Market Overview',   desc:'Full market view with top movers, volume leaders, and sparkline charts across 15+ assets.'},
+  {icon:'workspace_premium','title':'Tiered Plans',      desc:'From free to Atmosphere — scale your edge. Unlock more coins, alerts, and AI depth as you grow.'},
+];
+
+const LP_PLANS_PREVIEW = [
+  {id:'free',       nm:'FREE',       pr:'$0',          feats:['BTC & SOL live data','AI analysis','News feed','Simulator']},
+  {id:'budget',     nm:'BUDGET',     pr:'$3.90/mo',    feats:['15 coins live','3B AI model','5 price alerts','CSV export'], featured:true},
+  {id:'pro',        nm:'PRO',        pr:'$14.90/mo',   feats:['Unlimited coins','8B AI model','Portfolio guidance','Exchange connect']},
+  {id:'atmosphere', nm:'ATMOSPHERE', pr:'$44.90/mo',   feats:['Everything in Pro','Whale alerts','Custom AI signals','Deep-dive reports']},
+];
+
+function Landing({ onEnter }) {
+
+  /* Intersection observer for scroll animations */
+  useEffect(()=>{
+    const obs = new IntersectionObserver(entries=>{
+      entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); });
+    },{threshold:0.12});
+    document.querySelectorAll('.lp-anim').forEach(el=>obs.observe(el));
+    return ()=>obs.disconnect();
+  },[]);
+
+  const tickerItems = [...LP_COINS,...LP_COINS]; // double for seamless loop
+
+  return (
+    <div className="lp">
+
+      {/* ── SECTION 1: HERO ── */}
+      <section className="lp-sec lp-hero">
+        <div className="lp-grid-bg"/>
+        {/* Navbar */}
+        <nav className="lp-nav">
+          <div className="lp-nav-logo">KRYPTIV</div>
+          <div className="lp-nav-right">
+            <button className="lp-nav-login" onClick={onEnter}>LOG IN</button>
+            <button className="lp-nav-cta"   onClick={onEnter}>GET STARTED</button>
+          </div>
+        </nav>
+        {/* Hero content */}
+        <div className="lp-hero-content">
+          <div className="lp-eyebrow">Crypto Intelligence Platform</div>
+          <div className="lp-h1">
+            INVEST<br/>
+            SMART.<br/>
+            <span>TRADE</span><br/>
+            <span>SMARTER.</span>
+          </div>
+          <div className="lp-tagline">Real-time prices · AI analysis · Portfolio tracking</div>
+          <div className="lp-hero-btns">
+            <button className="lp-btn-primary" onClick={onEnter}>START FREE — NO CARD</button>
+            <button className="lp-btn-ghost"   onClick={()=>document.querySelector('.lp').scrollBy({top:window.innerHeight,behavior:'smooth'})}>
+              SEE FEATURES ↓
+            </button>
+          </div>
+          <div className="lp-hero-stats">
+            <div className="lp-hstat">
+              <div className="lp-hstat-val">15+</div>
+              <div className="lp-hstat-lbl">Assets tracked</div>
+            </div>
+            <div className="lp-hstat">
+              <div className="lp-hstat-val">5s</div>
+              <div className="lp-hstat-lbl">Price refresh</div>
+            </div>
+            <div className="lp-hstat">
+              <div className="lp-hstat-val">AI</div>
+              <div className="lp-hstat-lbl">On every coin</div>
+            </div>
+            <div className="lp-hstat">
+              <div className="lp-hstat-val">$0</div>
+              <div className="lp-hstat-lbl">To start</div>
+            </div>
+          </div>
+        </div>
+        <div className="lp-scroll-hint">
+          <div className="lp-scroll-hint-line"/>
+          <div className="lp-scroll-hint-dot"/>
+        </div>
+      </section>
+
+      {/* ── SECTION 2: FEATURES ── */}
+      <section className="lp-sec lp-features">
+        <div className="lp-anim">
+          <div className="lp-sec-label">What you get</div>
+          <div className="lp-sec-h2">YOUR EDGE,<br/>BUILT IN.</div>
+        </div>
+        <div className="lp-feat-grid lp-anim">
+          {LP_FEATS.map((f,i)=>(
+            <div key={i} className="lp-feat-card">
+              <div className="lp-feat-icon"><MI n={f.icon}/></div>
+              <div className="lp-feat-title">{f.title}</div>
+              <div className="lp-feat-desc">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── SECTION 3: LIVE PRICES ── */}
+      <section className="lp-sec lp-live">
+        <div className="lp-live-inner lp-anim">
+          <div className="lp-sec-label">Live market data</div>
+          <div className="lp-sec-h2">MARKETS,<br/>ALWAYS ON.</div>
+        </div>
+        <div className="lp-live-prices lp-anim">
+          {LP_COINS.slice(0,4).map((c,i)=>(
+            <div key={i} className="lp-price-cell">
+              <div className="lp-pc-sym">{c.sym}</div>
+              <div className="lp-pc-nm">{c.nm}</div>
+              <div className="lp-pc-price">{c.price}</div>
+              <div className={`lp-pc-ch${c.up?'':' dn'}`}>{c.ch}</div>
+            </div>
+          ))}
+        </div>
+        <div className="lp-live-bar">
+          <div className="lp-live-bar-track">
+            {tickerItems.map((c,i)=>(
+              <span key={i} className="lp-live-tick">
+                <span className="lp-live-tick-sym">{c.sym}</span>
+                <span className="lp-live-tick-price">{c.price}</span>
+                <span className={`lp-live-tick-ch${c.up?'':' dn'}`}>{c.ch}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="lp-live-inner" style={{marginTop:32}}>
+          <button className="lp-btn-primary" onClick={onEnter} style={{width:'100%',maxWidth:320}}>VIEW LIVE DASHBOARD →</button>
+        </div>
+      </section>
+
+      {/* ── SECTION 4: PLANS ── */}
+      <section className="lp-sec lp-plans">
+        <div className="lp-anim">
+          <div className="lp-sec-label">Pricing</div>
+          <div className="lp-sec-h2">START FREE.<br/>SCALE WHEN<br/>YOU'RE READY.</div>
+        </div>
+        <div className="lp-plans-grid lp-anim">
+          {LP_PLANS_PREVIEW.map((p,i)=>(
+            <div key={i} className={`lp-plan-card${p.featured?' featured':''}`}>
+              <div className="lp-plan-nm">{p.nm}</div>
+              <div className="lp-plan-pr">{p.pr}</div>
+              <div className="lp-plan-feats">
+                {p.feats.map((f,j)=><div key={j} className="lp-plan-feat">{f}</div>)}
+              </div>
+              <button className="lp-plan-cta" onClick={onEnter}>{p.featured?'GET STARTED':'SELECT'}</button>
+            </div>
+          ))}
+        </div>
+        <div className="lp-anim" style={{marginTop:18}}>
+          <p style={{fontFamily:'var(--mono)',fontSize:'7px',color:'var(--w4)',letterSpacing:'2px',lineHeight:'2'}}>
+            * Payment processors coming soon. All plans start free during beta.
+          </p>
+        </div>
+      </section>
+
+      {/* ── SECTION 5: FINAL CTA ── */}
+      <section className="lp-sec lp-cta-sec">
+        <div className="lp-grid-bg"/>
+        <div className="lp-anim" style={{position:'relative',zIndex:1,display:'flex',flexDirection:'column',alignItems:'center'}}>
+          <div className="lp-cta-pre">Join KRYPTIV today</div>
+          <div className="lp-cta-h">YOUR NEXT<br/>TRADE<br/>STARTS HERE.</div>
+          <div className="lp-cta-sub">Free forever · No credit card · Instant access</div>
+          <div className="lp-cta-btns">
+            <button className="lp-btn-primary" onClick={onEnter}>CREATE FREE ACCOUNT</button>
+            <button className="lp-btn-ghost"   onClick={onEnter}>SIGN IN</button>
+          </div>
+        </div>
+        <footer className="lp-footer">
+          <div className="lp-footer-logo">KRYPTIV</div>
+          <div className="lp-footer-links">
+            <button className="lp-footer-link" onClick={onEnter}>Privacy</button>
+            <button className="lp-footer-link" onClick={onEnter}>Plans</button>
+            <button className="lp-footer-link" onClick={onEnter}>App</button>
+          </div>
+          <div className="lp-footer-right">© 2025 KRYPTIV · ALL RIGHTS RESERVED</div>
+        </footer>
+      </section>
+
+    </div>
+  );
+}
+
 /* ═══════════════ AUTH / INDEX PAGE ═══════════════ */
 
 function Auth() {
@@ -1198,23 +1741,46 @@ function Auth() {
 }
 
 function Root() {
-  const [ready, setReady] = useState(false);
+  const [ready,      setReady]      = useState(false);
+  const [showLanding,setShowLanding]= useState(false);
+  const [showAuth,   setShowAuth]   = useState(false);
   const wallRef = useRef(null);
+
   useEffect(()=>{
     const saved = LS.get();
     if (saved?.kryptid) { window.location.href='/Dashboard/'; return; }
-    // Start animation on next frame — wall div begins empty so no double-trigger
     requestAnimationFrame(()=>{
       if (wallRef.current) wallRef.current.className='wall intro';
       setTimeout(()=>{
         if (wallRef.current) wallRef.current.className='wall clear';
         setReady(true);
+        setShowLanding(true);
       }, 900);
     });
   },[]);
+
+  const openAuth = () => {
+    setShowAuth(true);
+  };
+  const closeAuth = () => {
+    setShowAuth(false);
+  };
+
   return (<>
     <div ref={wallRef}/>
-    {ready&&<Auth/>}
+    {ready && showLanding && <Landing onEnter={openAuth}/>}
+
+    {/* Auth overlay — slides up from bottom */}
+    <div className={`auth-overlay${showAuth?' visible':''}`}>
+      <div style={{position:'relative',height:'100%'}}>
+        {/* Wall background inside overlay */}
+        <div className="wall clear" style={{position:'absolute',inset:0,zIndex:0}}/>
+        <button className="auth-overlay-close" onClick={closeAuth}>
+          <MI n="close"/>
+        </button>
+        {showAuth && <Auth/>}
+      </div>
+    </div>
   </>);
 }
 ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
