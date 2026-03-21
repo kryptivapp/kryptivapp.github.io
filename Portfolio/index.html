@@ -719,6 +719,7 @@ const NAV_ITEMS = [
   { id:'account',   lbl:'Account',   icon:'person',            path:'/Account/'    },
   { id:'plans',     lbl:'Plans',     icon:'workspace_premium', path:'/Plans/'      },
   { id:'privacy',   lbl:'Privacy',   icon:'shield',            path:'/Privacy/'    },
+  { id:'lab',       lbl:'Lab',       icon:'science',           path:'/Lab/'        },
 ];
 
 /* ── UTILITIES ── */
@@ -1320,6 +1321,7 @@ function AppShell({user, setUser, view, children}) {
               <MI n={n.icon}/>
               {n.lbl}
               {n.id==='ai' && <span className="nav-badge">FREE</span>}
+              {n.id==='lab' && <span className="nav-badge">Beta</span>}
             </div>
           ))}
         </nav>
