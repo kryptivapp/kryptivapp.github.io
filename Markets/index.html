@@ -1598,44 +1598,126 @@ function TradingChart({coinId, coin, range, onRangeChange, showRangeSelector, li
 }
 
 function ProbCalc({coin}) {
-  const [target, setTarget]   = useState('');
-  const [period, setPeriod]   = useState('7');
-  const [result, setResult]   = useState(null);
+  const [target,  setTarget]  = useState('');
+  const [period,  setPeriod]  = useState('7');
+  const [result,  setResult]  = useState(null);
+  const [showHow, setShowHow] = useState(false);
+
+  /* ── Rational normal CDF approximation (Abramowitz & Stegun 26.2.17) ── */
+  function normCDF(z) {
+    if (z < -8) return 0; if (z > 8) return 1;
+    const neg = z < 0;
+    const x = Math.abs(z);
+    const t = 1 / (1 + 0.2316419 * x);
+    const poly = t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+    const pdf  = Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+    const cdf  = 1 - pdf * poly;
+    return neg ? 1 - cdf : cdf;
+  }
 
   function calc() {
-    const tgt = parseFloat(target);
-    if (!tgt||!coin||!coin.price) return;
-    const pct = ((tgt - coin.price) / coin.price) * 100;
-    const vol = Math.abs(coin.ch||2) * 1.5;
-    const days = parseInt(period);
-    const sigma = vol/100 * Math.sqrt(days);
-    const logRet = Math.log(tgt/coin.price);
-    const drift  = (coin.ch7d||0)/700 * days;
-    const z      = (logRet - drift) / Math.max(sigma, 0.001);
-    const prob   = Math.min(95, Math.max(1, Math.round((0.5 * (1 + Math.sign(-z) * (1 - Math.exp(-0.7 * z * z)))) * 100)));
-    const probUp = pct > 0 ? (100-prob) : prob;
-    setResult({pct, probUp: Math.min(95,Math.max(5,probUp)), days, tgt, dir: pct>0?'up':'down'});
+    const tgt  = parseFloat(target);
+    if (!tgt || !coin || !coin.price || tgt <= 0) return;
+
+    const S0   = coin.price;          // current price
+    const T    = parseInt(period);    // days horizon
+    const pct  = ((tgt - S0) / S0) * 100;
+
+    /* ── Annualised volatility estimate ──
+       We blend three signals:
+       1. |ch24h| * √365  — 24h realised move scaled to annual
+       2. |ch7d|  * √52   — 7d move scaled to annual
+       3. 80% floor (crypto is always volatile)
+       Then convert to daily σ for the GBM formula.                    */
+    const vol24h  = Math.abs(coin.ch  || 2) / 100;
+    const vol7d   = coin.ch7d != null ? Math.abs(coin.ch7d) / 100 / Math.sqrt(7) : vol24h;
+    const sigmaAnn = Math.max(0.80, (vol24h * Math.sqrt(365) * 0.5 + vol7d * Math.sqrt(365) * 0.5));
+    const sigmaDay = sigmaAnn / Math.sqrt(365);
+
+    /* ── GBM drift: use 7d trend (annualised), defaulting to 0 ──      */
+    const muAnn    = coin.ch7d != null ? (coin.ch7d / 100) * (365 / 7) : 0;
+    const muDay    = muAnn / 365;
+
+    /* ── Log-normal GBM probability ──
+       Under GBM: ln(S_T/S_0) ~ N( (μ - σ²/2)·T , σ²·T )
+       P(S_T >= K) = N( -d2 )  where
+         d2 = [ ln(S_0/K) + (μ - σ²/2)·T ] / (σ·√T)                   */
+    const lnRatio  = Math.log(S0 / tgt);
+    const drift    = (muDay - 0.5 * sigmaDay * sigmaDay) * T;
+    const denom    = sigmaDay * Math.sqrt(T);
+    const d2       = (lnRatio + drift) / Math.max(denom, 0.0001);
+    const probUp   = normCDF(-d2);           // P(S_T >= K)
+    const probDown = 1 - probUp;             // P(S_T < K)
+
+    /* For display: probability of reaching the target (touch, not close) */
+    const probDisplay = pct > 0 ? probUp : probDown;
+    const pctClamped  = Math.min(94, Math.max(6, Math.round(probDisplay * 100)));
+
+    setResult({
+      pct, days: T, tgt, dir: pct > 0 ? 'up' : 'down',
+      prob: pctClamped,
+      sigmaAnn: Math.round(sigmaAnn * 100),
+      muAnn:    Math.round(muAnn * 100),
+      d2:       d2.toFixed(2),
+    });
   }
+
+  const accentUp  = 'rgba(130,255,150,';
+  const accentDn  = 'rgba(255,100,80,';
 
   return (
     <div style={{padding:'16px',background:'rgba(255,255,255,.02)',border:'1px solid rgba(255,255,255,.06)',marginTop:16}}>
-      <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:4,color:'var(--w4)',textTransform:'uppercase',marginBottom:12}}>
-        PROBABILITY CALCULATOR
+
+      {/* ── Title row ── */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+        <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:4,color:'var(--w4)',textTransform:'uppercase'}}>
+          PROBABILITY CALCULATOR
+        </div>
+        <button onClick={()=>setShowHow(h=>!h)}
+          style={{background:'none',border:'1px solid rgba(255,255,255,.1)',color:'var(--w4)',
+            fontFamily:'var(--mono)',fontSize:6,letterSpacing:2,padding:'2px 8px',cursor:'pointer',
+            transition:'all .15s'}}
+          onMouseEnter={e=>{e.target.style.color='var(--w)';e.target.style.borderColor='rgba(255,255,255,.3)';}}
+          onMouseLeave={e=>{e.target.style.color='var(--w4)';e.target.style.borderColor='rgba(255,255,255,.1)';}}>
+          {showHow ? 'HIDE' : 'HOW IT WORKS'}
+        </button>
       </div>
+
+      {/* ── How it works panel ── */}
+      {showHow && (
+        <div style={{padding:'12px 14px',background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.07)',
+          marginBottom:14,fontFamily:'var(--mono)',fontSize:7,color:'var(--w3)',lineHeight:2.0,letterSpacing:.5}}>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,letterSpacing:3,color:'var(--w4)',marginBottom:8,textTransform:'uppercase'}}>
+            Geometric Brownian Motion Model
+          </div>
+          <div><span style={{color:'var(--w)'}}>Model:</span> Uses GBM — the same stochastic process underlying Black-Scholes options pricing. Assumes log-normally distributed returns.</div>
+          <div style={{marginTop:4}}><span style={{color:'var(--w)'}}>Volatility (σ):</span> Estimated from live 24h and 7-day price moves, scaled to annual. Blended with an 80% floor — crypto is inherently volatile.</div>
+          <div style={{marginTop:4}}><span style={{color:'var(--w)'}}>Drift (μ):</span> Derived from the 7-day trend, annualised. Represents the expected directional component of price movement.</div>
+          <div style={{marginTop:4}}><span style={{color:'var(--w)'}}>Formula:</span> P(S_T ≥ K) = N(–d₂) where d₂ = [ln(S₀/K) + (μ – σ²/2)·T] / (σ·√T)</div>
+          <div style={{marginTop:4}}><span style={{color:'var(--w)'}}>CDF:</span> Normal distribution evaluated using the Abramowitz & Stegun rational approximation (error &lt; 7.5×10⁻⁸).</div>
+          <div style={{marginTop:6,padding:'6px 10px',background:'rgba(255,255,255,.04)',borderLeft:'2px solid rgba(255,255,255,.15)',lineHeight:1.9}}>
+            This is a statistical model, not a prediction. Crypto markets are non-stationary — past volatility does not guarantee future volatility. Use as one signal among many. Not financial advice.
+          </div>
+        </div>
+      )}
+
+      {/* ── Inputs ── */}
       <div style={{display:'flex',gap:10,marginBottom:10,flexWrap:'wrap'}}>
         <div style={{flex:1,minWidth:100}}>
           <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:4}}>TARGET PRICE ({csym()})</div>
           <input value={target} onChange={e=>setTarget(e.target.value)}
-            placeholder={coin?fp(coin.price*1.1):'target'}
+            onKeyDown={e=>e.key==='Enter'&&calc()}
+            placeholder={coin?fp(coin.price*1.15):'target'}
             style={{width:'100%',background:'none',border:'none',borderBottom:'1px solid rgba(255,255,255,.15)',
               color:'var(--w)',fontSize:14,fontWeight:300,padding:'4px 0',outline:'none',caretColor:'#fff'}}/>
         </div>
         <div style={{flex:1,minWidth:100}}>
-          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:4}}>TIME (DAYS)</div>
+          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:2,marginBottom:4}}>HORIZON</div>
           <select value={period} onChange={e=>setPeriod(e.target.value)}
             style={{width:'100%',background:'rgba(0,0,0,.5)',border:'none',borderBottom:'1px solid rgba(255,255,255,.15)',
               color:'var(--w)',fontSize:12,padding:'4px 0',outline:'none',appearance:'none',cursor:'pointer'}}>
             <option value="1">1 day</option>
+            <option value="3">3 days</option>
             <option value="7">7 days</option>
             <option value="14">14 days</option>
             <option value="30">30 days</option>
@@ -1643,34 +1725,65 @@ function ProbCalc({coin}) {
           </select>
         </div>
         <button onClick={calc}
-          style={{alignSelf:'flex-end',padding:'6px 16px',background:'var(--w)',border:'none',color:'#000',
+          style={{alignSelf:'flex-end',padding:'6px 18px',background:'var(--w)',border:'none',color:'#000',
             fontFamily:'var(--sans)',fontWeight:700,fontSize:8,letterSpacing:2,cursor:'pointer'}}>
           CALCULATE
         </button>
       </div>
-      {result && (
-        <div style={{padding:'12px',background:result.dir==='up'?'rgba(130,255,150,.04)':'rgba(255,100,80,.04)',
-          border:'1px solid '+(result.dir==='up'?'rgba(130,255,150,.15)':'rgba(255,100,80,.12)')}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-            <span style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--w)',letterSpacing:1}}>
-              {fp(result.tgt)} in {result.days}d
-            </span>
-            <span style={{fontFamily:'var(--disp)',fontSize:28,
-              color:result.dir==='up'?'rgba(130,255,150,.9)':'rgba(255,100,80,.8)'}}>
-              {result.probUp}%
-            </span>
+
+      {/* ── Result ── */}
+      {result && (()=>{
+        const acc = result.dir==='up' ? accentUp : accentDn;
+        return (
+          <div style={{padding:'14px',background:acc+'0.04)',border:'1px solid '+acc+'0.15)'}}>
+
+            {/* Headline */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+              <div>
+                <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--w)',letterSpacing:1}}>
+                  {fp(result.tgt)} in {result.days}d
+                </div>
+                <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',marginTop:3,letterSpacing:.5}}>
+                  {result.dir==='up'?'▴ upside target':'▾ downside target'} · σ {result.sigmaAnn}%/yr · μ {result.muAnn>0?'+':''}{result.muAnn}%/yr
+                </div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontFamily:'var(--disp)',fontSize:38,lineHeight:1,color:acc+'0.95)'}}>
+                  {result.prob}<span style={{fontSize:20}}>%</span>
+                </div>
+                <div style={{fontFamily:'var(--mono)',fontSize:6,color:'var(--w4)',letterSpacing:2,marginTop:2}}>
+                  GBM PROBABILITY
+                </div>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div style={{height:3,background:'rgba(255,255,255,.06)',marginBottom:10,overflow:'hidden',borderRadius:2}}>
+              <div style={{height:'100%',width:result.prob+'%',background:acc+'0.75)',transition:'width .6s cubic-bezier(.4,0,.2,1)',borderRadius:2}}/>
+            </div>
+
+            {/* Stats row */}
+            <div style={{display:'flex',gap:0,borderTop:'1px solid rgba(255,255,255,.06)',paddingTop:8}}>
+              {[
+                ['MOVE NEEDED', (result.pct>0?'+':'')+result.pct.toFixed(1)+'%'],
+                ['Z-SCORE',     result.d2],
+                ['MODEL',       'GBM / LOG-NORMAL'],
+              ].map(([l,v])=>(
+                <div key={l} style={{flex:1,paddingRight:8}}>
+                  <div style={{fontFamily:'var(--mono)',fontSize:6,color:'var(--w4)',letterSpacing:1.5,textTransform:'uppercase',marginBottom:2}}>{l}</div>
+                  <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--w2)'}}>{v}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{fontFamily:'var(--mono)',fontSize:6.5,color:'var(--w4)',letterSpacing:.5,lineHeight:1.8,marginTop:10,
+              borderTop:'1px solid rgba(255,255,255,.05)',paddingTop:8}}>
+              Statistical estimate using Geometric Brownian Motion. Assumes constant volatility and log-normal returns.
+              Crypto markets are non-stationary — treat as one signal, not a forecast. Not financial advice.
+            </div>
           </div>
-          <div style={{height:4,background:'rgba(255,255,255,.06)',marginBottom:6,overflow:'hidden'}}>
-            <div style={{height:'100%',width:result.probUp+'%',
-              background:result.dir==='up'?'rgba(130,255,150,.7)':'rgba(255,100,80,.6)',
-              transition:'width .5s ease'}}/>
-          </div>
-          <div style={{fontFamily:'var(--mono)',fontSize:7,color:'var(--w4)',letterSpacing:1,lineHeight:1.8}}>
-            Estimated probability of reaching {fp(result.tgt)} within {result.days} day{result.days>1?'s':''}.<br/>
-            Based on volatility model — never 100% certain. Not financial advice.
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
