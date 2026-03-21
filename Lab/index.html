@@ -626,15 +626,22 @@ function CandleChart({coinId,tf,chartType,indicators,drawings,onDraw,activeTool,
     return()=>{window.removeEventListener('mouseup',onMouseUpGlobal);window.removeEventListener('mousemove',onMouseMoveGlobal);};
   },[onMouseUpGlobal,onMouseMoveGlobal]);
 
-  const onWheel=useCallback(e=>{
-    e.preventDefault();
-    const s=stRef.current;
-    const range=s.ve-s.vs;
-    const factor=e.deltaY>0?1.08:.92;
-    const newRange=Math.max(.04,Math.min(1,range*factor));
-    const cx=(s.vs+s.ve)/2;
-    s.vs=Math.max(0,cx-newRange/2);s.ve=Math.min(1,s.vs+newRange);
-    requestAnimationFrame(drawChart);
+  const onWheelRef=useRef(null);
+  useEffect(()=>{
+    const cv=cvRef.current;if(!cv)return;
+    const handler=e=>{
+      e.preventDefault();
+      const s=stRef.current;
+      const range=s.ve-s.vs;
+      const factor=e.deltaY>0?1.08:.92;
+      const newRange=Math.max(.04,Math.min(1,range*factor));
+      const cx=(s.vs+s.ve)/2;
+      s.vs=Math.max(0,cx-newRange/2);s.ve=Math.min(1,s.vs+newRange);
+      requestAnimationFrame(drawChart);
+    };
+    onWheelRef.current=handler;
+    cv.addEventListener('wheel',handler,{passive:false});
+    return()=>cv.removeEventListener('wheel',handler);
   },[drawChart]);
 
   const onClick=useCallback(e=>{
@@ -658,7 +665,7 @@ function CandleChart({coinId,tf,chartType,indicators,drawings,onDraw,activeTool,
     <div ref={wrapRef} style={{position:'relative',width:'100%',height:'100%'}}>
       <canvas ref={cvRef} style={{position:'absolute',inset:0,width:'100%',height:'100%',cursor}}
         onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}
-        onMouseDown={onMouseDown} onClick={onClick} onWheel={onWheel}/>
+        onMouseDown={onMouseDown} onClick={onClick}/>
       <canvas ref={ovRef} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'}}/>
       {/* OHLC info bar */}
       {hoverOHLC&&(
@@ -736,7 +743,13 @@ function IndPanel({coinId,tf,type,height}){
     }
   },[candles,type]);
   const ro=useRef(null);
-  useEffect(()=>{const cv=cvRef.current;if(!cv)return;ro.current=new ResizeObserver(()=>cvRef.current&&(cvRef.current.style.width=''));ro.current.observe(cv.parentElement);return()=>ro.current?.disconnect();},[]);
+  useEffect(()=>{
+    const cv=cvRef.current;if(!cv)return;
+    const redraw=()=>{if(!cv)return;cv.dispatchEvent(new Event('_redraw'));};
+    ro.current=new ResizeObserver(redraw);
+    ro.current.observe(cv.parentElement||cv);
+    return()=>ro.current?.disconnect();
+  },[]);
   if(!candles)return<div style={{height:height,display:'flex',alignItems:'center',justifyContent:'center'}}><SkeletonRows n={2} h={8}/></div>;
   return<canvas ref={cvRef} style={{width:'100%',height:height+'px',display:'block'}}/>;
 }
@@ -816,7 +829,6 @@ function LiveTrades({coin}){
 }
 // ── APP ──
 function App(){
-  const isMobile=window.innerWidth<900&&!('ontouchstart'in window?false:true)||window.innerWidth<700;
   const[mobile]=useState(()=>window.innerWidth<768);
   const[preloadPct,setPreloadPct]=useState(0);
   const[ready,setReady]=useState(false);
